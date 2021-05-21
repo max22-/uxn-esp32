@@ -1,0 +1,38 @@
+( simple Dev/File writing example )
+
+( devices )
+
+|00 @System     [ &vector $2 &pad    $6 &r      $2 &g     $2 &b      $2 ]
+|a0 @File       [ &vector $2 &success $2 &offset $2 &pad $2 &name $2 &length $2 &load $2 &save $2 ]
+
+( variables )
+
+|0000
+
+( init )
+
+|0100 @reset ( -> )
+
+	( save contents to file )
+	;contents/end ;contents SUB2 .File/length DEO2
+	;filename .File/name DEO2
+	;contents .File/save DEO2
+
+	.File/success DEI2 ORA ,&success JCN
+	( failed to write: bright yellow background )
+	#f0f7 .System/r DEO2
+	#f0f7 .System/g DEO2
+	#00f7 .System/b DEO2
+	BRK
+
+	&success
+	( write successful: dark blue background )
+	#00f7 .System/r DEO2
+	#00f7 .System/g DEO2
+	#40f7 .System/b DEO2
+	BRK
+
+@filename "hello.txt 00
+@contents "Hello 20 "world, 20 "how 20 "are 20 "you? 0a
+	&end
+
