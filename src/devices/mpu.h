@@ -1,6 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <portmidi.h>
+/* #include <portmidi.h> */
 
 /*
 Copyright (c) 2021 Devine Lu Linvega
@@ -17,10 +17,16 @@ WITH REGARD TO THIS SOFTWARE.
 typedef unsigned char Uint8;
 
 typedef struct {
+	int message;
+} PmEvent;
+
+typedef struct {
 	Uint8 queue;
-	PmStream *midi;
 	PmEvent events[32];
+	/*
+	PmStream *midi;
 	PmError error;
+	*/
 } Mpu;
 
 int initmpu(Mpu *m, Uint8 device);

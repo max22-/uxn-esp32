@@ -15,6 +15,7 @@ WITH REGARD TO THIS SOFTWARE.
 int
 initmpu(Mpu *m, Uint8 device)
 {
+	/*
 	int i;
 	Pm_Initialize();
 	for(i = 0; i < Pm_CountDevices(); ++i)
@@ -25,12 +26,14 @@ initmpu(Mpu *m, Uint8 device)
 	Pm_OpenInput(&m->midi, device, NULL, 128, 0, NULL);
 	m->queue = 0;
 	m->error = pmNoError;
+	*/
 	return 1;
 }
 
 void
 listenmpu(Mpu *m)
 {
+	/*
 	const int result = Pm_Read(m->midi, m->events, 32);
 	if(result < 0) {
 		m->error = (PmError)result;
@@ -38,4 +41,5 @@ listenmpu(Mpu *m)
 		return;
 	}
 	m->queue = result;
+	*/
 }
