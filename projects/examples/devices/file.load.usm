@@ -12,8 +12,11 @@
 
 ( program )
 
-|0100 @reset ( -> )
-	
+|0100 ( -> )
+	;try-load JSR2
+	BRK
+
+@try-load ( -- )
 	( load contents from file )
 	#1000 .File/length DEO2
 	;filename .File/name DEO2
@@ -24,7 +27,7 @@
 	#f0f7 .System/r DEO2
 	#f0f7 .System/g DEO2
 	#00f7 .System/b DEO2
-	BRK
+	JMP2r
 
 	&success
 	( read successful: dark blue background, show contents )
@@ -32,7 +35,7 @@
 	#00f7 .System/g DEO2
 	#40f7 .System/b DEO2
 	;contents DUP2 .File/success DEI2 ADD2 SWP2 ;draw JSR2
-	BRK
+	JMP2r
 
 @draw ( end-ptr* ptr* -- )
 	EQU2k ,&end JCN
