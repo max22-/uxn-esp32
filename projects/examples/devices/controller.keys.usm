@@ -2,7 +2,7 @@
 
 %RTN { JMP2r }
 %8+  { #0008 ADD2 }
-%8*  { #0030 SFT2 }
+%8*  { #30 SFT2 }
 
 ( devices )
 

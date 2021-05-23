@@ -41,7 +41,7 @@
 	EQU2k ,&end JCN
 	LDAk
 	DUP #0a EQU ,&linefeed JCN
-	#00 #0005 SFT2 ;font ADD2
+	#0005 SFT2 ;font ADD2
 	.Screen/addr DEO2
 	#29 .Screen/color DEO
 	.Screen/x DEI2 #0008 ADD2 .Screen/x DEO2

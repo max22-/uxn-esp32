@@ -11,7 +11,7 @@
 
 |0100 ( -> )
 	#90ff .System/r DEO2 #9000 .System/g DEO2 #900f .System/b DEO2
-	#08e0 .Screen/width DEI2 #0001 SFT2 SUB2 .scroll/x STZ2
+	#08e0 .Screen/width DEI2 #01 SFT2 SUB2 .scroll/x STZ2
 	#09b0 .scroll/y STZ2
 	;frame .Screen/vector DEO2
 	#30 .scroll/wait STZ

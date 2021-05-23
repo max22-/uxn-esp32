@@ -43,10 +43,10 @@ RTN
 @print-hexadecimal ( short -- )
 	LIT '0 .Console/char DEO
 	LIT 'x .Console/char DEO
-	DUP2 #000c SFT2 ,&digit JSR
-	DUP2 #0008 SFT2 ,&digit JSR
-	DUP2 #0004 SFT2 ,&digit JSR
-	                ,&digit JSR
+	DUP2 #0c SFT2 ,&digit JSR
+	DUP2 #08 SFT2 ,&digit JSR
+	DUP2 #04 SFT2 ,&digit JSR
+	              ,&digit JSR
 RTN
 
 	&digit

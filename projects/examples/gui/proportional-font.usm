@@ -28,7 +28,7 @@ BRK
 	LDAk
 	DUP #00 EQU ,&end JCN
 	DUP #0a EQU ,&linefeed JCN
-	#00 #0005 SFT2 ;font ADD2
+	#0005 SFT2 ;font ADD2
 	DUP2 .Screen/addr DEO2
 	#29 .Screen/color DEO
 	,get-x-advance JSR .Screen/x DEI2 ADD2 STH2kr ADD2 .Screen/x DEO2

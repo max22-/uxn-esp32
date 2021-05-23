@@ -1,7 +1,7 @@
 ( dev/mouse )
 
 %RTN   { JMP2r }
-%ABS2  { DUP2 #000f SFT2 EQU #04 JCN #ffff MUL2 }
+%ABS2  { DUP2 #0f SFT2 EQU #04 JCN #ffff MUL2 }
 %LTS2  { #8000 ADD2 SWP2 #8000 ADD2 GTH2 }
 %GTS2  { #8000 ADD2 SWP2 #8000 ADD2 LTH2 }
 

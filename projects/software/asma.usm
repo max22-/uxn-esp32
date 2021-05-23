@@ -432,7 +432,7 @@
 	STAr
 	,&not-found JCN
 
-	;asma-opcodes/_disasm SUB2 #0003 SFT2 ( 00 byte / end* )
+	;asma-opcodes/_disasm SUB2 #03 SFT2 ( 00 byte / end* )
 	&loop
 	LDAkr STHr LIT2r 0001 ADD2r ( 00 byte char / end* )
 	DUP ,&not-end JCN
