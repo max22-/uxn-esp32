@@ -229,7 +229,7 @@ evaluxn(Uxn *u, Uint16 vec)
 			continue
 		for n in *allops[i].n
 			\write '\t\tcase 0x%02x: /* %s */\n'\format n, allops[n + 1].name
-		\write '\t\t\t__asm__( "evaluxn_%02x_%s:" );\n'\format allops[i].n[1], allops[i].name
+		\write '\t\t\t__asm__("evaluxn_%02x_%s:");\n'\format allops[i].n[1], allops[i].name
 		\write allops[i].body
 	\write [[
 #pragma GCC diagnostic pop
