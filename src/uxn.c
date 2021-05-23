@@ -15,9 +15,9 @@ WITH REGARD TO THIS SOFTWARE.
 #pragma mark - Operations
 
 /* clang-format off */
-void   push8(Stack *s, Uint8 a) { if (s->ptr == 0xff) { s->error = 2; return; } s->dat[s->ptr++] = a; }
-Uint8  pop8_keep(Stack *s) { if (s->kptr == 0) { s->error = 1; return 0; } return s->dat[--s->kptr]; }
-Uint8  pop8_nokeep(Stack *s) { if (s->ptr == 0) { s->error = 1; return 0; } return s->dat[--s->ptr]; }
+void   push8(Stack *s, Uint8 a) { if(s->ptr == 0xff) { s->error = 2; return; } s->dat[s->ptr++] = a; }
+Uint8  pop8_keep(Stack *s) { if(s->kptr == 0) { s->error = 1; return 0; } return s->dat[--s->kptr]; }
+Uint8  pop8_nokeep(Stack *s) { if(s->ptr == 0) { s->error = 1; return 0; } return s->dat[--s->ptr]; }
 static Uint8 (*pop8)(Stack *s);
 void   mempoke8(Uint8 *m, Uint16 a, Uint8 b) { m[a] = b; }
 Uint8  mempeek8(Uint8 *m, Uint16 a) { return m[a]; }
@@ -44,7 +44,7 @@ void op_neq(Uxn *u) { Uint8 a = pop8(u->src), b = pop8(u->src); push8(u->src, b 
 void op_gth(Uxn *u) { Uint8 a = pop8(u->src), b = pop8(u->src); push8(u->src, b > a); }
 void op_lth(Uxn *u) { Uint8 a = pop8(u->src), b = pop8(u->src); push8(u->src, b < a); }
 void op_jmp(Uxn *u) { Uint8 a = pop8(u->src); u->ram.ptr += (Sint8)a; }
-void op_jnz(Uxn *u) { Uint8 a = pop8(u->src); if (pop8(u->src)) u->ram.ptr += (Sint8)a; }
+void op_jnz(Uxn *u) { Uint8 a = pop8(u->src); if(pop8(u->src)) u->ram.ptr += (Sint8)a; }
 void op_jsr(Uxn *u) { Uint8 a = pop8(u->src); push16(u->dst, u->ram.ptr); u->ram.ptr += (Sint8)a; }
 void op_sth(Uxn *u) { Uint8 a = pop8(u->src); push8(u->dst, a); }
 /* Memory */
@@ -78,7 +78,7 @@ void op_neq16(Uxn *u) { Uint16 a = pop16(u->src), b = pop16(u->src); push8(u->sr
 void op_gth16(Uxn *u) { Uint16 a = pop16(u->src), b = pop16(u->src); push8(u->src, b > a); }
 void op_lth16(Uxn *u) { Uint16 a = pop16(u->src), b = pop16(u->src); push8(u->src, b < a); }
 void op_jmp16(Uxn *u) { u->ram.ptr = pop16(u->src); }
-void op_jnz16(Uxn *u) { Uint16 a = pop16(u->src); if (pop8(u->src)) u->ram.ptr = a; }
+void op_jnz16(Uxn *u) { Uint16 a = pop16(u->src); if(pop8(u->src)) u->ram.ptr = a; }
 void op_jsr16(Uxn *u) { push16(u->dst, u->ram.ptr); u->ram.ptr = pop16(u->src); }
 void op_sth16(Uxn *u) { Uint16 a = pop16(u->src); push16(u->dst, a); }
 /* Memory(16-bits) */
