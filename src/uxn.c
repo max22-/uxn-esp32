@@ -3,6 +3,7 @@
 
 /*
 Copyright (u) 2021 Devine Lu Linvega
+Copyright (u) 2021 Andrew Alderwick
 
 Permission to use, copy, modify, and distribute this software for any
 purpose with or without fee is hereby granted, provided that the above
@@ -176,8 +177,10 @@ int
 loaduxn(Uxn *u, char *filepath)
 {
 	FILE *f;
-	if(!(f = fopen(filepath, "rb")))
-		return haltuxn(u, "Missing input rom.", 0);
+	if(!(f = fopen(filepath, "rb"))) {
+		printf("Halted: Missing input rom.\n");
+		return 0;
+	}
 	fread(u->ram.dat + PAGE_PROGRAM, sizeof(u->ram.dat) - PAGE_PROGRAM, 1, f);
 	printf("Uxn loaded[%s].\n", filepath);
 	return 1;
