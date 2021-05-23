@@ -29,8 +29,8 @@ then
     cc -std=c89 -DDEBUG -Wall -Wno-unknown-pragmas -Wpedantic -Wshadow -Wextra -Werror=implicit-int -Werror=incompatible-pointer-types -Werror=int-conversion -Wvla -g -Og -fsanitize=address -fsanitize=undefined src/uxn.c src/debugger.c -o bin/debugger
 else
 	cc src/assembler.c -std=c89 -Os -DNDEBUG -g0 -s -Wall -Wno-unknown-pragmas -o bin/uxnasm
-	cc src/uxn.c src/debugger.c -std=c89 -Os -DNDEBUG -g0 -s -Wall -Wno-unknown-pragmas -o bin/debugger
-	cc src/uxn.c src/devices/ppu.c src/devices/apu.c src/devices/mpu.c src/emulator.c -std=c89 -Os -DNDEBUG -g0 -s -Wall -Wno-unknown-pragmas -L/usr/local/lib -lSDL2 -o bin/uxnemu
+	cc src/uxn-fast.c src/debugger.c -std=c89 -Os -DNDEBUG -g0 -s -Wall -Wno-unknown-pragmas -o bin/debugger
+	cc src/uxn-fast.c src/devices/ppu.c src/devices/apu.c src/devices/mpu.c src/emulator.c -std=c89 -Os -DNDEBUG -g0 -s -Wall -Wno-unknown-pragmas -L/usr/local/lib -lSDL2 -o bin/uxnemu
 fi
 
 echo "Installing.."
@@ -42,7 +42,7 @@ then
 fi
 
 echo "Assembling.."
-./bin/uxnasm projects/examples/devices/controller.buttons.usm bin/boot.rom
+./bin/uxnasm projects/demos/life.usm bin/boot.rom
 
 echo "Running.."
 if [ "${2}" = '--cli' ]; 
