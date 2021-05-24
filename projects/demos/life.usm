@@ -73,7 +73,7 @@ BRK
 	( incr frame ) .world/frame LDZ #01 + [ DUP ] .world/frame STZ
 	( reset count ) #0000 .world/count STZ2
 
-	MOD2 #00 = #01 JCN [ BRK ] 
+	#03 AND #00 = #01 JCN [ BRK ] 
 
 	( clear buffer )
 	BANK2 DUP2 GET-SIZE ++
