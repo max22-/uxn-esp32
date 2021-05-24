@@ -14,6 +14,7 @@
 %2//  { #01 SFT2 }
 %4//  { #02 SFT2 }
 %8//  { #03 SFT2 }
+%8**  { #30 SFT2 }
 
 %WAVEFORM { #1000 }
 
@@ -295,7 +296,7 @@ RTN
 	.octave-view/y1 LDZ2 #0010 ++ .Screen/y DEO2
 	#21 .Screen/color DEO
 
-	;font-hex .octave LDZ #03 + #00 SWP #0008 ** ++ .Screen/addr DEO2
+	;font-hex .octave LDZ #03 + #00 SWP 8** ++ .Screen/addr DEO2
 	.octave-view/y1 LDZ2 #0008 ++ .Screen/y DEO2
 	#23 .Screen/color DEO
 
@@ -425,15 +426,15 @@ RTN
 @draw-short ( short* color -- )
 
 	STH SWP 
-	DUP #04 SFT TOS #0008 ** ;font-hex ++ .Screen/addr DEO2
+	DUP #04 SFT TOS 8** ;font-hex ++ .Screen/addr DEO2
 	( draw ) STHkr .Screen/color DEO
-	#0f AND TOS #0008 ** ;font-hex ++ .Screen/addr DEO2
+	#0f AND TOS 8** ;font-hex ++ .Screen/addr DEO2
 	.Screen/x DEI2 #0008 ++ .Screen/x DEO2
 	( draw ) STHkr .Screen/color DEO
-	DUP #04 SFT TOS #0008 ** ;font-hex ++ .Screen/addr DEO2
+	DUP #04 SFT TOS 8** ;font-hex ++ .Screen/addr DEO2
 	.Screen/x DEI2 #0008 ++ .Screen/x DEO2
 	( draw ) STHkr .Screen/color DEO
-	#0f AND TOS #0008 ** ;font-hex ++ .Screen/addr DEO2
+	#0f AND TOS 8** ;font-hex ++ .Screen/addr DEO2
 	.Screen/x DEI2 #0008 ++ .Screen/x DEO2
 	( draw ) STHr .Screen/color DEO
 

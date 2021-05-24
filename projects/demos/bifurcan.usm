@@ -7,6 +7,7 @@
 %MOD { DUP2 DIV MUL SUB }
 %TOS { #00 SWP }
 %2// { #01 SFT2 }
+%8** { #30 SFT2 }
 
 ( devices )
 
@@ -105,11 +106,11 @@ RTN
 	( save pos ) .anchor/y STZ2 .anchor/x STZ2
 	#00 #0f
 	&loop
-		( save-x ) OVR #03 MOD TOS #0008 MUL2 .anchor/x LDZ2 ADD2 .Screen/x DEO2
-		( save-y ) OVR #03 DIV TOS #0008 MUL2 .anchor/y LDZ2 ADD2 .Screen/y DEO2
+		( save-x ) OVR #03 MOD TOS 8** .anchor/x LDZ2 ADD2 .Screen/x DEO2
+		( save-y ) OVR #03 DIV TOS 8** .anchor/y LDZ2 ADD2 .Screen/y DEO2
 		( get digit* ) OVR STHkr #02 MUL TOS ;digits ADD2 LDA2 
 		( get bit ) ROT #0e SWP SUB SFT2 #0001 AND2 
-		( set tile ) #0008 MUL2 ;tiles ADD2 
+		( set tile ) 8** ;tiles ADD2 
 		( set style ) .style LDZ #10 MUL TOS ADD2
 		.Screen/addr DEO2
 		( draw ) #21 .Screen/color DEO

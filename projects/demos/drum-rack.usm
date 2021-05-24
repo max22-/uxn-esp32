@@ -9,6 +9,10 @@
 %++ { ADD2 } %-- { SUB2 } %** { MUL2 } %// { DIV2 }
 %<< { LTH2 } %>> { GTH2 } %== { EQU2 } %!! { NEQ2 }
 
+%2** { #10 SFT2 } %2// { #01 SFT2 }
+%4** { #20 SFT2 } %4// { #02 SFT2 }
+%8** { #30 SFT2 } %8// { #03 SFT2 }
+
 %TOB { SWP POP } %TOS { #00 SWP }
 %RTN { JMP2r }
 %MOD { DUP2 / * - }
@@ -85,14 +89,14 @@
 	#01 .piano/octave STZ
 
 	( find center )
-	.Screen/width DEI2 #0002 // .center/x STZ2
-	.Screen/height DEI2 #0002 // .center/y STZ2
+	.Screen/width DEI2 2// .center/x STZ2
+	.Screen/height DEI2 2// .center/y STZ2
 
 	( place frame )
 	.center/x LDZ2 PAD-WIDTH #0003 ** -- #0010 -- .frame/x1 STZ2
 	.center/y LDZ2 #0050 -- .frame/y1 STZ2
 	.center/x LDZ2 PAD-WIDTH #0003 ** ++ #0010 ++ .frame/x2 STZ2
-	.frame/y1 LDZ2 PAD-HEIGHT #0004 ** ++ #0028 ++ .frame/y2 STZ2
+	.frame/y1 LDZ2 PAD-HEIGHT 4** ++ #0028 ++ .frame/y2 STZ2
 
 	( place pad-view )
 	.frame/x1 LDZ2 .pad-view/x1 STZ2
@@ -136,7 +140,7 @@
 		( load sample )
 		OVR TOS #0019 ** ;pad-path ++ .File/name DEO2
 		OVR #04 / #10 * .Audio0/length + DEI2 .File/length DEO2
-		OVR TOS #0002 ** ;pad-addr ++ LDA2 .File/load DEO2
+		OVR TOS 2** ;pad-addr ++ LDA2 .File/load DEO2
 		( draw pad )
 		OVR #01 ;draw-pad JSR2
 		( draw mixer )
@@ -287,8 +291,8 @@ BRK
 
 @on-touch-oct ( -> )
 	
-	.Mouse/x DEI2 .oct-view/x1 LDZ2 -- #0008 // TOB #08 ! ,&no-mod JCN
-		.Mouse/y DEI2 .oct-view/y1 LDZ2 -- #0008 // TOB 
+	.Mouse/x DEI2 .oct-view/x1 LDZ2 -- 8// TOB #08 ! ,&no-mod JCN
+		.Mouse/y DEI2 .oct-view/y1 LDZ2 -- 8// TOB 
 		DUP #00 ! ,&no-incr JCN
 			.piano/octave LDZ #01 + .piano/octave STZ &no-incr
 		DUP #02 ! ,&no-decr JCN
@@ -299,8 +303,8 @@ BRK
 		BRK
 	&no-mod
 
-	.Mouse/x DEI2 .oct-view/x1 LDZ2 -- #0008 // TOB #06 GTH ,&no-key JCN
-		.Mouse/x DEI2 .oct-view/x1 LDZ2 -- #0008 // 
+	.Mouse/x DEI2 .oct-view/x1 LDZ2 -- 8// TOB #06 GTH ,&no-key JCN
+		.Mouse/x DEI2 .oct-view/x1 LDZ2 -- 8// 
 		( set pitch of pad )
 		DUP2 ;notes ++ LDA .pads/last LDZ SWP .piano/octave LDZ #02 - #0c * + 
 		( save ) SWP TOS ;pad-pitch ++ STA 
@@ -321,7 +325,7 @@ BRK
 	( highlight )
 	DUP #02 ;draw-pad JSR2
 	( addr )
-	DUP TOS #0002 ** ;pad-addr ++ LDA2 STH2
+	DUP TOS 2** ;pad-addr ++ LDA2 STH2
 	DUP #04 / #10 * .Audio0/addr + STH2r ROT DEO2
 	( pitch )
 	DUP TOS ;pad-pitch ++ LDA STH 
@@ -355,7 +359,7 @@ RTN
 		&no-dot
 		OVR TOS #0010 ** [ DUP2r STH2r ] ++ LDA 
 		#02 /
-		TOS #0004 // .wav-view/y1 LDZ2 ++ .Screen/y DEO2
+		TOS 4// .wav-view/y1 LDZ2 ++ .Screen/y DEO2
 		.Screen/x DEI2 #0001 ++ .Screen/x DEO2
 		( draw ) #02 .Screen/color DEO
 		( incr ) SWP #01 + SWP
@@ -417,14 +421,14 @@ RTN
 	OVR2 #0003 ++ .Screen/x DEO2
 	DUP2 #0014 ++ .Screen/y DEO2
 	( get pitch ) STHkr TOS ;pad-pitch ++ LDA
-	#0c / TOS #0008 ** ;font-hex ++ .Screen/addr DEO2
+	#0c / TOS 8** ;font-hex ++ .Screen/addr DEO2
 	#21 .Screen/color DEO
 
 	( draw octave )
 	OVR2 #000b ++ .Screen/x DEO2
 	DUP2 #0014 ++ .Screen/y DEO2
 	( get pitch ) STHkr TOS ;pad-pitch ++ LDA
-	#0c MOD TOS #0008 ** ;font-notes ++ .Screen/addr DEO2
+	#0c MOD TOS 8** ;font-notes ++ .Screen/addr DEO2
 	#21 .Screen/color DEO
 
 	POP2 POP2
@@ -455,7 +459,7 @@ RTN
 	.oct-view/y1 LDZ2 #0010 ++ .Screen/y DEO2
 	#21 .Screen/color DEO
 
-	;font-hex .piano/octave LDZ #03 + #00 SWP #0008 ** ++ .Screen/addr DEO2
+	;font-hex .piano/octave LDZ #03 + #00 SWP 8** ++ .Screen/addr DEO2
 	.oct-view/y1 LDZ2 #0008 ++ .Screen/y DEO2
 	#23 .Screen/color DEO
 
@@ -589,7 +593,7 @@ RTN
 	( load ) STH STH2 .Screen/y DEO2 .Screen/x DEO2
 	STH2r
 	&loop
-		DUP2 LDA #00 SWP #0030 -- #0008 ** ;font-num-uc ++ .Screen/addr DEO2 
+		DUP2 LDA #00 SWP #0030 -- 8** ;font-num-uc ++ .Screen/addr DEO2 
 		( draw ) STHkr .Screen/color DEO
 		( incr ) #0001 ++
 		( incr ) .Screen/x DEI2 #0008 ++ .Screen/x DEO2

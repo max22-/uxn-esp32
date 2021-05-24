@@ -8,6 +8,7 @@
 %h { .DateTime/hour   DEI }
 %m { .DateTime/minute DEI }
 %s { .DateTime/second DEI }
+%8** { #30 SFT2 }
 
 ( devices )
 
@@ -68,7 +69,7 @@
 	#0120 #00 h MUL2
 	#00c0 #00 m MUL2 ADD2
 	#00f8 #00 s MUL2 ADD2
-	#0271 #00 .fps/next LDZ MUL2 #00 .fps/current LDZ DIV2 #0008 MUL2 ADD2
+	#0271 #00 .fps/next LDZ MUL2 #00 .fps/current LDZ DIV2 8** ADD2
 	#01b0 ;modf JSR2 SWP2 #0017 MUL2 #03e8 DIV2 .neralie/n6 STZ POP
 
 	( add up units and tens of pulses, store in n5 and n4 )
@@ -109,11 +110,11 @@
 	JMP2r
 
 @letter ( index* -- )
-	#0008 MUL2 ;font-letters ADD2 .Screen/addr DEO2
+	8** ;font-letters ADD2 .Screen/addr DEO2
 	,digit/middle JMP
 
 @digit ( index* -- )
-	#0008 MUL2 ;font-numbers ADD2 .Screen/addr DEO2
+	8** ;font-numbers ADD2 .Screen/addr DEO2
 	&middle
 	.neralie/color LDZ #20 ADD .Screen/color DEO
 	.Screen/x DEI2 #0008 ADD2 .Screen/x DEO2

@@ -388,7 +388,7 @@
 	&not-end
 	,asma-parse-hex-digit JSR
 	DUP #f0 AND ,&fail JCN
-	LIT2r 0010 MUL2r
+	LITr 40 SFT2r
 	#00 STH STH ADD2r
 	#0001 ADD2
 	,&loop JMP

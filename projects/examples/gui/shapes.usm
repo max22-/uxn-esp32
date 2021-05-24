@@ -3,7 +3,9 @@
 %RTN { JMP2r }
 %++  { #0001 ADD2 }
 %--  { #0001 SUB2 }
-%8+  { #0008 ADD2 }
+%8++  { #0008 ADD2 }
+%2** { #10 SFT2 }
+%4** { #20 SFT2 }
 %ABS2 { DUP2 #0f SFT2 EQU #04 JCN #ffff MUL2 }
 %LTS2  { #8000 ADD2 SWP2 #8000 ADD2 GTH2 }
 %GTS2  { #8000 ADD2 SWP2 #8000 ADD2 LTH2 }
@@ -49,13 +51,13 @@ BRK
 	( load ) .color STZ -- .line/y0 STZ2 -- .line/x0 STZ2 .line/y STZ2 .line/x STZ2
 	.line/x0 LDZ2 .line/x LDZ2 SUB2 ABS2 .line/dx STZ2
 	.line/y0 LDZ2 .line/y LDZ2 SUB2 ABS2 #0000 SWP2 SUB2 .line/dy STZ2
-	#ffff #00 .line/x LDZ2 .line/x0 LDZ2 LTS2 #0002 MUL2 ADD2 .line/sx STZ2
-	#ffff #00 .line/y LDZ2 .line/y0 LDZ2 LTS2 #0002 MUL2 ADD2 .line/sy STZ2
+	#ffff #00 .line/x LDZ2 .line/x0 LDZ2 LTS2 2** ADD2 .line/sx STZ2
+	#ffff #00 .line/y LDZ2 .line/y0 LDZ2 LTS2 2** ADD2 .line/sy STZ2
 	.line/dx LDZ2 .line/dy LDZ2 ADD2 .line/e1 STZ2
 	&loop
 		.line/x LDZ2 .Screen/x DEO2 .line/y LDZ2 .Screen/y DEO2 .color LDZ .Screen/color DEO
 		.line/x LDZ2 .line/x0 LDZ2 EQU2 .line/y LDZ2 .line/y0 LDZ2 EQU2 #0101 EQU2 ,&end JCN
-		.line/e1 LDZ2 #0002 MUL2 .line/e2 STZ2
+		.line/e1 LDZ2 2** .line/e2 STZ2
 		.line/e2 LDZ2 .line/dy LDZ2 LTS2 ,&skipy JCN
 			.line/e1 LDZ2 .line/dy LDZ2 ADD2 .line/e1 STZ2
 			.line/x LDZ2 .line/sx LDZ2 ADD2 .line/x STZ2
@@ -115,16 +117,16 @@ RTN
 
 	( load ) .color STZ .circle/r STZ2 .circle/yc STZ2 .circle/xc STZ2
 	#0000 .circle/x STZ2 .circle/r LDZ2 .circle/y STZ2
-	.circle/r LDZ2 #0002 MUL2 .circle/d STZ2
+	.circle/r LDZ2 2** .circle/d STZ2
 	( draw ) ;&seg JSR2
 	&loop
 		( incr ) .circle/x LDZ2 ++ .circle/x STZ2
 		.circle/d LDZ2 #0001 LTS2 ,&else JCN
 			( decr ) .circle/y LDZ2 -- .circle/y STZ2
-			.circle/x LDZ2 .circle/y LDZ2 SUB2 #0004 MUL2 .circle/d LDZ2 ADD2 .circle/d STZ2
+			.circle/x LDZ2 .circle/y LDZ2 SUB2 4** .circle/d LDZ2 ADD2 .circle/d STZ2
 			;&end JMP2
 		&else
-			.circle/x LDZ2 #0004 MUL2 .circle/d LDZ2 ADD2 .circle/d STZ2
+			.circle/x LDZ2 4** .circle/d LDZ2 ADD2 .circle/d STZ2
 		&end
 		( draw ) ;&seg JSR2
 		.circle/y LDZ2 .circle/x LDZ2 -- GTS2 ,&loop JCN
@@ -151,10 +153,10 @@ RTN
 		&hor
 			( save ) OVR2 .Screen/x DEO2
 			( draw ) .color LDZ .Screen/color DEO
-			( incr ) SWP2 8+ SWP2
+			( incr ) SWP2 8++ SWP2
 			OVR2 OVR2 LTH2 ,&hor JCN
 		POP2 POP2
-		( incr ) SWP2 8+ SWP2
+		( incr ) SWP2 8++ SWP2
 		OVR2 OVR2 LTH2 ,&ver JCN
 	POP2 POP2
 

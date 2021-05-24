@@ -1,13 +1,20 @@
 ( dev/audio )
 
-@timer    $1
-@progress $1
+%4** { #20 SFT2 }
+%8** { #30 SFT2 }
 
 ( devices )
 
 |00 @System     [ &vector $2 &pad      $6 &r      $2 &g     $2 &b      $2 ]
 |20 @Screen     [ &vector $2 &width    $2 &height $2 &pad   $2 &x      $2 &y    $2 &addr  $2 &color $1 ]
 |30 @Audio0     [ &vector $2 &position $2 &output $1 &pad   $3 &adsr   $2 &length $2 &addr $2 &volume $1 &pitch $1 ]
+
+( variables )
+
+|0000
+
+@timer    $1
+@progress $1
 
 |0100 ( -> )
 	
@@ -42,8 +49,8 @@ BRK
 	#20  .Screen/color DEO
 
 	( draw note )
-	#00 SWP #0004 MUL2 #0100 SUB2 .Screen/y DEO2
-	#00 .progress LDZ #0008 MUL2 .Screen/x DEO2
+	#00 SWP 4** #0100 SUB2 .Screen/y DEO2
+	#00 .progress LDZ 8** .Screen/x DEO2
 	;dot .Screen/addr DEO2
 	#21 .Screen/color DEO
 

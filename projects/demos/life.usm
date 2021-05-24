@@ -16,6 +16,7 @@
 %MOD8 { #07 AND } %MOD2 { #01 AND }
 %SFL  { #40 SFT SFT }
 %2//  { #01 SFT2 } %8//  { #03 SFT2 }
+%2**  { #10 SFT2 } %8**  { #30 SFT2 }
 
 %WIDTH { #40 }   %HEIGHT { #40 }
 %BANK1 { #8000 } %BANK2 { #a000 }
@@ -151,10 +152,10 @@ BRK
 
 	#00 HEIGHT
 	&ver
-		OVR TOS #0002 ** .anchor/y LDZ2 ++ .Screen/y DEO2
+		OVR TOS 2** .anchor/y LDZ2 ++ .Screen/y DEO2
 		#00 WIDTH
 		&hor
-			OVR TOS #0002 ** .anchor/x LDZ2 ++ .Screen/x DEO2
+			OVR TOS 2** .anchor/x LDZ2 ++ .Screen/x DEO2
 			GET-ITERATORS ,get-cell JSR #01 + .Screen/color DEO
 			INCR
 			NEQk ,&hor JCN
@@ -256,15 +257,15 @@ RTN
 @draw-short ( short* color -- )
 
 	STH SWP 
-	DUP #04 SFT TOS #0008 ** ;font-hex ++ .Screen/addr DEO2
+	DUP #04 SFT TOS 8** ;font-hex ++ .Screen/addr DEO2
 	( draw ) STHkr .Screen/color DEO
-	#0f AND TOS #0008 ** ;font-hex ++ .Screen/addr DEO2
+	#0f AND TOS 8** ;font-hex ++ .Screen/addr DEO2
 	.Screen/x DEI2 #0008 ++ .Screen/x DEO2
 	( draw ) STHkr .Screen/color DEO
-	DUP #04 SFT TOS #0008 ** ;font-hex ++ .Screen/addr DEO2
+	DUP #04 SFT TOS 8** ;font-hex ++ .Screen/addr DEO2
 	.Screen/x DEI2 #0008 ++ .Screen/x DEO2
 	( draw ) STHkr .Screen/color DEO
-	#0f AND TOS #0008 ** ;font-hex ++ .Screen/addr DEO2
+	#0f AND TOS 8** ;font-hex ++ .Screen/addr DEO2
 	.Screen/x DEI2 #0008 ++ .Screen/x DEO2
 	( draw ) STHr .Screen/color DEO
 

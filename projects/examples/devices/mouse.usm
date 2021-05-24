@@ -4,6 +4,7 @@
 %ABS2  { DUP2 #0f SFT2 EQU #04 JCN #ffff MUL2 }
 %LTS2  { #8000 ADD2 SWP2 #8000 ADD2 GTH2 }
 %GTS2  { #8000 ADD2 SWP2 #8000 ADD2 LTH2 }
+%2** { #10 SFT2 }
 
 ( devices )
 
@@ -94,8 +95,8 @@ RTN
 	( load ) .color STZ .line/y0 STZ2 .line/x0 STZ2 .line/y STZ2 .line/x STZ2
 	.line/x0 LDZ2 .line/x LDZ2 SUB2 ABS2 .line/dx STZ2
 	.line/y0 LDZ2 .line/y LDZ2 SUB2 ABS2 #0000 SWP2 SUB2 .line/dy STZ2
-	#ffff #00 .line/x LDZ2 .line/x0 LDZ2 LTS2 #0002 MUL2 ADD2 .line/sx STZ2
-	#ffff #00 .line/y LDZ2 .line/y0 LDZ2 LTS2 #0002 MUL2 ADD2 .line/sy STZ2
+	#ffff #00 .line/x LDZ2 .line/x0 LDZ2 LTS2 2** ADD2 .line/sx STZ2
+	#ffff #00 .line/y LDZ2 .line/y0 LDZ2 LTS2 2** ADD2 .line/sy STZ2
 	.line/dx LDZ2 .line/dy LDZ2 ADD2 .line/e1 STZ2
 	&loop
 		.line/x LDZ2 .Screen/x DEO2 
@@ -103,7 +104,7 @@ RTN
 		.color LDZ .Screen/color DEO
 		[ .line/x LDZ2 .line/x0 LDZ2 EQU2 ] 
 		[ .line/y LDZ2 .line/y0 LDZ2 EQU2 ] #0101 EQU2 ,&end JCN
-		.line/e1 LDZ2 #0002 MUL2 .line/e2 STZ2
+		.line/e1 LDZ2 2** .line/e2 STZ2
 		.line/e2 LDZ2 .line/dy LDZ2 LTS2 ,&skipy JCN
 			.line/e1 LDZ2 .line/dy LDZ2 ADD2 .line/e1 STZ2
 			.line/x LDZ2 .line/sx LDZ2 ADD2 .line/x STZ2

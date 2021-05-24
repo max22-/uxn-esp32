@@ -4,6 +4,8 @@
 %++  { #0001 ADD2 }
 %2// { #01 SFT2 }
 %4// { #02 SFT2 }
+%4** { #20 SFT2 }
+%8** { #30 SFT2 }
 %8+  { #0008 ADD2 }
 %STEP8 { #33 SFT2 }
 
@@ -213,28 +215,28 @@ RTN
 	.window/x1 LDZ2 #0038 ADD2 .Screen/x DEO2 
 	.System/b DEI2 #28 ;draw-short JSR2
 
-	.window/x1 LDZ2 #0060 ADD2 .window/y1 LDZ2 #0010 ADD2 .window/x1 LDZ2 #0090 ADD2 #00 ;theme/r1 .selection LDZ ADD LDA #0004 MUL2 #01 ;draw-slider JSR2
-	.window/x1 LDZ2 #0060 ADD2 .window/y1 LDZ2 #0020 ADD2 .window/x1 LDZ2 #0090 ADD2 #00 ;theme/g1 .selection LDZ ADD LDA #0004 MUL2 #01 ;draw-slider JSR2
-	.window/x1 LDZ2 #0060 ADD2 .window/y1 LDZ2 #0030 ADD2 .window/x1 LDZ2 #0090 ADD2 #00 ;theme/b1 .selection LDZ ADD LDA #0004 MUL2 #01 ;draw-slider JSR2
+	.window/x1 LDZ2 #0060 ADD2 .window/y1 LDZ2 #0010 ADD2 .window/x1 LDZ2 #0090 ADD2 #00 ;theme/r1 .selection LDZ ADD LDA 4** #01 ;draw-slider JSR2
+	.window/x1 LDZ2 #0060 ADD2 .window/y1 LDZ2 #0020 ADD2 .window/x1 LDZ2 #0090 ADD2 #00 ;theme/g1 .selection LDZ ADD LDA 4** #01 ;draw-slider JSR2
+	.window/x1 LDZ2 #0060 ADD2 .window/y1 LDZ2 #0030 ADD2 .window/x1 LDZ2 #0090 ADD2 #00 ;theme/b1 .selection LDZ ADD LDA 4** #01 ;draw-slider JSR2
 
 	.window/x1 LDZ2 #0050 ADD2 .Screen/x DEO2
 	.window/y1 LDZ2 #0040 ADD2 .Screen/y DEO2
-	;radio_icns #00 .selection LDZ #00 EQU #0008 MUL2 ADD2 .Screen/addr DEO2
+	;radio_icns #00 .selection LDZ #00 EQU 8** ADD2 .Screen/addr DEO2
 	#25 .Screen/color DEO
 
 	.window/x1 LDZ2 #0060 ADD2 .Screen/x DEO2
 	.window/y1 LDZ2 #0040 ADD2 .Screen/y DEO2
-	;radio_icns #00 .selection LDZ #01 EQU #0008 MUL2 ADD2 .Screen/addr DEO2
+	;radio_icns #00 .selection LDZ #01 EQU 8** ADD2 .Screen/addr DEO2
 	#25 .Screen/color DEO
 
 	.window/x1 LDZ2 #0070 ADD2 .Screen/x DEO2
 	.window/y1 LDZ2 #0040 ADD2 .Screen/y DEO2
-	;radio_icns #00 .selection LDZ #02 EQU #0008 MUL2 ADD2 .Screen/addr DEO2
+	;radio_icns #00 .selection LDZ #02 EQU 8** ADD2 .Screen/addr DEO2
 	#25 .Screen/color DEO
 
 	.window/x1 LDZ2 #0080 ADD2 .Screen/x DEO2
 	.window/y1 LDZ2 #0040 ADD2 .Screen/y DEO2
-	;radio_icns #00 .selection LDZ #03 EQU #0008 MUL2 ADD2 .Screen/addr DEO2
+	;radio_icns #00 .selection LDZ #03 EQU 8** ADD2 .Screen/addr DEO2
 	#25 .Screen/color DEO
 
 RTN
@@ -328,7 +330,7 @@ RTN
 	.Screen/x DEO2 
 	STH2r
 	&loop
-		DUP2 LDA #00 SWP #0008 MUL2 
+		DUP2 LDA #00 SWP 8**
 		;font ADD2 .Screen/addr DEO2 
 		( draw ) STHkr .Screen/color DEO
 		( incr ) ++
@@ -341,15 +343,15 @@ RTN
 @draw-short ( short* color -- )
 
 	STH SWP 
-	DUP #04 SFT #00 SWP #0008 MUL2 ;font-hex ADD2 .Screen/addr DEO2
+	DUP #04 SFT #00 SWP 8** ;font-hex ADD2 .Screen/addr DEO2
 	( draw ) STHkr .Screen/color DEO
-	#0f AND #00 SWP #0008 MUL2 ;font-hex ADD2 .Screen/addr DEO2
+	#0f AND #00 SWP 8** ;font-hex ADD2 .Screen/addr DEO2
 	.Screen/x DEI2 8+ .Screen/x DEO2
 	( draw ) STHkr .Screen/color DEO
-	DUP #04 SFT #00 SWP #0008 MUL2 ;font-hex ADD2 .Screen/addr DEO2
+	DUP #04 SFT #00 SWP 8** ;font-hex ADD2 .Screen/addr DEO2
 	.Screen/x DEI2 8+ .Screen/x DEO2
 	( draw ) STHkr .Screen/color DEO
-	#0f AND #00 SWP #0008 MUL2 ;font-hex ADD2 .Screen/addr DEO2
+	#0f AND #00 SWP 8** ;font-hex ADD2 .Screen/addr DEO2
 	.Screen/x DEI2 8+ .Screen/x DEO2
 	( draw ) STHr .Screen/color DEO
 
