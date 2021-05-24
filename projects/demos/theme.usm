@@ -96,6 +96,8 @@ BRK
 	POP2
 
 	;update-theme JSR2
+	;draw-cursor JSR2
+	;draw-background JSR2
 	;draw-window JSR2
 
 BRK
