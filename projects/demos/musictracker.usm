@@ -1,8 +1,8 @@
 ( mini music tracker )
 
 %RTN { JMP2r }
-%8+ { #0008 ADD2 } %8- { #0008 SUB2 }
-%8* { #0008 MUL2 } %8/ { #0008 DIV2 }
+%8++ { #0008 ADD2 } %8-- { #0008 SUB2 }
+%8** { #0008 MUL2 } %8// { #0008 DIV2 }
 %++ { #0001 ADD2 }
 %MOD8 { #07 AND }
 %TRACK { ;track/ch1 #00 .track/active LDZ #0020 MUL2 ADD2 }
@@ -92,10 +92,10 @@ BRK
 		.Mouse/y DEI2 .trkframe/y1 LDZ2 GTH2 .Mouse/y DEI2 .trkframe/y2 LDZ2 LTH2 #0101 EQU2
 		#0101 EQU2 ;touch-trk JCN2
 		.Mouse/x DEI2 .chnframe/x1 LDZ2 GTH2 .Mouse/x DEI2 .chnframe/x2 LDZ2 LTH2 #0101 EQU2
-		.Mouse/y DEI2 .chnframe/y1 LDZ2 8+ GTH2 .Mouse/y DEI2 .chnframe/y2 LDZ2 8- LTH2 #0101 EQU2
+		.Mouse/y DEI2 .chnframe/y1 LDZ2 8++ GTH2 .Mouse/y DEI2 .chnframe/y2 LDZ2 8-- LTH2 #0101 EQU2
 		#0101 EQU2 ;touch-chn JCN2
 		.Mouse/x DEI2 .ctlframe/x1 LDZ2 GTH2 .Mouse/x DEI2 .ctlframe/x2 LDZ2 LTH2 #0101 EQU2
-		.Mouse/y DEI2 .ctlframe/y1 LDZ2 8+ GTH2 .Mouse/y DEI2 .ctlframe/y2 LDZ2 8- LTH2 #0101 EQU2
+		.Mouse/y DEI2 .ctlframe/y1 LDZ2 8++ GTH2 .Mouse/y DEI2 .ctlframe/y2 LDZ2 8-- LTH2 #0101 EQU2
 		#0101 EQU2 ;touch-ctl JCN2	
 	&click-end
 
@@ -158,7 +158,7 @@ BRK
 
 @touch-ctl ( -- )
 	
-	.Mouse/x DEI2 .ctlframe/x1 LDZ2 SUB2 8- 8/ SWP POP #02 DIV
+	.Mouse/x DEI2 .ctlframe/x1 LDZ2 SUB2 8-- 8// SWP POP #02 DIV
 	DUP ,&no-a JCN
 		.Audio0/adsr .track/active LDZ #10 MUL ADD DEI
 		#10 .Mouse/state DEI #10 EQU #e0 MUL ADD ADD
@@ -225,7 +225,7 @@ RTN
 @move-head ( -- )
 
 	( clear )
-	.trkframe/y1 LDZ2 8- .Screen/y DEO2
+	.trkframe/y1 LDZ2 8-- .Screen/y DEO2
 	.trkframe/x1 LDZ2 #00 .head/pos LDZ ADD2 .Screen/x DEO2
 	;head_icn .Screen/addr DEO2
 	#20 .Screen/color DEO
@@ -241,8 +241,8 @@ RTN
 	#00 #20
 	&loop
 		( load ) OVR #00 SWP TRACK ADD2 LDA
-		DUP STH #00 SWP #0e SWP SUB 8* .trkframe/y1 LDZ2 ADD2 .Screen/y DEO2
-		OVR #00 SWP 8* .trkframe/x1 LDZ2 ADD2 .Screen/x DEO2
+		DUP STH #00 SWP #0e SWP SUB 8** .trkframe/y1 LDZ2 ADD2 .Screen/y DEO2
+		OVR #00 SWP 8** .trkframe/x1 LDZ2 ADD2 .Screen/x DEO2
 		STHr #00 EQU ,&skip JCN
 			#20 .Screen/color DEO
 		&skip
@@ -257,8 +257,8 @@ RTN
 	#00 #20
 	&notes-loop
 		( load ) OVR #00 SWP TRACK ADD2 LDA
-		DUP STH #00 SWP #0e SWP SUB 8* .trkframe/y1 LDZ2 ADD2 .Screen/y DEO2
-		OVR #00 SWP 8* .trkframe/x1 LDZ2 ADD2 .Screen/x DEO2
+		DUP STH #00 SWP #0e SWP SUB 8** .trkframe/y1 LDZ2 ADD2 .Screen/y DEO2
+		OVR #00 SWP 8** .trkframe/x1 LDZ2 ADD2 .Screen/x DEO2
 		;note_icn .Screen/addr DEO2
 		STHr #00 EQU ,&skip JCN
 			#25 .Screen/color DEO
@@ -283,16 +283,16 @@ RTN
 			OVR2 .trkframe/x1 LDZ2 ADD2 .Screen/x DEO2
 			.trkframe/y1 LDZ2 #0010 SUB2 .Screen/y DEO2
 			#22 .Screen/color DEO
-			.Screen/addr DEI2 8+ .Screen/addr DEO2
+			.Screen/addr DEI2 8++ .Screen/addr DEO2
 			OVR2 .trkframe/x1 LDZ2 ADD2 .trkframe/y1 LDZ2 ++ .trkframe/y2 LDZ2 #01 ;line-vertical-dotted JSR2
 		&skip
 		OVR2 .trkframe/x1 LDZ2 ADD2 .trkframe/y1 LDZ2 .trkframe/y2 LDZ2 #01 ;line-vertical-dotted JSR2
-		SWP2 8+ SWP2
+		SWP2 8++ SWP2
 		OVR2 OVR2 LTH2 ,&loop JCN
 	POP2
 	POP2
 
-	.trkframe/x1 LDZ2 .trkframe/x2 LDZ2 .trkframe/y1 LDZ2 8- #0040 ADD2 #01 ;line-horizontal-dotted JSR2
+	.trkframe/x1 LDZ2 .trkframe/x2 LDZ2 .trkframe/y1 LDZ2 8-- #0040 ADD2 #01 ;line-horizontal-dotted JSR2
 
 RTN
 
@@ -305,12 +305,12 @@ RTN
 	&loop
 		OVR2 .Screen/y DEO2
 		#21 .Screen/color DEO
-		.Screen/addr DEI2 8+ .Screen/addr DEO2
-		.Screen/x DEI2 8+ .Screen/x DEO2
+		.Screen/addr DEI2 8++ .Screen/addr DEO2
+		.Screen/x DEI2 8++ .Screen/x DEO2
 		#21 .Screen/color DEO
-		.Screen/addr DEI2 8+ .Screen/addr DEO2
-		.Screen/x DEI2 8- .Screen/x DEO2
-		SWP2 8+ SWP2
+		.Screen/addr DEI2 8++ .Screen/addr DEO2
+		.Screen/x DEI2 8-- .Screen/x DEO2
+		SWP2 8++ SWP2
 		OVR2 OVR2 LTH2 ,&loop JCN
 	POP2
 	POP2
@@ -353,8 +353,8 @@ RTN
 
 	.knob/x LDZ2 .Screen/x DEO2
 	.knob/y LDZ2 .Screen/y DEO2 ;knob_icns .Screen/addr DEO2 #21 .Screen/color DEO
-	.knob/x LDZ2 8+ .Screen/x DEO2 ;knob_icns 8+ .Screen/addr DEO2 #21 .Screen/color DEO
-	.knob/y LDZ2 8+ .Screen/y DEO2 ;knob_icns #0018 ADD2 .Screen/addr DEO2 #21 .Screen/color DEO
+	.knob/x LDZ2 8++ .Screen/x DEO2 ;knob_icns 8++ .Screen/addr DEO2 #21 .Screen/color DEO
+	.knob/y LDZ2 8++ .Screen/y DEO2 ;knob_icns #0018 ADD2 .Screen/addr DEO2 #21 .Screen/color DEO
 	.knob/x LDZ2 .Screen/x DEO2 ;knob_icns #0010 ADD2 .Screen/addr DEO2 #21 .Screen/color DEO
 	.knob/x LDZ2 #00 #00 .knob/value LDZ ;knob_offsetx ADD2 LDA ADD2 .Screen/x DEO2
 	.knob/y LDZ2 #00 #00 .knob/value LDZ ;knob_offsety ADD2 LDA ADD2 .Screen/y DEO2
@@ -373,8 +373,8 @@ RTN
 
 	.knob/x LDZ2 .Screen/x DEO2
 	.knob/y LDZ2 .Screen/y DEO2 #20 .Screen/color DEO
-	.knob/x LDZ2 8+ .Screen/x DEO2 #20 .Screen/color DEO
-	.knob/y LDZ2 8+ .Screen/y DEO2 #20 .Screen/color DEO
+	.knob/x LDZ2 8++ .Screen/x DEO2 #20 .Screen/color DEO
+	.knob/y LDZ2 8++ .Screen/y DEO2 #20 .Screen/color DEO
 	.knob/x LDZ2 .Screen/x DEO2 #20 .Screen/color DEO
 	.knob/x LDZ2 #0004 ADD2 .Screen/x DEO2
 	.knob/y LDZ2 #0010 ADD2 .Screen/y DEO2
@@ -385,8 +385,8 @@ RTN
 	
 	.ctlframe/x1 LDZ2 .ctlframe/y1 LDZ2 .ctlframe/x2 LDZ2 .ctlframe/y2 LDZ2 #01 ;line-rect JSR2
 	( env )
-	.ctlframe/x1 LDZ2 8+ .ctlframe/y1 LDZ2 8+ #22 ;env_txt ;draw-label JSR2
-	.ctlframe/x1 LDZ2 8+ .ctlframe/y1 LDZ2 #0010 ADD2
+	.ctlframe/x1 LDZ2 8++ .ctlframe/y1 LDZ2 8++ #22 ;env_txt ;draw-label JSR2
+	.ctlframe/x1 LDZ2 8++ .ctlframe/y1 LDZ2 #0010 ADD2
 		.Audio0/adsr .track/active LDZ #10 MUL ADD DEI #04 SFT
 		;draw-knob JSR2
 	.ctlframe/x1 LDZ2 #0018 ADD2 .ctlframe/y1 LDZ2 #0010 ADD2
@@ -399,7 +399,7 @@ RTN
 		.Audio0/adsr .track/active LDZ #10 MUL ADD #01 ADD DEI #0f AND
 		;draw-knob JSR2
 	( vol )
-	.ctlframe/x1 LDZ2 #0058 ADD2 .ctlframe/y1 LDZ2 8+ #22 ;vol_txt ;draw-label JSR2
+	.ctlframe/x1 LDZ2 #0058 ADD2 .ctlframe/y1 LDZ2 8++ #22 ;vol_txt ;draw-label JSR2
 	.ctlframe/x1 LDZ2 #0058 ADD2 .ctlframe/y1 LDZ2 #0010 ADD2
 		.Audio0/volume .track/active LDZ #10 MUL ADD DEI #04 SFT
 	;draw-knob/force JSR2
@@ -422,10 +422,10 @@ RTN
 @draw-channels
 	
 	.chnframe/x1 LDZ2 .chnframe/y1 LDZ2 .chnframe/x2 LDZ2 .chnframe/y2 LDZ2 #01 ;line-rect JSR2
-	.chnframe/x1 LDZ2 8+ .chnframe/y1 LDZ2 8+ #21 .track/active LDZ #00 EQU #07 MUL ADD ;ch1_txt ;draw-label JSR2
-	.chnframe/x1 LDZ2 8+ .chnframe/y1 LDZ2 #0010 ADD2 #21 .track/active LDZ #01 EQU #07 MUL ADD ;ch2_txt ;draw-label JSR2
-	.chnframe/x1 LDZ2 8+ .chnframe/y1 LDZ2 #0018 ADD2 #21 .track/active LDZ #02 EQU #07 MUL ADD ;ch3_txt ;draw-label JSR2
-	.chnframe/x1 LDZ2 8+ .chnframe/y1 LDZ2 #0020 ADD2 #21 .track/active LDZ #03 EQU #07 MUL ADD ;ch4_txt ;draw-label JSR2
+	.chnframe/x1 LDZ2 8++ .chnframe/y1 LDZ2 8++ #21 .track/active LDZ #00 EQU #07 MUL ADD ;ch1_txt ;draw-label JSR2
+	.chnframe/x1 LDZ2 8++ .chnframe/y1 LDZ2 #0010 ADD2 #21 .track/active LDZ #01 EQU #07 MUL ADD ;ch2_txt ;draw-label JSR2
+	.chnframe/x1 LDZ2 8++ .chnframe/y1 LDZ2 #0018 ADD2 #21 .track/active LDZ #02 EQU #07 MUL ADD ;ch3_txt ;draw-label JSR2
+	.chnframe/x1 LDZ2 8++ .chnframe/y1 LDZ2 #0020 ADD2 #21 .track/active LDZ #03 EQU #07 MUL ADD ;ch4_txt ;draw-label JSR2
 
 RTN
 
@@ -453,9 +453,9 @@ RTN
 	( load ) .label/addr STZ2 .label/color STZ .Screen/y DEO2 .Screen/x DEO2
 	.label/addr LDZ2
 	&loop
-		( draw ) DUP2 LDA #00 SWP 8* ;font ADD2 .Screen/addr DEO2 .label/color LDZ .Screen/color DEO
+		( draw ) DUP2 LDA #00 SWP 8** ;font ADD2 .Screen/addr DEO2 .label/color LDZ .Screen/color DEO
 		( incr ) ++
-		( incr ) .Screen/x DEI2 8+ .Screen/x DEO2
+		( incr ) .Screen/x DEI2 8++ .Screen/x DEO2
 		DUP2 LDA ,&loop JCN
 	POP2
 
