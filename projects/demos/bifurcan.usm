@@ -6,6 +6,7 @@
 %RTN { JMP2r }
 %MOD { DUP2 DIV MUL SUB }
 %TOS { #00 SWP }
+%2// { #01 SFT2 }
 
 ( devices )
 
@@ -38,8 +39,8 @@
 	;on-mouse .Mouse/vector DEO2
 
 	( find center )
-	.Screen/width DEI2 #0002 DIV2 .center/x STZ2
-	.Screen/height DEI2 #0002 DIV2 .center/y STZ2
+	.Screen/width DEI2 2// .center/x STZ2
+	.Screen/height DEI2 2// .center/y STZ2
 
 	( background ) 
 	;tiles ;cover-pattern JSR2

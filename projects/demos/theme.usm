@@ -2,7 +2,8 @@
 
 %RTN { JMP2r }
 %++  { #0001 ADD2 }
-%2/  { #01 SFT2 }
+%2// { #01 SFT2 }
+%4// { #02 SFT2 }
 %8+  { #0008 ADD2 }
 %STEP8 { #33 SFT2 }
 
@@ -48,8 +49,8 @@
 	#0050 .window/h STZ2
 
 	( center window )
-	.Screen/width DEI2 2/ .window/w LDZ2 2/ SUB2 .window/x1 STZ2
-	.Screen/height DEI2 2/ .window/h LDZ2 2/ SUB2 .window/y1 STZ2
+	.Screen/width DEI2 2// .window/w LDZ2 2// SUB2 .window/x1 STZ2
+	.Screen/height DEI2 2// .window/h LDZ2 2// SUB2 .window/y1 STZ2
 
 	#01 .theme/r1 STZ #02 .theme/g1 STZ #03 .theme/b1 STZ
 	#04 .theme/r2 STZ #06 .theme/g2 STZ #07 .theme/b2 STZ
@@ -57,8 +58,8 @@
 	#0c .theme/r4 STZ #0b .theme/g4 STZ #0d .theme/b4 STZ
 
 	( find screen center )
-	.Screen/width DEI2 2/ .center/x STZ2
-	.Screen/height DEI2 2/ .center/y STZ2
+	.Screen/width DEI2 2// .center/x STZ2
+	.Screen/height DEI2 2// .center/y STZ2
 
 	;update-theme JSR2
 	;draw-background JSR2
@@ -76,22 +77,22 @@ BRK
 	DUP2 #0010 NEQ2 ,&no-touch-red JCN
 		.Mouse/x DEI2 .window/x1 LDZ2 #0060 ADD2 LTH2 ,&no-touch-red JCN
 		.Mouse/x DEI2 .window/x1 LDZ2 #009c ADD2 GTH2 ,&no-touch-red JCN
-		( get new value ) .Mouse/x DEI2 .window/x1 LDZ2 SUB2 #0060 SUB2 #0004 DIV2 SWP POP ;theme/r1 #00 .selection LDZ ADD2 STA
+		( get new value ) .Mouse/x DEI2 .window/x1 LDZ2 SUB2 #0060 SUB2 4// SWP POP ;theme/r1 #00 .selection LDZ ADD2 STA
 	&no-touch-red
 	DUP2 #0020 NEQ2 ,&no-touch-green JCN
 		.Mouse/x DEI2 .window/x1 LDZ2 #0060 ADD2 LTH2 ,&no-touch-green JCN
 		.Mouse/x DEI2 .window/x1 LDZ2 #009c ADD2 GTH2 ,&no-touch-green JCN
-		( get new value ) .Mouse/x DEI2 .window/x1 LDZ2 SUB2 #0060 SUB2 #0004 DIV2 SWP POP ;theme/g1 #00 .selection LDZ ADD2 STA
+		( get new value ) .Mouse/x DEI2 .window/x1 LDZ2 SUB2 #0060 SUB2 4// SWP POP ;theme/g1 #00 .selection LDZ ADD2 STA
 	&no-touch-green
 	DUP2 #0030 NEQ2 ,&no-touch-blue JCN
 		.Mouse/x DEI2 .window/x1 LDZ2 #0060 ADD2 LTH2 ,&no-touch-blue JCN
 		.Mouse/x DEI2 .window/x1 LDZ2 #009c ADD2 GTH2 ,&no-touch-blue JCN
-		( get new value ) .Mouse/x DEI2 .window/x1 LDZ2 SUB2 #0060 SUB2 #0004 DIV2 SWP POP ;theme/b1 #00 .selection LDZ ADD2 STA
+		( get new value ) .Mouse/x DEI2 .window/x1 LDZ2 SUB2 #0060 SUB2 4// SWP POP ;theme/b1 #00 .selection LDZ ADD2 STA
 	&no-touch-blue
 	DUP2 #0040 NEQ2 ,&no-touch-radio JCN
 		.Mouse/x DEI2 .window/x1 LDZ2 #0050 ADD2 LTH2 ,&no-touch-radio JCN
 		.Mouse/x DEI2 .window/x1 LDZ2 #008c ADD2 GTH2 ,&no-touch-radio JCN
-		.Mouse/x DEI2 .window/x1 LDZ2 SUB2 #0050 SUB2 STEP8 2/ #0008 DIV2 SWP POP .selection STZ
+		.Mouse/x DEI2 .window/x1 LDZ2 SUB2 #0050 SUB2 STEP8 2// #0008 DIV2 SWP POP .selection STZ
 	&no-touch-radio
 	POP2
 

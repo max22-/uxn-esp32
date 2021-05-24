@@ -2,6 +2,7 @@
 
 %++ { #0001 ADD2 } 
 %-- { #0001 SUB2 }
+%2// { #01 SFT2 }
 
 ( devices )
 
@@ -28,8 +29,8 @@
 	;on-frame .Screen/vector DEO2
 	
 	( set origin )
-	.Screen/width DEI2 #0002 DIV2 .Screen/x DEO2
-	.Screen/height DEI2 #0002 DIV2 .Screen/y DEO2
+	.Screen/width DEI2 2// .Screen/x DEO2
+	.Screen/height DEI2 2// .Screen/y DEO2
 
 	;default_icn .Screen/addr DEO2
 	#31 .Screen/color DEO

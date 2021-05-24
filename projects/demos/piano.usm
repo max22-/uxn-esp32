@@ -1,9 +1,9 @@
 ( piano )
 
-%+  { ADD } %-   { SUB }  %*  { MUL } %/   { DIV }  
-%<  { LTH } %>   { GTH }  %=  { EQU } %!   { NEQ } 
-%++ { ADD2 } %-- { SUB2 } %** { MUL2 } %// { DIV2 } 
-%<< { LTH2 } %>> { GTH2 } %== { EQU2 } %!! { NEQ2 }  
+%+  { ADD } %-   { SUB }  %*  { MUL } %/   { DIV }
+%<  { LTH } %>   { GTH }  %=  { EQU } %!   { NEQ }
+%++ { ADD2 } %-- { SUB2 } %** { MUL2 } %// { DIV2 }
+%<< { LTH2 } %>> { GTH2 } %== { EQU2 } %!! { NEQ2 }
 
 %RTN  { JMP2r }
 %TOS  { #00 SWP }
@@ -11,6 +11,9 @@
 %LTS2 { #8000 ++ SWP2 #8000 ++ >> }
 %GTS2 { #8000 ++ SWP2 #8000 ++ << }
 %INCR { SWP #01 + SWP }
+%2//  { #01 SFT2 }
+%4//  { #02 SFT2 }
+%8//  { #03 SFT2 }
 
 %WAVEFORM { #1000 }
 
@@ -62,8 +65,8 @@
 	;saw-path   .File/name DEO2 #0100 .File/length DEO2 WAVEFORM #0500 ++ .File/load DEO2
 
 	( find center )
-	.Screen/width DEI2 #0002 // .center/x STZ2
-	.Screen/height DEI2 #0002 // .center/y STZ2
+	.Screen/width DEI2 2// .center/x STZ2
+	.Screen/height DEI2 2// .center/y STZ2
 
 	( place octave )
 	.center/x LDZ2 #0080 -- .octave-view/x1 STZ2
@@ -191,8 +194,8 @@ BRK
 
 @on-touch-octave-view ( -> )
 
-	.Mouse/x DEI2 .octave-view/x1 LDZ2 -- #0008 // SWP POP #09 ! ,&no-mod JCN
-		.Mouse/y DEI2 .octave-view/y1 LDZ2 -- #0008 // SWP POP 
+	.Mouse/x DEI2 .octave-view/x1 LDZ2 -- 8// SWP POP #09 ! ,&no-mod JCN
+		.Mouse/y DEI2 .octave-view/y1 LDZ2 -- 8// SWP POP 
 		DUP #00 ! ,&no-incr JCN
 			.octave LDZ #01 + .octave STZ &no-incr
 		DUP #02 ! ,&no-decr JCN
@@ -203,8 +206,8 @@ BRK
 		BRK
 	&no-mod
 
-	.Mouse/x DEI2 .octave-view/x1 LDZ2 -- #0008 // SWP POP #06 > ,&no-key JCN
-		.Mouse/x DEI2 .octave-view/x1 LDZ2 -- #0008 // DUP2 SWP POP .last-note STZ ;notes ++ LDA ;play JSR2
+	.Mouse/x DEI2 .octave-view/x1 LDZ2 -- 8// SWP POP #06 > ,&no-key JCN
+		.Mouse/x DEI2 .octave-view/x1 LDZ2 -- 8// DUP2 SWP POP .last-note STZ ;notes ++ LDA ;play JSR2
 		( release ) #00 .Mouse/state DEO
 		;draw-octave JSR2
 	&no-key
@@ -213,7 +216,7 @@ BRK
 
 @on-touch-adsr-view ( -> )
 
-	.Mouse/x DEI2 .adsr-view/x1 LDZ2 -- #0008 // SWP POP #03 /
+	.Mouse/x DEI2 .adsr-view/x1 LDZ2 -- 8// SWP POP #03 /
 	DUP #00 ! ,&no-a JCN
 		.Audio0/adsr DEI
 		#10 .Mouse/state DEI #10 = #e0 * + +
@@ -363,7 +366,7 @@ RTN
 		&no-dot
 		OVR TOS .Audio0/addr DEI2 ++ LDA 
 		#02 /
-		TOS #0004 // .wave-view/y1 LDZ2 ++ .Screen/y DEO2
+		TOS 4// .wave-view/y1 LDZ2 ++ .Screen/y DEO2
 		.Screen/x DEI2 #0001 ++ .Screen/x DEO2
 		( draw ) OVR .Audio0/length DEI2 SWP POP > #02 * #01 + .Screen/color DEO
 		( incr ) INCR

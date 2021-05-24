@@ -14,7 +14,7 @@
 %RTN { JMP2r }
 %++ { #01 ADD } %-- { #01 SUB }
 %8+ { #0008 ADD2 }
-%8* { #0008 MUL2 } %8/ { #0008 DIV2 }
+%8* { #0008 MUL2 } %8/ { #03 SFT2 }
 %MOD { DUP2 DIV MUL SUB }
 %MOD8 { #07 AND }
 %MOD2 { #01 AND }

@@ -4,10 +4,10 @@
 		- When selecting a pad, should highlight note in octave
 )
 
-%+  { ADD } %-   { SUB }  %*  { MUL } %/   { DIV }  
-%<  { LTH } %>   { GTH }  %=  { EQU } %!   { NEQ } 
-%++ { ADD2 } %-- { SUB2 } %** { MUL2 } %// { DIV2 } 
-%<< { LTH2 } %>> { GTH2 } %== { EQU2 } %!! { NEQ2 }  
+%+  { ADD } %-   { SUB }  %*  { MUL } %/   { DIV }
+%<  { LTH } %>   { GTH }  %=  { EQU } %!   { NEQ }
+%++ { ADD2 } %-- { SUB2 } %** { MUL2 } %// { DIV2 }
+%<< { LTH2 } %>> { GTH2 } %== { EQU2 } %!! { NEQ2 }
 
 %TOB { SWP POP } %TOS { #00 SWP }
 %RTN { JMP2r }

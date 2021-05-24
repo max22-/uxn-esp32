@@ -15,11 +15,12 @@
 %RTN  { JMP2r }   %MOD  { DUP2 / * - }
 %MOD8 { #07 AND } %MOD2 { #01 AND }
 %SFL  { #40 SFT SFT }
+%2//  { #01 SFT2 } %8//  { #03 SFT2 }
 
 %WIDTH { #40 }   %HEIGHT { #40 }
 %BANK1 { #8000 } %BANK2 { #a000 }
 
-%GET-SIZE { WIDTH TOS #0008 // HEIGHT TOS ** }
+%GET-SIZE { WIDTH TOS 8// HEIGHT TOS ** }
 %GET-ITERATORS { SWP2k POP SWP POP }
 
 ( devices )
@@ -58,8 +59,8 @@
 	#07 #05 ;set-cell JSR2
 	#06 #05 ;set-cell JSR2
 
-	.Screen/width DEI2 #0002 // WIDTH TOS -- .anchor/x STZ2
-	.Screen/height DEI2 #0002 // HEIGHT TOS -- .anchor/y STZ2
+	.Screen/width DEI2 2// WIDTH TOS -- .anchor/x STZ2
+	.Screen/height DEI2 2// HEIGHT TOS -- .anchor/y STZ2
 
 	#01 .world/paused STZ
 

@@ -85,7 +85,7 @@
 	JMP2r
 
 @arvelie-text ( -- )
-	.Screen/width DEI2 #0002 DIV2 #0034 SUB2 .Screen/x DEO2
+	.Screen/width DEI2 #01 SFT2 #0034 SUB2 .Screen/x DEO2
 	.Screen/height DEI2 #0008 SUB2 .Screen/y DEO2
 	.DateTime/year DEI2 #07d6 SUB2
 	#000a ;modf JSR2 ;digit JSR2
@@ -97,7 +97,7 @@
 	JMP2r
 
 @neralie-text ( -- )
-	.Screen/width DEI2 #0002 DIV2 #0004 SUB2 .Screen/x DEO2
+	.Screen/width DEI2 #01 SFT2 #0004 SUB2 .Screen/x DEO2
 	.neralie/n0123 LDZ2
 	#03e8 ;modf JSR2 ,digit JSR
 	#0064 ;modf JSR2 ,digit JSR

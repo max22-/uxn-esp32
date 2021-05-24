@@ -1,10 +1,13 @@
 ( Dev/Time )
 
+%2// { #01 SFT2 }
+%4// { #02 SFT2 }
+
 %RTN     { JMP2r }
 %MOD     { DUP2 DIV MUL SUB }
 %ABS2    { DUP2 #0f SFT2 EQU #04 JCN #ffff MUL2 }
-%SCALEX  { #0002 DIV2 .Screen/width DEI2 #0002 DIV2 ADD2 #0040 SUB2 }
-%SCALEY  { #0002 DIV2 .Screen/height DEI2 #0002 DIV2 ADD2 #0040 SUB2 }
+%SCALEX  { 2// .Screen/width DEI2 2// ADD2 #0040 SUB2 }
+%SCALEY  { 2// .Screen/height DEI2 2// ADD2 #0040 SUB2 }
 %12HOURS { DUP #0c GTH #0c MUL SUB }
 %LTS2    { #8000 ADD2 SWP2 #8000 ADD2 GTH2 }
 %GTS2    { #8000 ADD2 SWP2 #8000 ADD2 LTH2 }
@@ -55,11 +58,11 @@ BRK
 		#00 SWP SCALEY .needles/sy STZ2
 		#00 SWP SCALEX .needles/sx STZ2
 	#00 .DateTime/minute DEI #0002 MUL2 ;table ADD2 LDA2
-		#00 SWP #0004 DIV2 #0003 MUL2 #0020 ADD2 SCALEY .needles/my STZ2
-		#00 SWP #0004 DIV2 #0003 MUL2 #0020 ADD2 SCALEX .needles/mx STZ2
+		#00 SWP 4// #0003 MUL2 #0020 ADD2 SCALEY .needles/my STZ2
+		#00 SWP 4// #0003 MUL2 #0020 ADD2 SCALEX .needles/mx STZ2
 	#00 .DateTime/hour DEI 12HOURS #05 MUL #0002 MUL2 ;table ADD2 LDA2
-		#00 SWP #0002 DIV2 #0040 ADD2 SCALEY .needles/hy STZ2
-		#00 SWP #0002 DIV2 #0040 ADD2 SCALEX .needles/hx STZ2
+		#00 SWP 2// #0040 ADD2 SCALEY .needles/hy STZ2
+		#00 SWP 2// #0040 ADD2 SCALEX .needles/hx STZ2
 
 	( needles )
 	#0080 SCALEX #0080 SCALEY .needles/sx LDZ2 .needles/sy LDZ2 #02 ;draw-line JSR2
@@ -83,8 +86,8 @@ BRK
 
 @draw-display ( -- )
 
-	.Screen/height DEI2 #0002 DIV2 #0048 ADD2 .Screen/y DEO2
-	.Screen/width DEI2 #0002 DIV2
+	.Screen/height DEI2 2// #0048 ADD2 .Screen/y DEO2
+	.Screen/width DEI2 2//
 	DUP2 #0020 SUB2 .Screen/x DEO2
 		;font-hex #00 .DateTime/hour DEI #0a DIV #08 MUL ADD2 .Screen/addr DEO2
 		#22 .Screen/color DEO

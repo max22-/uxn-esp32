@@ -1,6 +1,8 @@
 ( polycat )
 
 %RTN { JMP2r }
+%2// { #01 SFT2 }
+%4// { #02 SFT2 }
 
 ( devices )
 
@@ -25,8 +27,8 @@
 	#0caf .System/b DEO2
 
 	( find center )
-	.Screen/width DEI2 #0002 DIV2 #0008 SUB2 .cat/x STZ2
-	.Screen/height DEI2 #0004 DIV2 #0003 MUL2 #0018 SUB2 .cat/y STZ2
+	.Screen/width DEI2 2// #0008 SUB2 .cat/x STZ2
+	.Screen/height DEI2 4// #0003 MUL2 #0018 SUB2 .cat/y STZ2
 
 	( vectors )
 	;on-mouse .Mouse/vector DEO2
