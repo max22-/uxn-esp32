@@ -1,6 +1,6 @@
 # Uxn
 
-An [8-bit stack-based computer](https://wiki.xxiivv.com/site/uxn.html), written in ANSI C. 
+An assembler and emulator for a [tiny stack-based computer](https://wiki.xxiivv.com/site/uxn.html), written in ANSI C. 
 
 ## Build
 
@@ -33,13 +33,13 @@ Begin by building the assembler and emulator by running the build script. The as
 ./build.sh
 ```
 
-This example will create the `life.rom` from the `life.usm` uxambly file, point to a different usm file to assemble a different rom. You can find additional roms [here](https://sr.ht/~rabbits/uxn/sources). To create a rom, from a [usm file](https://wiki.xxiivv.com/site/uxambly.html), use the following command:
+The following command will create a rom from an [uxambly file](https://wiki.xxiivv.com/site/uxambly.html), point to a different usm file in the projects folder to assemble a different rom. You can find additional roms [here](https://sr.ht/~rabbits/uxn/sources).
 
 ```
 bin/uxnasm projects/demos/life.usm bin/life.rom
 ```
 
-To launch the rom:
+And, to start the rom:
 
 ```
 bin/uxnemu bin/life.rom
