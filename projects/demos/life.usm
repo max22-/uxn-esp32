@@ -187,7 +187,7 @@ RTN
 	DUP2 ,get-index JSR LDA 
 	SWP POP SWP
 	MOD8
-	SFT #01 AND
+	SFT MOD2
 
 RTN 
 
