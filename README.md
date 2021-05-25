@@ -27,23 +27,25 @@ try again after `rm -r /sys/include/npe`.
 
 ## Getting Started
 
-Begin by building the assembler and emulator by running the build script. The assembler(`uxnasm`) and emulator(`uxnemu`) are created in the `bin` folder.
+Begin by building the assembler and emulator by running the build script. The assembler(`uxnasm`) and emulator(`uxnemu`) are created in the `/bin` folder.
 
 ```
 ./build.sh
 ```
 
-The following command will create a rom from an [uxambly file](https://wiki.xxiivv.com/site/uxambly.html), point to a different usm file in the projects folder to assemble a different rom. You can find additional roms [here](https://sr.ht/~rabbits/uxn/sources).
+The following command will create an Uxn-compatible rom from an [uxambly file](https://wiki.xxiivv.com/site/uxambly.html), point to a different usm file in `/projects` to assemble a different rom. 
 
 ```
 bin/uxnasm projects/demos/life.usm bin/life.rom
 ```
 
-And, to start the rom:
+To start the rom, point the emulator to the newly created rom:
 
 ```
 bin/uxnemu bin/life.rom
 ```
+
+You can find additional roms [here](https://sr.ht/~rabbits/uxn/sources).
 
 ## Emulator Controls
 
