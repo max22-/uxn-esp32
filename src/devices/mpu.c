@@ -27,6 +27,8 @@ initmpu(Mpu *m, Uint8 device)
 	m->queue = 0;
 	m->error = pmNoError;
 	*/
+	(void)m;
+	(void)device;
 	return 1;
 }
 
@@ -42,4 +44,5 @@ listenmpu(Mpu *m)
 	}
 	m->queue = result;
 	*/
+	(void)m;
 }

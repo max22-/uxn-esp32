@@ -137,7 +137,7 @@ main(int argc, char **argv)
 	portuxn(&u, 0xd, "empty", nil_talk);
 	portuxn(&u, 0xe, "empty", nil_talk);
 	portuxn(&u, 0xf, "empty", nil_talk);
-	
+
 	start(&u);
 
 	if(argc > 2)
