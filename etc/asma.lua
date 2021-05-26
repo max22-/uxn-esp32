@@ -23,7 +23,7 @@ local trees = {
 local opcodes_in_order = { }
 do
   local wanted = false
-  for l in assert(io.lines('src/assembler.c')) do
+  for l in assert(io.lines('src/uxnasm.c')) do
     if l == 'char ops[][4] = {' then
       wanted = true
     elseif wanted then

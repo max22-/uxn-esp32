@@ -22,7 +22,7 @@ EOD
 
 expect_failure() {
     cat > 'in.usm'
-    if ../bin/debugger asma.rom > asma.log 2>/dev/null || ! grep -qF "${1}" asma.log; then
+    if ../bin/uxncli asma.rom > asma.log 2>/dev/null || ! grep -qF "${1}" asma.log; then
         echo "error: asma didn't report error ${1} in faulty code"
 		tail asma.log
         exit 1
@@ -44,7 +44,7 @@ find ../projects -type f -name '*.usm' -not -name 'blank.usm' | sort | while rea
 	xxd "uxnasm-${BN}.rom" > "uxnasm-${BN}.hex"
 
 	cp "${F}" 'in.usm'
-	if ! ../bin/debugger asma.rom > asma.log; then
+	if ! ../bin/uxncli asma.rom > asma.log; then
 		echo "error: asma failed to assemble ${F}, while uxnasm succeeded"
 		tail asma.log
 		exit 1

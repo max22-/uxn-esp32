@@ -1,6 +1,6 @@
 </$objtype/mkfile
 
-TARG=bin/debugger bin/uxnasm bin/uxnemu
+TARG=bin/uxncli bin/uxnasm bin/uxnemu
 USM=`{walk -f projects/ | grep '\.usm$' | grep -v blank.usm}
 ROM=${USM:%.usm=%.rom}
 CFLAGS=$CFLAGS -I/sys/include/npe
@@ -29,16 +29,16 @@ bin:
 %.rom:Q: %.usm bin/uxnasm
 	bin/uxnasm $stem.usm $target >/dev/null
 
-bin/debugger: debugger.$O uxn.$O
+bin/uxncli: uxncli.$O uxn.$O
 	$LD $LDFLAGS -o $target $prereq
 
-bin/uxnasm: assembler.$O
+bin/uxnasm: uxnasm.$O
 	$LD $LDFLAGS -o $target $prereq
 
-bin/uxnemu: emulator.$O apu.$O mpu.$O ppu.$O uxn.$O
+bin/uxnemu: uxnemu.$O apu.$O mpu.$O ppu.$O uxn.$O
 	$LD $LDFLAGS -o $target $prereq
 
-(assembler|debugger|emulator|uxn)\.$O:R: src/\1.c
+(uxnasm|uxncli|uxnemu|uxn)\.$O:R: src/\1.c
 	$CC $CFLAGS -Isrc -o $target src/$stem1.c
 
 (apu|mpu|ppu)\.$O:R: src/devices/\1.c

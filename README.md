@@ -1,6 +1,6 @@
 # Uxn
 
-An assembler and emulator for a [tiny stack-based computer](https://wiki.xxiivv.com/site/uxn.html), written in ANSI C. 
+An assembler and emulator for the [Uxn stack-machine](https://wiki.xxiivv.com/site/uxn.html), written in ANSI C. 
 
 ## Build
 
@@ -11,7 +11,6 @@ To build the Uxn emulator, you must have [SDL2](https://wiki.libsdl.org/).
 ```sh
 ./build.sh 
 	--debug # Add debug flags to compiler
-	--cli # Run rom without graphics
 ```
 
 ### Plan 9 
@@ -22,8 +21,7 @@ To build the Uxn emulator on [9front](http://9front.org/), via [npe](https://git
 mk
 ```
 
-If the build fails on 9front because of missing headers or functions,
-try again after `rm -r /sys/include/npe`.
+If the build fails on 9front because of missing headers or functions, try again after `rm -r /sys/include/npe`.
 
 ## Getting Started
 
@@ -36,7 +34,7 @@ Begin by building the assembler and emulator by running the build script. The as
 The following command will create an Uxn-compatible rom from an [uxambly file](https://wiki.xxiivv.com/site/uxambly.html), point to a different usm file in `/projects` to assemble a different rom. 
 
 ```
-bin/uxnasm projects/demos/life.usm bin/life.rom
+bin/uxnasm projects/examples/demos/life.usm bin/life.rom
 ```
 
 To start the rom, point the emulator to the newly created rom:
@@ -45,11 +43,11 @@ To start the rom, point the emulator to the newly created rom:
 bin/uxnemu bin/life.rom
 ```
 
-You can find additional roms [here](https://sr.ht/~rabbits/uxn/sources).
+You can also use the emulator without graphics by using `uxncli`. You can find additional roms [here](https://sr.ht/~rabbits/uxn/sources).
 
 ## Emulator Controls
 
-- `ctrl+h` toggle debugger
+- `ctrl+h` toggle inspector
 - `alt+h` toggle zoom
 
 ## Need a hand?

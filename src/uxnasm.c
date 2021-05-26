@@ -296,9 +296,9 @@ pass1(FILE *f)
 	printf("Pass 1\n");
 	while(fscanf(f, "%s", w) == 1) {
 		if(skipblock(w, &ccmnt, '(', ')')) continue;
-		if(w[0] == '|') {
+		if(w[0] == '|')
 			addr = shex(w + 1);
-		} else if(w[0] == '%') {
+		else if(w[0] == '%') {
 			if(!makemacro(w + 1, f))
 				return error("Pass1 failed", w);
 		} else if(w[0] == '@') {

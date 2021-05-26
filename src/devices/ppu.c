@@ -107,7 +107,7 @@ putchr(Ppu *p, Layer *layer, Uint16 x, Uint16 y, Uint8 *sprite, Uint8 color, Uin
 /* output */
 
 void
-drawdebugger(Ppu *p, Uint8 *stack, Uint8 ptr)
+inspect(Ppu *p, Uint8 *stack, Uint8 ptr)
 {
 	Uint8 i, x, y, b;
 	for(i = 0; i < 0x20; ++i) { /* memory */

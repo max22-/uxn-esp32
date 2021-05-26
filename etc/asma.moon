@@ -34,7 +34,7 @@ opcodes_in_order = {}
 
 do -- opcodes
 	wanted = false
-	for l in assert io.lines 'src/assembler.c'
+	for l in assert io.lines 'src/uxnasm.c'
 		if l == 'char ops[][4] = {'
 			wanted = true
 		elseif wanted

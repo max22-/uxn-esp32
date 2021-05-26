@@ -9,7 +9,7 @@
 	Asma - an in-Uxn assembler
 
 	This assembler aims to be binary compatible with the output from
-	src/assembler.c, but unlike that assembler this one can be run inside Uxn
+	src/uxnasm.c, but unlike that assembler this one can be run inside Uxn
 	itself!
 
 	Asma is designed to be able to be copy-pasted inside another project, so

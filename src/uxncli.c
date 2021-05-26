@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <time.h>
 #include "uxn.h"
 
 /*
@@ -25,6 +26,7 @@ void
 printstack(Stack *s)
 {
 	Uint8 x, y;
+	printf("\n\n");
 	for(y = 0; y < 0x08; ++y) {
 		for(x = 0; x < 0x08; ++x) {
 			Uint8 p = y * 0x08 + x;
@@ -60,12 +62,33 @@ file_talk(Device *d, Uint8 b0, Uint8 w)
 		Uint16 addr = mempeek16(d->dat, b0 - 1);
 		FILE *f = fopen(name, read ? "r" : (offset ? "a" : "w"));
 		if(f) {
-			if(fseek(f, offset, SEEK_SET) != -1 && (result = read ? fread(&d->mem[addr], 1, length, f) : fwrite(&d->mem[addr], 1, length, f)))
-				printf("%s %d bytes, at %04x from %s\n", read ? "Loaded" : "Saved", result, addr, name);
+			printf("%s %04x %s %s: ", read ? "Loading" : "Saving", addr, read ? "from" : "to", name);
+			if(fseek(f, offset, SEEK_SET) != -1)
+				result = read ? fread(&d->mem[addr], 1, length, f) : fwrite(&d->mem[addr], 1, length, f);
+			printf("%04x bytes\n", result);
 			fclose(f);
 		}
 		mempoke16(d->dat, 0x2, result);
 	}
+}
+
+void
+datetime_talk(Device *d, Uint8 b0, Uint8 w)
+{
+	time_t seconds = time(NULL);
+	struct tm *t = localtime(&seconds);
+	t->tm_year += 1900;
+	mempoke16(d->dat, 0x0, t->tm_year);
+	d->dat[0x2] = t->tm_mon;
+	d->dat[0x3] = t->tm_mday;
+	d->dat[0x4] = t->tm_hour;
+	d->dat[0x5] = t->tm_min;
+	d->dat[0x6] = t->tm_sec;
+	d->dat[0x7] = t->tm_wday;
+	mempoke16(d->dat, 0x08, t->tm_yday);
+	d->dat[0xa] = t->tm_isdst;
+	(void)b0;
+	(void)w;
 }
 
 void
@@ -81,10 +104,8 @@ nil_talk(Device *d, Uint8 b0, Uint8 w)
 int
 start(Uxn *u)
 {
-	printf("RESET --------\n");
 	if(!evaluxn(u, PAGE_PROGRAM))
 		return error("Reset", "Failed");
-	printstack(&u->wst);
 	return 1;
 }
 
@@ -100,23 +121,26 @@ main(int argc, char **argv)
 	if(!loaduxn(&u, argv[1]))
 		return error("Load", "Failed");
 
-	portuxn(&u, 0x00, "empty", nil_talk);
-	portuxn(&u, 0x01, "console", console_talk);
-	portuxn(&u, 0x02, "empty", nil_talk);
-	portuxn(&u, 0x03, "empty", nil_talk);
-	portuxn(&u, 0x04, "empty", nil_talk);
-	portuxn(&u, 0x05, "empty", nil_talk);
-	portuxn(&u, 0x06, "empty", nil_talk);
-	portuxn(&u, 0x07, "empty", nil_talk);
-	portuxn(&u, 0x08, "empty", nil_talk);
-	portuxn(&u, 0x09, "empty", nil_talk);
-	portuxn(&u, 0x0a, "file", file_talk);
-	portuxn(&u, 0x0b, "empty", nil_talk);
-	portuxn(&u, 0x0c, "empty", nil_talk);
-	portuxn(&u, 0x0d, "empty", nil_talk);
-	portuxn(&u, 0x0e, "empty", nil_talk);
-	portuxn(&u, 0x0f, "empty", nil_talk);
+	portuxn(&u, 0x0, "empty", nil_talk);
+	portuxn(&u, 0x1, "console", console_talk);
+	portuxn(&u, 0x2, "empty", nil_talk);
+	portuxn(&u, 0x3, "empty", nil_talk);
+	portuxn(&u, 0x4, "empty", nil_talk);
+	portuxn(&u, 0x5, "empty", nil_talk);
+	portuxn(&u, 0x6, "empty", nil_talk);
+	portuxn(&u, 0x7, "empty", nil_talk);
+	portuxn(&u, 0x8, "empty", nil_talk);
+	portuxn(&u, 0x9, "empty", nil_talk);
+	portuxn(&u, 0xa, "file", file_talk);
+	portuxn(&u, 0xb, "datetime", datetime_talk);
+	portuxn(&u, 0xc, "empty", nil_talk);
+	portuxn(&u, 0xd, "empty", nil_talk);
+	portuxn(&u, 0xe, "empty", nil_talk);
+	portuxn(&u, 0xf, "empty", nil_talk);
+	
 	start(&u);
 
+	if(argc > 2)
+		printstack(&u.wst);
 	return 0;
 }

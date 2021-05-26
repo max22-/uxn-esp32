@@ -219,7 +219,7 @@ for l in assert(io.lines('src/uxn.c')) do
 end
 i = 0
 wanted = false
-for l in assert(io.lines('src/assembler.c')) do
+for l in assert(io.lines('src/uxnasm.c')) do
   if l == 'char ops[][4] = {' then
     wanted = true
   elseif l == '};' then

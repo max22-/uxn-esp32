@@ -59,7 +59,7 @@ void
 redraw(Uxn *u)
 {
 	if(debug)
-		drawdebugger(&ppu, u->wst.dat, u->wst.ptr);
+		inspect(&ppu, u->wst.dat, u->wst.ptr);
 	SDL_UpdateTexture(bgTexture, &gRect, ppu.bg.pixels, ppu.width * sizeof(Uint32));
 	SDL_UpdateTexture(fgTexture, &gRect, ppu.fg.pixels, ppu.width * sizeof(Uint32));
 	SDL_RenderClear(gRenderer);
@@ -245,7 +245,6 @@ screen_talk(Device *d, Uint8 b0, Uint8 w)
 			puticn(&ppu, layer, x, y, addr, d->dat[0xe] & 0xf, mode & 0x2, mode & 0x4);
 		else
 			putchr(&ppu, layer, x, y, addr, d->dat[0xe] & 0xf, mode & 0x2, mode & 0x4);
-
 		reqdraw = 1;
 	}
 }
