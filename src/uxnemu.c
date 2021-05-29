@@ -106,7 +106,7 @@ int
 init(void)
 {
 	SDL_AudioSpec as;
-	if(!initppu(&ppu, 64, 40))
+	if(!initppu(&ppu, 48, 32))
 		return error("PPU", "Init failure");
 	gRect.x = PAD;
 	gRect.y = PAD;
