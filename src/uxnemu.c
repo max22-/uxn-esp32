@@ -162,9 +162,7 @@ domouse(SDL_Event *event)
 	switch(event->type) {
 	case SDL_MOUSEBUTTONDOWN:
 		devmouse->dat[6] |= flag;
-		if(flag == 0x10 && (devmouse->dat[6] & 0x01))
-			if(flag == 0x01 && (devmouse->dat[6] & 0x10))
-				break;
+		break;
 	case SDL_MOUSEBUTTONUP:
 		devmouse->dat[6] &= (~flag);
 		break;
@@ -353,6 +351,7 @@ start(Uxn *u)
 			case SDL_MOUSEWHEEL:
 				devmouse->dat[7] = event.wheel.y;
 				evaluxn(u, mempeek16(devmouse->dat, 0));
+				devmouse->dat[7] = 0;
 				break;
 			case SDL_MOUSEBUTTONUP:
 			case SDL_MOUSEBUTTONDOWN:
