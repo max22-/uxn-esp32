@@ -20,7 +20,7 @@ WITH REGARD TO THIS SOFTWARE.
 static SDL_AudioDeviceID audio_id;
 static SDL_Window *gWindow;
 static SDL_Renderer *gRenderer;
-static SDL_Texture *gTexture;
+static SDL_Texture *fgTexture, *bgTexture;
 static SDL_Rect gRect;
 static Ppu ppu;
 static Apu apu[POLYPHONY];
@@ -60,9 +60,11 @@ redraw(Uxn *u)
 {
 	if(debug)
 		inspect(&ppu, u->wst.dat, u->wst.ptr);
-	SDL_UpdateTexture(gTexture, &gRect, ppu.rgba, ppu.width * sizeof(Uint32));
+	SDL_UpdateTexture(bgTexture, &gRect, ppu.bg.pixels, ppu.width * sizeof(Uint32));
+	SDL_UpdateTexture(fgTexture, &gRect, ppu.fg.pixels, ppu.width * sizeof(Uint32));
 	SDL_RenderClear(gRenderer);
-	SDL_RenderCopy(gRenderer, gTexture, NULL, NULL);
+	SDL_RenderCopy(gRenderer, bgTexture, NULL, NULL);
+	SDL_RenderCopy(gRenderer, fgTexture, NULL, NULL);
 	SDL_RenderPresent(gRenderer);
 	reqdraw = 0;
 }
@@ -85,11 +87,13 @@ togglezoom(Uxn *u)
 void
 quit(void)
 {
-	free(ppu.rgba);
-	free(ppu.index);
+	free(ppu.fg.pixels);
+	free(ppu.bg.pixels);
 	SDL_UnlockAudioDevice(audio_id);
-	SDL_DestroyTexture(gTexture);
-	gTexture = NULL;
+	SDL_DestroyTexture(bgTexture);
+	bgTexture = NULL;
+	SDL_DestroyTexture(fgTexture);
+	fgTexture = NULL;
 	SDL_DestroyRenderer(gRenderer);
 	gRenderer = NULL;
 	SDL_DestroyWindow(gWindow);
@@ -119,10 +123,14 @@ init(void)
 	if(gRenderer == NULL)
 		return error("Renderer", SDL_GetError());
 	SDL_RenderSetLogicalSize(gRenderer, ppu.width + PAD * 2, ppu.height + PAD * 2);
-	gTexture = SDL_CreateTexture(gRenderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STATIC, ppu.width + PAD * 2, ppu.height + PAD * 2);
-	if(gTexture == NULL)
+	bgTexture = SDL_CreateTexture(gRenderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STATIC, ppu.width + PAD * 2, ppu.height + PAD * 2);
+	if(bgTexture == NULL || SDL_SetTextureBlendMode(bgTexture, SDL_BLENDMODE_NONE))
 		return error("Texture", SDL_GetError());
-	SDL_UpdateTexture(gTexture, NULL, ppu.rgba, 4);
+	fgTexture = SDL_CreateTexture(gRenderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STATIC, ppu.width + PAD * 2, ppu.height + PAD * 2);
+	if(fgTexture == NULL || SDL_SetTextureBlendMode(fgTexture, SDL_BLENDMODE_BLEND))
+		return error("Texture", SDL_GetError());
+	SDL_UpdateTexture(bgTexture, NULL, ppu.bg.pixels, 4);
+	SDL_UpdateTexture(fgTexture, NULL, ppu.fg.pixels, 4);
 	SDL_StartTextInput();
 	SDL_ShowCursor(SDL_DISABLE);
 	SDL_zero(as);
@@ -224,7 +232,7 @@ screen_talk(Device *d, Uint8 b0, Uint8 w)
 		Uint16 x = mempeek16(d->dat, 0x8);
 		Uint16 y = mempeek16(d->dat, 0xa);
 		Uint8 *addr = &d->mem[mempeek16(d->dat, 0xc)];
-		Uint8 layer = (d->dat[0xe] >> 4) & 0x1;
+		Layer *layer = d->dat[0xe] >> 4 & 0x1 ? &ppu.fg : &ppu.bg;
 		Uint8 mode = d->dat[0xe] >> 5;
 		if(!mode)
 			putpixel(&ppu, layer, x, y, d->dat[0xe] & 0x3);
