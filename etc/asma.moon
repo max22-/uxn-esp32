@@ -1,7 +1,7 @@
 --
 -- Asma tree helper script
 --
--- This script updates the trees at the end of projects/software/asma.usm when
+-- This script updates the trees at the end of projects/software/asma.tal when
 -- Uxn's opcode set changes or new runes (first character of tokens) are
 -- created, so that new changes in the C assembler can be incorporated rapidly
 -- into asma.
@@ -122,8 +122,8 @@ printout = true
 fmt = (...) ->
 	('\t%-11s %-10s %-12s %-14s %s '\format(...)\gsub ' +$', '\n')
 
-with assert io.open 'projects/software/asma.usm.tmp', 'w'
-	for l in assert io.lines 'projects/software/asma.usm'
+with assert io.open 'projects/software/asma.tal.tmp', 'w'
+	for l in assert io.lines 'projects/software/asma.tal'
 		if l\match '--- cut here ---'
 			break
 		\write l
@@ -193,5 +193,5 @@ with assert io.open 'projects/software/asma.usm.tmp', 'w'
 
 ]]
 	\close!
-os.execute 'mv projects/software/asma.usm.tmp projects/software/asma.usm'
+os.execute 'mv projects/software/asma.tal.tmp projects/software/asma.tal'
 

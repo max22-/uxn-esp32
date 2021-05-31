@@ -1,8 +1,8 @@
 </$objtype/mkfile
 
 TARG=bin/uxncli bin/uxnasm bin/uxnemu
-USM=`{walk -f projects/ | grep '\.usm$' | grep -v blank.usm}
-ROM=${USM:%.usm=%.rom}
+USM=`{walk -f projects/ | grep '\.tal$' | grep -v blank.tal}
+ROM=${USM:%.tal=%.rom}
 CFLAGS=$CFLAGS -I/sys/include/npe
 HFILES=\
 	/sys/include/npe/stdio.h\
@@ -26,8 +26,8 @@ bin:
 	mk install &&
 	rm -r npe-master
 
-%.rom:Q: %.usm bin/uxnasm
-	bin/uxnasm $stem.usm $target >/dev/null
+%.rom:Q: %.tal bin/uxnasm
+	bin/uxnasm $stem.tal $target >/dev/null
 
 bin/uxncli: uxncli.$O uxn.$O
 	$LD $LDFLAGS -o $target $prereq

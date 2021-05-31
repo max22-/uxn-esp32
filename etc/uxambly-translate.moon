@@ -1,4 +1,4 @@
--- Used for porting Uxambly code for use with the old assembler
+-- Used for porting Uxntal code for use with the old assembler
 -- in commit 82f7103a55c21b13f898b20e5d1e174e501bc825 with the
 -- assembler that replaced it straight afterwards.
 
@@ -93,11 +93,11 @@ translate = (_filename) ->
     f\close!
     os.exit 0
 
-translate 'attic/software/assembler.usm'
+translate 'attic/software/assembler.tal'
 os.exit 0
 
-translate 'attic/tests/opcodes.usm'
-translate 'attic/tests/basics.usm'
+translate 'attic/tests/opcodes.tal'
+translate 'attic/tests/basics.tal'
 
 -- for k, v in pairs t
 --     print k

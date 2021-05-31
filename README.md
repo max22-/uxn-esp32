@@ -31,10 +31,10 @@ Begin by building the assembler and emulator by running the build script. The as
 ./build.sh
 ```
 
-The following command will create an Uxn-compatible rom from an [uxambly file](https://wiki.xxiivv.com/site/uxambly.html), point to a different usm file in `/projects` to assemble a different rom. 
+The following command will create an Uxn-compatible rom from an [uxntal file](https://wiki.xxiivv.com/site/uxntal.html), point to a different .tal file in `/projects` to assemble a different rom. 
 
 ```
-bin/uxnasm projects/examples/demos/life.usm bin/life.rom
+bin/uxnasm projects/examples/demos/life.tal bin/life.rom
 ```
 
 To start the rom, point the emulator to the newly created rom:

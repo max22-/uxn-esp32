@@ -22,7 +22,7 @@
 	(
 		Assemble the source code into an output ROM file.
 
-		If all you want is to use asma.usm to assemble files, insert a BRK
+		If all you want is to use asma.tal to assemble files, insert a BRK
 		after this statement.
 	)
 	;&source-file ;&dest-file ;asma-assemble-file JSR2
@@ -60,7 +60,7 @@
 	#00ff JMP2
 
 	&source-file
-		"projects/demos/piano.usm 00
+		"projects/demos/piano.tal 00
 	&dest-file
 		"bin/asma-boot.rom 00
 

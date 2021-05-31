@@ -147,8 +147,8 @@ fmt = function(...)
   return (('\t%-11s %-10s %-12s %-14s %s '):format(...):gsub(' +$', '\n'))
 end
 do
-  local _with_0 = assert(io.open('projects/software/asma.usm.tmp', 'w'))
-  for l in assert(io.lines('projects/software/asma.usm')) do
+  local _with_0 = assert(io.open('projects/software/asma.tal.tmp', 'w'))
+  for l in assert(io.lines('projects/software/asma.tal')) do
     if l:match('--- cut here ---') then
       break
     end
@@ -228,4 +228,4 @@ do
 ]])
   _with_0:close()
 end
-return os.execute('mv projects/software/asma.usm.tmp projects/software/asma.usm')
+return os.execute('mv projects/software/asma.tal.tmp projects/software/asma.tal')

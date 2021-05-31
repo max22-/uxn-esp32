@@ -6,22 +6,22 @@ mkdir asma-test
 cd asma-test
 
 build_asma() {
-    sed -ne '/^( devices )/,/^( vectors )/p' ../projects/software/asma.usm
+    sed -ne '/^( devices )/,/^( vectors )/p' ../projects/software/asma.tal
     cat <<EOD
 |0100 @reset
 	;&source-file ;&dest-file ;asma-assemble-file JSR2
 	;asma/error LDA2 #0000 NEQ2 JMP BRK
 	#0000 DIV
 
-	&source-file "in.usm 00
+	&source-file "in.tal 00
 	&dest-file "out.rom 00
 
 EOD
-	sed -ne '/%asma-IF-ERROR/,$p' ../projects/software/asma.usm
+	sed -ne '/%asma-IF-ERROR/,$p' ../projects/software/asma.tal
 }
 
 expect_failure() {
-    cat > 'in.usm'
+    cat > 'in.tal'
     if ../bin/uxncli asma.rom > asma.log 2>/dev/null || ! grep -qF "${1}" asma.log; then
         echo "error: asma didn't report error ${1} in faulty code"
 		tail asma.log
@@ -30,11 +30,11 @@ expect_failure() {
 }
 
 echo 'Assembling asma with uxnasm'
-build_asma > asma.usm
-../bin/uxnasm asma.usm asma.rom > uxnasm.log
-find ../projects -type f -name '*.usm' -not -name 'blank.usm' | sort | while read F; do
+build_asma > asma.tal
+../bin/uxnasm asma.tal asma.rom > uxnasm.log
+find ../projects -type f -name '*.tal' -not -name 'blank.tal' | sort | while read F; do
 	echo "Comparing assembly of ${F}"
-	BN="$(basename "${F%.usm}")"
+	BN="$(basename "${F%.tal}")"
 
 	if ! ../bin/uxnasm "${F}" "uxnasm-${BN}.rom" > uxnasm.log; then
 		echo "error: uxnasm failed to assemble ${F}"
@@ -43,7 +43,7 @@ find ../projects -type f -name '*.usm' -not -name 'blank.usm' | sort | while rea
 	fi
 	xxd "uxnasm-${BN}.rom" > "uxnasm-${BN}.hex"
 
-	cp "${F}" 'in.usm'
+	cp "${F}" 'in.tal'
 	if ! ../bin/uxncli asma.rom > asma.log; then
 		echo "error: asma failed to assemble ${F}, while uxnasm succeeded"
 		tail asma.log

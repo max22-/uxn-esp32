@@ -2,11 +2,11 @@
 ---
 # See http://www.sublimetext.com/docs/3/syntax.html
 name: Uxn Assembly
-scopeName: usm.
-fileTypes: [usm]
+scopeName: tal.
+fileTypes: [tal]
 file_extensions:
-  - usm
-scope: source.usm
+  - tal
+scope: source.tal
 
 contexts:
   main:
