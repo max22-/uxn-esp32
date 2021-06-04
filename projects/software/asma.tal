@@ -1,5 +1,6 @@
 ( devices )
 
+|00 @System     [ &vector $2 &wst      $1 &rst    $1 &pad   $4 &r      $2 &g     $2 &b      $2 ]
 |10 @Console    [ &pad    $8 &char     $1 &byte   $1 &short $2 &string $2 ]
 |a0 @File       [ &vector $2 &success  $2 &offset $2 &pad   $2 &name  $2 &length $2 &load $2 &save $2 ]
 
@@ -818,9 +819,10 @@
 	&not-hex
 	;asma-trees/macros ;asma-traverse-tree JSR2 ,&not-macro JCN
 
+	.System/rst DEI #e0 GTH ,&too-deep JCN
+
 	&macro-loop
 	LDAk ,&keep-going JCN
-	&error
 	POP2
 	JMP2r
 
@@ -830,9 +832,14 @@
 	,&macro-loop JMP
 
 	&not-macro
-	POP2
-
 	;asma-msg-label ;asma/error STA2
+	&error
+	POP2
+	JMP2r
+
+	&too-deep
+	;asma-msg-too-deep ;asma/error STA2
+	POP2
 	JMP2r
 
 ( Error messages )
@@ -843,6 +850,7 @@
 @asma-msg-label     "Label 20 "not 20 "found 00
 @asma-msg-macro     "Macro 20 "already 20 "exists 00
 @asma-msg-rewound   "Memory 20 "overwrite 00
+@asma-msg-too-deep  "Macro 20 "expansion 20 "level 20 "too 20 "deep 00
 
 ( trees )
 
