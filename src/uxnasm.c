@@ -296,18 +296,20 @@ pass1(FILE *f)
 	printf("Pass 1\n");
 	while(fscanf(f, "%s", w) == 1) {
 		if(skipblock(w, &ccmnt, '(', ')')) continue;
-		if(w[0] == '|')
+		if(w[0] == '|') {
+			if(!sihx(w + 1))
+				return error("Invalid padding", w);
 			addr = shex(w + 1);
-		else if(w[0] == '%') {
+		} else if(w[0] == '%') {
 			if(!makemacro(w + 1, f))
-				return error("Pass1 failed", w);
+				return error("Invalid macro", w);
 		} else if(w[0] == '@') {
 			if(!makelabel(w + 1, addr))
-				return error("Pass1 failed", w);
+				return error("Invalid label", w);
 			scpy(w + 1, scope, 64);
 		} else if(w[0] == '&') {
 			if(!makelabel(sublabel(subw, scope, w + 1), addr))
-				return error("Pass1 failed", w);
+				return error("Ivalid sublabel", w);
 		} else if(sihx(w))
 			addr += slen(w) / 2;
 		else
