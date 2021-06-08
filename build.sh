@@ -25,12 +25,12 @@ if [ "${1}" = '--debug' ];
 then
 	echo "[debug]"
     cc -std=c89 -DDEBUG -Wall -Wno-unknown-pragmas -Wpedantic -Wshadow -Wextra -Werror=implicit-int -Werror=incompatible-pointer-types -Werror=int-conversion -Wvla -g -Og -fsanitize=address -fsanitize=undefined src/uxnasm.c -o bin/uxnasm
-	cc -std=c89 -DDEBUG -Wall -Wno-unknown-pragmas -Wpedantic -Wshadow -Wextra -Werror=implicit-int -Werror=incompatible-pointer-types -Werror=int-conversion -Wvla -g -Og -fsanitize=address -fsanitize=undefined src/uxn.c src/devices/ppu.c src/devices/apu.c src/devices/mpu.c src/uxnemu.c -L/usr/local/lib -lSDL2 -o bin/uxnemu
+	cc -std=c89 -DDEBUG -Wall -Wno-unknown-pragmas -Wpedantic -Wshadow -Wextra -Werror=implicit-int -Werror=incompatible-pointer-types -Werror=int-conversion -Wvla -g -Og -fsanitize=address -fsanitize=undefined src/uxn.c src/devices/ppu.c src/devices/apu.c src/devices/mpu.c src/uxnemu.c -L/usr/local/lib $(sdl2-config --cflags --libs) -o bin/uxnemu
     cc -std=c89 -DDEBUG -Wall -Wno-unknown-pragmas -Wpedantic -Wshadow -Wextra -Werror=implicit-int -Werror=incompatible-pointer-types -Werror=int-conversion -Wvla -g -Og -fsanitize=address -fsanitize=undefined src/uxn.c src/uxncli.c -o bin/uxncli
 else
 	cc src/uxnasm.c -std=c89 -Os -DNDEBUG -g0 -s -Wall -Wno-unknown-pragmas -o bin/uxnasm
 	cc src/uxn-fast.c src/uxncli.c -std=c89 -Os -DNDEBUG -g0 -s -Wall -Wno-unknown-pragmas -o bin/uxncli
-	cc src/uxn-fast.c src/devices/ppu.c src/devices/apu.c src/devices/mpu.c src/uxnemu.c -std=c89 -Os -DNDEBUG -g0 -s -Wall -Wno-unknown-pragmas -L/usr/local/lib -lSDL2 -o bin/uxnemu
+	cc src/uxn-fast.c src/devices/ppu.c src/devices/apu.c src/devices/mpu.c src/uxnemu.c -std=c89 -Os -DNDEBUG -g0 -s -Wall -Wno-unknown-pragmas -L/usr/local/lib $(sdl2-config --cflags --libs) -o bin/uxnemu
 fi
 
 echo "Installing.."
