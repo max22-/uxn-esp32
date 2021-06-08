@@ -48,7 +48,7 @@ char ops[][4] = {
 
 int   scin(char *s, char c) { int i = 0; while(s[i]) if(s[i++] == c) return i - 1; return -1; } /* string char index */
 int   scmp(char *a, char *b, int len) { int i = 0; while(a[i] == b[i] && i < len) if(!a[i++]) return 1; return 0; } /* string compare */
-int   sihx(char *s) { int i = 0; char c; while((c = s[i++])) if(!(c >= '0' && c <= '9') && !(c >= 'a' && c <= 'f')) return 0; return 1; } /* string is hexadecimal */
+int   sihx(char *s) { int i = 0; char c; while((c = s[i++])) if(!(c >= '0' && c <= '9') && !(c >= 'a' && c <= 'f')) return 0; return i > 1; } /* string is hexadecimal */
 int   ssin(char *s, char *ss) { int a = 0, b = 0; while(s[a]) { if(s[a] == ss[b]) { if(!ss[b + 1]) return a - b; b++; } else b = 0; a++; } return -1; } /* string substring index */
 int   shex(char *s) { int n = 0, i = 0; char c; while((c = s[i++])) if(c >= '0' && c <= '9') n = n * 16 + (c - '0'); else if(c >= 'a' && c <= 'f') n = n * 16 + 10 + (c - 'a'); return n; } /* string to num */
 int   slen(char *s) { int i = 0; while(s[i] && s[++i]) ; return i; } /* string length */
@@ -154,7 +154,7 @@ makemacro(char *name, FILE *f)
 		return error("Macro duplicate", name);
 	if(sihx(name) && slen(name) % 2 == 0)
 		return error("Macro name is hex number", name);
-	if(findopcode(name))
+	if(findopcode(name) || !slen(name))
 		return error("Macro name is invalid", name);
 	m = &p.macros[p.mlen++];
 	scpy(name, m->name, 64);
@@ -179,7 +179,7 @@ makelabel(char *name, Uint16 addr)
 		return error("Label duplicate", name);
 	if(sihx(name) && slen(name) % 2 == 0)
 		return error("Label name is hex number", name);
-	if(findopcode(name))
+	if(findopcode(name) || !slen(name))
 		return error("Label name is invalid", name);
 	l = &p.labels[p.llen++];
 	l->addr = addr;
