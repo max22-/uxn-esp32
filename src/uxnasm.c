@@ -275,7 +275,7 @@ parsetoken(char *w)
 		else if(slen(w) == 4)
 			pushshort(shex(w), 0);
 		else
-			return error("Hex value length is invalid", w);
+			return error("Invalid hexadecimal value", w);
 		return 1;
 	} else if((m = findmacro(w))) {
 		int i;
@@ -309,7 +309,7 @@ pass1(FILE *f)
 			scpy(w + 1, scope, 64);
 		} else if(w[0] == '&') {
 			if(!makelabel(sublabel(subw, scope, w + 1), addr))
-				return error("Ivalid sublabel", w);
+				return error("Invalid sublabel", w);
 		} else if(sihx(w))
 			addr += slen(w) / 2;
 		else
