@@ -61,7 +61,7 @@
 	#00ff JMP2
 
 	&source-file
-		"projects/demos/piano.tal 00
+		"projects/examples/demos/piano.tal 00
 	&dest-file
 		"bin/asma-boot.rom 00
 
