@@ -34,6 +34,19 @@ void   mempoke16(Uint8 *m, Uint16 a, Uint16 b) { mempoke8(m, a, b >> 8); mempoke
 Uint16 mempeek16(Uint8 *m, Uint16 a) { return (mempeek8(m, a) << 8) + mempeek8(m, a + 1); }
 void   devpoke16(Device *d, Uint8 a, Uint16 b) { devpoke8(d, a, b >> 8); devpoke8(d, a + 1, b); }
 Uint16 devpeek16(Device *d, Uint16 a) { return (devpeek8(d, a) << 8) + devpeek8(d, a + 1); }
+
+#ifndef NO_STACK_CHECKS
+static const char *errors[] = {"underflow", "overflow", "division by zero"};
+
+int
+haltuxn(Uxn *u, Uint8 error, char *name, int id)
+{
+	printf("Halted: %s %s#%04x, at 0x%04x\n", name, errors[error - 1], id, u->ram.ptr);
+	u->ram.ptr = 0;
+	return 0;
+}
+#endif
+
 /* clang-format on */
 
 #pragma mark - Core
@@ -453,6 +466,13 @@ evaluxn(Uxn *u, Uint16 vec)
 			__asm__("evaluxn_1b_DIV:");
 			{
 				Uint8 a = u->wst.dat[u->wst.ptr - 1], b = u->wst.dat[u->wst.ptr - 2];
+				if(a == 0) {
+					u->wst.error = 3;
+#ifndef NO_STACK_CHECKS
+					goto error;
+#endif
+					a = 1;
+				}
 				u->wst.dat[u->wst.ptr - 2] = b / a;
 #ifndef NO_STACK_CHECKS
 				if(__builtin_expect(u->wst.ptr < 2, 0)) {
@@ -926,6 +946,13 @@ evaluxn(Uxn *u, Uint16 vec)
 			__asm__("evaluxn_3b_DIV2:");
 			{
 				Uint16 a = (u->wst.dat[u->wst.ptr - 1] | (u->wst.dat[u->wst.ptr - 2] << 8)), b = (u->wst.dat[u->wst.ptr - 3] | (u->wst.dat[u->wst.ptr - 4] << 8));
+				if(a == 0) {
+					u->wst.error = 3;
+#ifndef NO_STACK_CHECKS
+					goto error;
+#endif
+					a = 1;
+				}
 				u->wst.dat[u->wst.ptr - 4] = (b / a) >> 8;
 				u->wst.dat[u->wst.ptr - 3] = (b / a) & 0xff;
 #ifndef NO_STACK_CHECKS
@@ -1376,6 +1403,13 @@ evaluxn(Uxn *u, Uint16 vec)
 			__asm__("evaluxn_5b_DIVr:");
 			{
 				Uint8 a = u->rst.dat[u->rst.ptr - 1], b = u->rst.dat[u->rst.ptr - 2];
+				if(a == 0) {
+					u->rst.error = 3;
+#ifndef NO_STACK_CHECKS
+					goto error;
+#endif
+					a = 1;
+				}
 				u->rst.dat[u->rst.ptr - 2] = b / a;
 #ifndef NO_STACK_CHECKS
 				if(__builtin_expect(u->rst.ptr < 2, 0)) {
@@ -1849,6 +1883,13 @@ evaluxn(Uxn *u, Uint16 vec)
 			__asm__("evaluxn_7b_DIV2r:");
 			{
 				Uint16 a = (u->rst.dat[u->rst.ptr - 1] | (u->rst.dat[u->rst.ptr - 2] << 8)), b = (u->rst.dat[u->rst.ptr - 3] | (u->rst.dat[u->rst.ptr - 4] << 8));
+				if(a == 0) {
+					u->rst.error = 3;
+#ifndef NO_STACK_CHECKS
+					goto error;
+#endif
+					a = 1;
+				}
 				u->rst.dat[u->rst.ptr - 4] = (b / a) >> 8;
 				u->rst.dat[u->rst.ptr - 3] = (b / a) & 0xff;
 #ifndef NO_STACK_CHECKS
@@ -2332,6 +2373,13 @@ evaluxn(Uxn *u, Uint16 vec)
 			__asm__("evaluxn_9b_DIVk:");
 			{
 				Uint8 a = u->wst.dat[u->wst.ptr - 1], b = u->wst.dat[u->wst.ptr - 2];
+				if(a == 0) {
+					u->wst.error = 3;
+#ifndef NO_STACK_CHECKS
+					goto error;
+#endif
+					a = 1;
+				}
 				u->wst.dat[u->wst.ptr] = b / a;
 #ifndef NO_STACK_CHECKS
 				if(__builtin_expect(u->wst.ptr < 2, 0)) {
@@ -2846,6 +2894,13 @@ evaluxn(Uxn *u, Uint16 vec)
 			__asm__("evaluxn_bb_DIV2k:");
 			{
 				Uint16 a = (u->wst.dat[u->wst.ptr - 1] | (u->wst.dat[u->wst.ptr - 2] << 8)), b = (u->wst.dat[u->wst.ptr - 3] | (u->wst.dat[u->wst.ptr - 4] << 8));
+				if(a == 0) {
+					u->wst.error = 3;
+#ifndef NO_STACK_CHECKS
+					goto error;
+#endif
+					a = 1;
+				}
 				u->wst.dat[u->wst.ptr] = (b / a) >> 8;
 				u->wst.dat[u->wst.ptr + 1] = (b / a) & 0xff;
 #ifndef NO_STACK_CHECKS
@@ -3349,6 +3404,13 @@ evaluxn(Uxn *u, Uint16 vec)
 			__asm__("evaluxn_db_DIVkr:");
 			{
 				Uint8 a = u->rst.dat[u->rst.ptr - 1], b = u->rst.dat[u->rst.ptr - 2];
+				if(a == 0) {
+					u->rst.error = 3;
+#ifndef NO_STACK_CHECKS
+					goto error;
+#endif
+					a = 1;
+				}
 				u->rst.dat[u->rst.ptr] = b / a;
 #ifndef NO_STACK_CHECKS
 				if(__builtin_expect(u->rst.ptr < 2, 0)) {
@@ -3863,6 +3925,13 @@ evaluxn(Uxn *u, Uint16 vec)
 			__asm__("evaluxn_fb_DIV2kr:");
 			{
 				Uint16 a = (u->rst.dat[u->rst.ptr - 1] | (u->rst.dat[u->rst.ptr - 2] << 8)), b = (u->rst.dat[u->rst.ptr - 3] | (u->rst.dat[u->rst.ptr - 4] << 8));
+				if(a == 0) {
+					u->rst.error = 3;
+#ifndef NO_STACK_CHECKS
+					goto error;
+#endif
+					a = 1;
+				}
 				u->rst.dat[u->rst.ptr] = (b / a) >> 8;
 				u->rst.dat[u->rst.ptr + 1] = (b / a) & 0xff;
 #ifndef NO_STACK_CHECKS
@@ -3961,12 +4030,10 @@ evaluxn(Uxn *u, Uint16 vec)
 	return 1;
 #ifndef NO_STACK_CHECKS
 error:
-	printf("Halted: %s-stack %sflow#%04x, at 0x%04x\n",
-		u->wst.error ? "Working" : "Return",
-		((u->wst.error | u->rst.error) & 2) ? "over" : "under",
-		instr,
-		u->ram.ptr);
-	return 0;
+	if(u->wst.error)
+		return haltuxn(u, u->wst.error, "Working-stack", instr);
+	else
+		return haltuxn(u, u->rst.error, "Return-stack", instr);
 #endif
 }
 

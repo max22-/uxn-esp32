@@ -61,7 +61,7 @@ void op_deo(Uxn *u) { Uint8 a = pop8(u->src), b = pop8(u->src); devpoke8(&u->dev
 void op_add(Uxn *u) { Uint8 a = pop8(u->src), b = pop8(u->src); push8(u->src, b + a); }
 void op_sub(Uxn *u) { Uint8 a = pop8(u->src), b = pop8(u->src); push8(u->src, b - a); }
 void op_mul(Uxn *u) { Uint8 a = pop8(u->src), b = pop8(u->src); push8(u->src, b * a); }
-void op_div(Uxn *u) { Uint8 a = pop8(u->src), b = pop8(u->src); push8(u->src, b / a); }
+void op_div(Uxn *u) { Uint8 a = pop8(u->src), b = pop8(u->src); if(a == 0) { u->src->error = 3; a = 1; } push8(u->src, b / a); }
 void op_and(Uxn *u) { Uint8 a = pop8(u->src), b = pop8(u->src); push8(u->src, b & a); }
 void op_ora(Uxn *u) { Uint8 a = pop8(u->src), b = pop8(u->src); push8(u->src, b | a); }
 void op_eor(Uxn *u) { Uint8 a = pop8(u->src), b = pop8(u->src); push8(u->src, b ^ a); }
@@ -95,7 +95,7 @@ void op_deo16(Uxn *u) { Uint8 a = pop8(u->src); Uint16 b = pop16(u->src); devpok
 void op_add16(Uxn *u) { Uint16 a = pop16(u->src), b = pop16(u->src); push16(u->src, b + a); }
 void op_sub16(Uxn *u) { Uint16 a = pop16(u->src), b = pop16(u->src); push16(u->src, b - a); }
 void op_mul16(Uxn *u) { Uint16 a = pop16(u->src), b = pop16(u->src); push16(u->src, b * a); }
-void op_div16(Uxn *u) { Uint16 a = pop16(u->src), b = pop16(u->src); push16(u->src, b / a); }
+void op_div16(Uxn *u) { Uint16 a = pop16(u->src), b = pop16(u->src); if(a == 0) { u->src->error = 3; a = 1; } push16(u->src, b / a); }
 void op_and16(Uxn *u) { Uint16 a = pop16(u->src), b = pop16(u->src); push16(u->src, b & a); }
 void op_ora16(Uxn *u) { Uint16 a = pop16(u->src), b = pop16(u->src); push16(u->src, b | a); }
 void op_eor16(Uxn *u) { Uint16 a = pop16(u->src), b = pop16(u->src); push16(u->src, b ^ a); }
@@ -117,10 +117,12 @@ void (*ops[])(Uxn *u) = {
 
 #pragma mark - Core
 
+static const char *errors[] = {"underflow", "overflow", "division by zero"};
+
 int
-haltuxn(Uxn *u, char *name, int id)
+haltuxn(Uxn *u, Uint8 error, char *name, int id)
 {
-	printf("Halted: %s#%04x, at 0x%04x\n", name, id, u->ram.ptr);
+	printf("Halted: %s %s#%04x, at 0x%04x\n", name, errors[error - 1], id, u->ram.ptr);
 	u->ram.ptr = 0;
 	return 0;
 }
@@ -145,9 +147,9 @@ stepuxn(Uxn *u, Uint8 instr)
 {
 	opcuxn(u, instr);
 	if(u->wst.error)
-		return haltuxn(u, u->wst.error == 1 ? "Working-stack underflow" : "Working-stack overflow", instr);
+		return haltuxn(u, u->wst.error, "Working-stack", instr);
 	if(u->rst.error)
-		return haltuxn(u, u->rst.error == 1 ? "Return-stack underflow" : "Return-stack overflow", instr);
+		return haltuxn(u, u->rst.error, "Return-stack", instr);
 	return 1;
 }
 

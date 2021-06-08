@@ -77,8 +77,13 @@ pop_push = (k, n, s) ->
 		else
 			nil
 
+indented_block = (s) ->
+	s = s\gsub('^%{ *', '{\n')\gsub('\n', '\n\t')\gsub('\t%} *$', '}\n')
+	s = s\gsub('\n[^\n]+%.error = [^\n]+', '%0\n#ifndef NO_STACK_CHECKS\n\tgoto error;\n#endif')
+	s
+
 process = (body) ->
-	out_body = body\gsub('^%{ *', '')\gsub(' *%}$', '')\gsub('; ', ';\n')\gsub '(%a+)(%d+)(%b())', pop_push
+	out_body = body\gsub('^%{ *', '')\gsub(' *%}$', '')\gsub('; ', ';\n')\gsub('%b{} *', indented_block)\gsub '(%a+)(%d+)(%b())', pop_push
 	in_ifdef = false
 	for k in *{'src', 'dst'}
 		if bottom[k] != 0
@@ -115,6 +120,8 @@ for l in assert io.lines 'src/uxn.c'
 		continue
 	if replacements[name]
 		body = replacements[name]
+	body = body\gsub 'u%-%>src%-%>', 'src.'
+	body = body\gsub 'u%-%>dst%-%>', 'dst.'
 	body = body\gsub 'u%-%>src', 'src'
 	body = body\gsub 'u%-%>dst', 'dst'
 	top = { src: 0, dst: 0 }
@@ -200,13 +207,21 @@ See etc/mkuxn-fast.moon for instructions.
 
 */
 ]]
+	wanted = true
 	while true
 		l = f\read '*l'
 		if l\match' push' or l\match'[ *]pop'
 			continue
 		if l == '/* Stack */'
+			wanted = false
+		if l\match 'errors%[%]'
+			\write '\n#ifndef NO_STACK_CHECKS\n'
+			wanted = true
+		if wanted
+			\write '%s\n'\format l
+		if l == '}'
+			\write '#endif\n\n'
 			break
-		\write '%s\n'\format l
 	\write [[
 /* clang-format on */
 
@@ -238,12 +253,10 @@ evaluxn(Uxn *u, Uint16 vec)
 	return 1;
 #ifndef NO_STACK_CHECKS
 error:
-	printf("Halted: %s-stack %sflow#%04x, at 0x%04x\n",
-		u->wst.error ? "Working" : "Return",
-		((u->wst.error | u->rst.error) & 2) ? "over" : "under",
-		instr,
-		u->ram.ptr);
-	return 0;
+	if(u->wst.error)
+		return haltuxn(u, u->wst.error, "Working-stack", instr);
+	else
+		return haltuxn(u, u->rst.error, "Return-stack", instr);
 #endif
 }
 

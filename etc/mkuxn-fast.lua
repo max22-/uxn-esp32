@@ -72,9 +72,15 @@ pop_push = function(k, n, s)
     return nil
   end
 end
+local indented_block
+indented_block = function(s)
+  s = s:gsub('^%{ *', '{\n'):gsub('\n', '\n\t'):gsub('\t%} *$', '}\n')
+  s = s:gsub('\n[^\n]+%.error = [^\n]+', '%0\n#ifndef NO_STACK_CHECKS\n\tgoto error;\n#endif')
+  return s
+end
 local process
 process = function(body)
-  local out_body = body:gsub('^%{ *', ''):gsub(' *%}$', ''):gsub('; ', ';\n'):gsub('(%a+)(%d+)(%b())', pop_push)
+  local out_body = body:gsub('^%{ *', ''):gsub(' *%}$', ''):gsub('; ', ';\n'):gsub('%b{} *', indented_block):gsub('(%a+)(%d+)(%b())', pop_push)
   local in_ifdef = false
   local _list_0 = {
     'src',
@@ -132,6 +138,8 @@ for l in assert(io.lines('src/uxn.c')) do
     if replacements[name] then
       body = replacements[name]
     end
+    body = body:gsub('u%-%>src%-%>', 'src.')
+    body = body:gsub('u%-%>dst%-%>', 'dst.')
     body = body:gsub('u%-%>src', 'src')
     body = body:gsub('u%-%>dst', 'dst')
     top = {
@@ -278,6 +286,7 @@ See etc/mkuxn-fast.moon for instructions.
 
 */
 ]])
+  wanted = true
   while true do
     local _continue_0 = false
     repeat
@@ -287,9 +296,19 @@ See etc/mkuxn-fast.moon for instructions.
         break
       end
       if l == '/* Stack */' then
+        wanted = false
+      end
+      if l:match('errors%[%]') then
+        _with_0:write('\n#ifndef NO_STACK_CHECKS\n')
+        wanted = true
+      end
+      if wanted then
+        _with_0:write(('%s\n'):format(l))
+      end
+      if l == '}' then
+        _with_0:write('#endif\n\n')
         break
       end
-      _with_0:write(('%s\n'):format(l))
       _continue_0 = true
     until true
     if not _continue_0 then
@@ -338,12 +357,10 @@ evaluxn(Uxn *u, Uint16 vec)
 	return 1;
 #ifndef NO_STACK_CHECKS
 error:
-	printf("Halted: %s-stack %sflow#%04x, at 0x%04x\n",
-		u->wst.error ? "Working" : "Return",
-		((u->wst.error | u->rst.error) & 2) ? "over" : "under",
-		instr,
-		u->ram.ptr);
-	return 0;
+	if(u->wst.error)
+		return haltuxn(u, u->wst.error, "Working-stack", instr);
+	else
+		return haltuxn(u, u->rst.error, "Return-stack", instr);
 #endif
 }
 
