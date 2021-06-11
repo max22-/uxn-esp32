@@ -93,8 +93,8 @@ save_screenshot(void)
 	SDL_Surface *surface = SDL_CreateRGBSurfaceWithFormat(0, w, h, 32, format);
 	SDL_LockSurface(surface);
 	SDL_RenderReadPixels(gRenderer, NULL, format, surface->pixels, surface->pitch);
-	SDL_UnlockSurface(surface);
 	SDL_SaveBMP(surface, "screenshot.bmp");
+	SDL_UnlockSurface(surface);
 	SDL_FreeSurface(surface);
 }
 
