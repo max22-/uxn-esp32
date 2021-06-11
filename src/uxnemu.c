@@ -85,7 +85,7 @@ togglezoom(Uxn *u)
 }
 
 void
-save_screenshot(void)
+screencapture(void)
 {
 	const Uint32 format = SDL_PIXELFORMAT_ARGB8888;
 	int w, h;
@@ -94,6 +94,7 @@ save_screenshot(void)
 	SDL_RenderReadPixels(gRenderer, NULL, format, surface->pixels, surface->pitch);
 	SDL_SaveBMP(surface, "screenshot.bmp");
 	SDL_FreeSurface(surface);
+	printf("Saved screenshot.bmp\n");
 }
 
 void
@@ -186,13 +187,13 @@ doctrl(Uxn *u, SDL_Event *event, int z)
 {
 	Uint8 flag = 0x00;
 	if(z && event->key.keysym.sym == SDLK_h) {
-		if(SDL_GetModState() & KMOD_LCTRL)
+		if(SDL_GetModState() & KMOD_CAPS)
+			screencapture();
+		else if(SDL_GetModState() & KMOD_LCTRL)
 			toggledebug(u);
-		if(SDL_GetModState() & KMOD_LALT)
+		else if(SDL_GetModState() & KMOD_LALT)
 			togglezoom(u);
-	} else if(z && event->key.keysym.sym == SDLK_s)
-		if(SDL_GetModState() & KMOD_LCTRL)
-			save_screenshot();
+	}
 	switch(event->key.keysym.sym) {
 	case SDLK_LCTRL: flag = 0x01; break;
 	case SDLK_LALT: flag = 0x02; break;
