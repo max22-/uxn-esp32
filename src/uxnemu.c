@@ -85,6 +85,18 @@ togglezoom(Uxn *u)
 }
 
 void
+save_screenshot(void)
+{
+	const Uint32 format = SDL_PIXELFORMAT_ARGB8888;
+	SDL_Surface *surface = SDL_CreateRGBSurfaceWithFormat(0, (ppu.width + PAD * 2) * zoom, (ppu.height + PAD * 2) * zoom, 32, format);
+	SDL_LockSurface(surface);
+	SDL_RenderReadPixels(gRenderer, NULL, format, surface->pixels, surface->pitch);
+	SDL_UnlockSurface(surface);
+	SDL_SaveBMP(surface, "screenshot.bmp");
+	SDL_FreeSurface(surface);
+}
+
+void
 quit(void)
 {
 	free(ppu.fg.pixels);
@@ -178,7 +190,9 @@ doctrl(Uxn *u, SDL_Event *event, int z)
 			toggledebug(u);
 		if(SDL_GetModState() & KMOD_LALT)
 			togglezoom(u);
-	}
+	} else if(z && event->key.keysym.sym == SDLK_s)
+		if(SDL_GetModState() & KMOD_LCTRL)
+			save_screenshot();
 	switch(event->key.keysym.sym) {
 	case SDLK_LCTRL: flag = 0x01; break;
 	case SDLK_LALT: flag = 0x02; break;
