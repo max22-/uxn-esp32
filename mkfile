@@ -3,7 +3,7 @@
 TARG=bin/uxncli bin/uxnasm bin/uxnemu
 USM=`{walk -f projects/ | grep '\.tal$' | grep -v blank.tal}
 ROM=${USM:%.tal=%.rom}
-CFLAGS=$CFLAGS -I/sys/include/npe
+CFLAGS=$CFLAGS -I/sys/include/npe -I/sys/include/npe/SDL2
 HFILES=\
 	/sys/include/npe/stdio.h\
 	src/devices/apu.h\
