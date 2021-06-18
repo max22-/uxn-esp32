@@ -18,7 +18,7 @@ typedef signed char Sint8;
 typedef unsigned short Uint16;
 
 typedef struct {
-	char name[64], items[64][64];
+	char name[64], items[128][64];
 	Uint8 len, refs;
 } Macro;
 
@@ -267,7 +267,7 @@ parsetoken(char *w)
 		else if(sihx(w + 1) && slen(w + 1) == 4)
 			pushshort(shex(w + 1), 1);
 		else
-			return 0;
+			return error("Invalid hexadecimal literal", w);
 		return 1;
 	} else if(sihx(w)) { /* raw */
 		if(slen(w) == 2)
@@ -281,10 +281,10 @@ parsetoken(char *w)
 		int i;
 		for(i = 0; i < m->len; ++i)
 			if(!parsetoken(m->items[i]))
-				return 0;
+				return error("Invalid macro", m->name);
 		return ++m->refs;
 	}
-	return 0;
+	return error("Invalid token", w);
 }
 
 int

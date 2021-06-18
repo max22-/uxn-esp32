@@ -89,8 +89,9 @@ screencapture(void)
 {
 	const Uint32 format = SDL_PIXELFORMAT_ARGB8888;
 	int w, h;
+	SDL_Surface *surface;
 	SDL_GetRendererOutputSize(gRenderer, &w, &h);
-	SDL_Surface *surface = SDL_CreateRGBSurfaceWithFormat(0, w, h, 32, format);
+	surface = SDL_CreateRGBSurfaceWithFormat(0, w, h, 32, format);
 	SDL_RenderReadPixels(gRenderer, NULL, format, surface->pixels, surface->pitch);
 	SDL_SaveBMP(surface, "screenshot.bmp");
 	SDL_FreeSurface(surface);
