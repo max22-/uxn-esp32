@@ -19,13 +19,13 @@ typedef unsigned short Uint16;
 
 typedef struct {
 	char name[64], items[128][64];
-	Uint8 len, refs;
+	Uint8 len;
+	Uint16 refs;
 } Macro;
 
 typedef struct {
 	char name[64];
-	Uint8 refs;
-	Uint16 addr;
+	Uint16 addr, refs;
 } Label;
 
 typedef struct {
