@@ -187,14 +187,18 @@ void
 doctrl(Uxn *u, SDL_Event *event, int z)
 {
 	Uint8 flag = 0x00;
-	if(z && event->key.keysym.sym == SDLK_h) {
-		if(SDL_GetModState() & KMOD_CAPS)
+	if(z && event->key.keysym.sym == SDLK_h)
+		switch(SDL_GetModState() & (KMOD_LSHIFT | KMOD_LCTRL | KMOD_LALT)) {
+		case KMOD_LSHIFT | KMOD_LCTRL:
 			screencapture();
-		else if(SDL_GetModState() & KMOD_LCTRL)
+			break;
+		case KMOD_LCTRL:
 			toggledebug(u);
-		else if(SDL_GetModState() & KMOD_LALT)
+			break;
+		case KMOD_LALT:
 			togglezoom(u);
-	}
+			break;
+		}
 	switch(event->key.keysym.sym) {
 	case SDLK_LCTRL: flag = 0x01; break;
 	case SDLK_LALT: flag = 0x02; break;
