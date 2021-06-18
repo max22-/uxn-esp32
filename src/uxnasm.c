@@ -167,7 +167,7 @@ makemacro(char *name, FILE *f)
 			return error("Word too long", name);
 		scpy(word, m->items[m->len++], 64);
 	}
-	printf("New macro: %s, %d items\n", m->name, m->len);
+	printf("New macro #%d: %s, %d items\n", p.mlen, m->name, m->len);
 	return 1;
 }
 
@@ -185,7 +185,7 @@ makelabel(char *name, Uint16 addr)
 	l->addr = addr;
 	l->refs = 0;
 	scpy(name, l->name, 64);
-	printf("New label: %s, at 0x%04x\n", l->name, l->addr);
+	printf("New label #%d: %s, at 0x%04x\n", p.llen, l->name, l->addr);
 	return 1;
 }
 
