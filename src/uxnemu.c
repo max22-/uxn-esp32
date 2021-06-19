@@ -145,7 +145,6 @@ init(void)
 		return error("Texture", SDL_GetError());
 	SDL_UpdateTexture(bgTexture, NULL, ppu.bg.pixels, 4);
 	SDL_UpdateTexture(fgTexture, NULL, ppu.fg.pixels, 4);
-	SDL_StartTextInput();
 	SDL_ShowCursor(SDL_DISABLE);
 	SDL_zero(as);
 	as.freq = SAMPLE_FREQUENCY;
@@ -187,34 +186,40 @@ void
 doctrl(Uxn *u, SDL_Event *event, int z)
 {
 	Uint8 flag = 0x00;
-	if(z && event->key.keysym.sym == SDLK_h)
-		switch(SDL_GetModState() & (KMOD_LSHIFT | KMOD_LCTRL | KMOD_LALT)) {
-		case KMOD_LSHIFT | KMOD_LCTRL:
-			screencapture();
-			break;
-		case KMOD_LCTRL:
-			toggledebug(u);
-			break;
-		case KMOD_LALT:
-			togglezoom(u);
-			break;
-		}
+	SDL_Keymod mods = SDL_GetModState();
+	devctrl->dat[2] &= 0xf8;
+	if(mods & KMOD_CTRL) devctrl->dat[2] |= 0x01;
+	if(mods & KMOD_ALT) devctrl->dat[2] |= 0x02;
+	if(mods & KMOD_SHIFT) devctrl->dat[2] |= 0x04;
 	switch(event->key.keysym.sym) {
-	case SDLK_LCTRL: flag = 0x01; break;
-	case SDLK_LALT: flag = 0x02; break;
-	case SDLK_LSHIFT: flag = 0x04; break;
+	case SDLK_h:
+		if(z) switch(devctrl->dat[2] & 0x07) {
+			case 0x1: toggledebug(u); break;
+			case 0x2: togglezoom(u); break;
+			case 0x5: screencapture(); break;
+			}
+		break;
 	case SDLK_ESCAPE: flag = 0x08; break;
 	case SDLK_UP: flag = 0x10; break;
 	case SDLK_DOWN: flag = 0x20; break;
 	case SDLK_LEFT: flag = 0x40; break;
 	case SDLK_RIGHT: flag = 0x80; break;
 	}
-	if(flag && z)
+	if(z)
 		devctrl->dat[2] |= flag;
-	else if(flag)
-		devctrl->dat[2] &= (~flag);
-	if(z && event->key.keysym.sym < 20)
+	else
+		devctrl->dat[2] &= ~flag;
+	if(z && event->key.keysym.sym < 0x80) {
 		devctrl->dat[3] = event->key.keysym.sym;
+		if(devctrl->dat[3] >= 0x60 && devctrl->dat[3] < 0x7f) {
+			if(devctrl->dat[2] & 0x01)
+				devctrl->dat[3] &= ~0x60;
+			else if(!(devctrl->dat[2] & 0x04) ^ !(mods & KMOD_CAPS))
+				devctrl->dat[3] &= ~0x20;
+		}
+	} else {
+		devctrl->dat[3] = 0;
+	}
 }
 
 #pragma mark - Devices
@@ -359,14 +364,10 @@ start(Uxn *u)
 			case SDL_QUIT:
 				quit();
 				break;
-			case SDL_TEXTINPUT:
 			case SDL_KEYDOWN:
 			case SDL_KEYUP:
-				if(event.text.text[0] >= ' ' && event.text.text[0] <= '~')
-					devctrl->dat[3] = event.text.text[0];
 				doctrl(u, &event, event.type == SDL_KEYDOWN);
 				evaluxn(u, mempeek16(devctrl->dat, 0));
-				devctrl->dat[3] = 0;
 				break;
 			case SDL_MOUSEWHEEL:
 				devmouse->dat[7] = event.wheel.y;
