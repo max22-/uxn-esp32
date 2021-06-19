@@ -107,15 +107,17 @@ putchr(Ppu *p, Layer *layer, Uint16 x, Uint16 y, Uint8 *sprite, Uint8 color, Uin
 /* output */
 
 void
-inspect(Ppu *p, Uint8 *stack, Uint8 ptr)
+inspect(Ppu *p, Uint8 *stack, Uint8 wptr, Uint8 rptr)
 {
 	Uint8 i, x, y, b;
 	for(i = 0; i < 0x20; ++i) { /* memory */
 		x = ((i % 8) * 3 + 1) * 8, y = (i / 8 + 1) * 8, b = stack[i];
-		puticn(p, &p->bg, x, y, font[(b >> 4) & 0xf], 1 + (ptr == i) * 0x7, 0, 0);
-		puticn(p, &p->bg, x + 8, y, font[b & 0xf], 1 + (ptr == i) * 0x7, 0, 0);
+		puticn(p, &p->bg, x, y, font[(b >> 4) & 0xf], 1 + (wptr == i) * 0x7, 0, 0);
+		puticn(p, &p->bg, x + 8, y, font[b & 0xf], 1 + (wptr == i) * 0x7, 0, 0);
 	}
-	for(x = 0; x < 0x20; ++x) {
+	puticn(p, &p->bg, 0x8, y + 0x10, font[(rptr >> 4) & 0xf], 0x2, 0, 0);
+	puticn(p, &p->bg, 0x10, y + 0x10, font[rptr & 0xf], 0x2, 0, 0);
+	for(x = 0; x < 0x20; ++x) { /* guides */
 		putpixel(p, &p->bg, x, p->height / 2, 2);
 		putpixel(p, &p->bg, p->width - x, p->height / 2, 2);
 		putpixel(p, &p->bg, p->width / 2, p->height - x, 2);
