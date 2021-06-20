@@ -11,26 +11,7 @@ scope: source.tal
 contexts:
   main:
 
-    # get/set
-    - match: '\.(\S+)\sDEO2'
-      scope:  constant.numeric
-      pop: true
-    - match: '\.(\S+)\sDEO'
-      scope:  constant.numeric
-      pop: true
-    - match: '\.(\S+)\sSTZ2'
-      scope:  constant.numeric
-      pop: true
-    - match: '\.(\S+)\sSTZ'
-      scope:  constant.numeric
-      pop: true
-    - match: '\.(\S+)\sLDA2'
-      scope:  constant.numeric
-      pop: true
-    - match: '\.(\S+)\sLDA'
-      scope:  constant.numeric
-      pop: true
-
+    # get
     - match: '\.(\S+)\sDEI2'
       scope:  entity.name.type.typedef
       pop: true
@@ -43,10 +24,41 @@ contexts:
     - match: '\.(\S+)\sLDZ'
       scope:  entity.name.type.typedef
       pop: true
-    - match: '\.(\S+)\sSTA2'
+    - match: '\,(\S+)\sLDR2'
       scope:  entity.name.type.typedef
       pop: true
-    - match: '\.(\S+)\sSTA'
+    - match: '\,(\S+)\sLDR'
+      scope:  entity.name.type.typedef
+      pop: true
+    - match: '\;(\S+)\sLDA2'
+      scope:  constant.numeric
+      pop: true
+    - match: '\;(\S+)\sLDA'
+      scope:  constant.numeric
+      pop: true
+    # set
+    - match: '\.(\S+)\sDEO2'
+      scope:  constant.numeric
+      pop: true
+    - match: '\.(\S+)\sDEO'
+      scope:  constant.numeric
+      pop: true
+    - match: '\.(\S+)\sSTZ2'
+      scope:  constant.numeric
+      pop: true
+    - match: '\.(\S+)\sSTZ'
+      scope:  constant.numeric
+      pop: true
+    - match: '\,(\S+)\sSTR2'
+      scope:  constant.numeric
+      pop: true
+    - match: '\,(\S+)\sSTR'
+      scope:  constant.numeric
+      pop: true
+    - match: '\;(\S+)\sSTA2'
+      scope:  entity.name.type.typedef
+      pop: true
+    - match: '\;(\S+)\sSTA'
       scope:  entity.name.type.typedef
       pop: true
 
