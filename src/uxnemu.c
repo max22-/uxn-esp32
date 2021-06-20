@@ -209,11 +209,12 @@ doctrl(Uxn *u, SDL_Event *event, int z)
 	case SDLK_DOWN: flag = 0x20; break;
 	case SDLK_LEFT: flag = 0x40; break;
 	case SDLK_RIGHT: flag = 0x80; break;
-	case SDLK_DELETE: devctrl->dat[3] = z ? 0x7f : 0x00; break;
 	}
-	if(z)
+	if(z) {
 		devctrl->dat[2] |= flag;
-	else
+		if(event->key.keysym.sym < 0x20 || event->key.keysym.sym == SDLK_DELETE)
+			devctrl->dat[3] = event->key.keysym.sym;
+	} else
 		devctrl->dat[2] &= ~flag;
 }
 
@@ -360,7 +361,7 @@ start(Uxn *u)
 				quit();
 				break;
 			case SDL_TEXTINPUT:
-				devctrl->dat[3] = event.text.text[0];
+				devctrl->dat[3] = event.text.text[0]; /* fall-thru */
 			case SDL_KEYDOWN:
 			case SDL_KEYUP:
 				doctrl(u, &event, event.type == SDL_KEYDOWN);
