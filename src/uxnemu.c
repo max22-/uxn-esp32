@@ -145,6 +145,7 @@ init(void)
 		return error("Texture", SDL_GetError());
 	SDL_UpdateTexture(bgTexture, NULL, ppu.bg.pixels, 4);
 	SDL_UpdateTexture(fgTexture, NULL, ppu.fg.pixels, 4);
+	SDL_StartTextInput();
 	SDL_ShowCursor(SDL_DISABLE);
 	SDL_zero(as);
 	as.freq = SAMPLE_FREQUENCY;
@@ -188,7 +189,11 @@ doctrl(Uxn *u, SDL_Event *event, int z)
 	Uint8 flag = 0x00;
 	SDL_Keymod mods = SDL_GetModState();
 	devctrl->dat[2] &= 0xf8;
-	if(mods & KMOD_CTRL) devctrl->dat[2] |= 0x01;
+	if(mods & KMOD_CTRL) {
+		devctrl->dat[2] |= 0x01;
+		if(z && event->key.keysym.sym >= SDLK_a && event->key.keysym.sym <= SDLK_z)
+			devctrl->dat[3] = event->key.keysym.sym & 0x1f;
+	}
 	if(mods & KMOD_ALT) devctrl->dat[2] |= 0x02;
 	if(mods & KMOD_SHIFT) devctrl->dat[2] |= 0x04;
 	switch(event->key.keysym.sym) {
@@ -204,22 +209,12 @@ doctrl(Uxn *u, SDL_Event *event, int z)
 	case SDLK_DOWN: flag = 0x20; break;
 	case SDLK_LEFT: flag = 0x40; break;
 	case SDLK_RIGHT: flag = 0x80; break;
+	case SDLK_DELETE: devctrl->dat[3] = z ? 0x7f : 0x00; break;
 	}
 	if(z)
 		devctrl->dat[2] |= flag;
 	else
 		devctrl->dat[2] &= ~flag;
-	if(z && event->key.keysym.sym < 0x80) {
-		devctrl->dat[3] = event->key.keysym.sym;
-		if(devctrl->dat[3] >= 0x60 && devctrl->dat[3] < 0x7f) {
-			if(devctrl->dat[2] & 0x01)
-				devctrl->dat[3] &= ~0x60;
-			else if(!(devctrl->dat[2] & 0x04) ^ !(mods & KMOD_CAPS))
-				devctrl->dat[3] &= ~0x20;
-		}
-	} else {
-		devctrl->dat[3] = 0;
-	}
 }
 
 #pragma mark - Devices
@@ -364,10 +359,13 @@ start(Uxn *u)
 			case SDL_QUIT:
 				quit();
 				break;
+			case SDL_TEXTINPUT:
+				devctrl->dat[3] = event.text.text[0];
 			case SDL_KEYDOWN:
 			case SDL_KEYUP:
 				doctrl(u, &event, event.type == SDL_KEYDOWN);
 				evaluxn(u, mempeek16(devctrl->dat, 0));
+				devctrl->dat[3] = 0;
 				break;
 			case SDL_MOUSEWHEEL:
 				devmouse->dat[7] = event.wheel.y;
