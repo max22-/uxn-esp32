@@ -1,3 +1,5 @@
+#ifndef ARDUINO
+
 #include <SDL.h>
 #include <stdio.h>
 #include <time.h>
@@ -443,3 +445,5 @@ main(int argc, char **argv)
 	quit();
 	return 0;
 }
+
+#endif

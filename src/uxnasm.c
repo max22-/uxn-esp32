@@ -1,3 +1,5 @@
+#ifndef ARDUINO
+
 #include <stdio.h>
 
 /*
@@ -382,3 +384,5 @@ main(int argc, char *argv[])
 	cleanup(argv[2]);
 	return 0;
 }
+
+#endif

@@ -1,3 +1,5 @@
+#ifndef ARDUINO
+
 #include <stdio.h>
 #include <time.h>
 #include "uxn.h"
@@ -144,3 +146,5 @@ main(int argc, char **argv)
 		printstack(&u.wst);
 	return 0;
 }
+
+#endif

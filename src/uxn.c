@@ -1,3 +1,5 @@
+#ifndef ARDUINO_UXN_FAST
+
 #include <stdio.h>
 #include "uxn.h"
 
@@ -199,3 +201,5 @@ portuxn(Uxn *u, Uint8 id, char *name, void (*talkfn)(Device *d, Uint8 b0, Uint8 
 	printf("Device added #%02x: %s, at 0x%04x \n", id, name, d->addr);
 	return d;
 }
+
+#endif
