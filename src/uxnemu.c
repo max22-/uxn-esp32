@@ -1,6 +1,8 @@
 #ifndef ARDUINO
-
 #include <SDL.h>
+#else
+#include <Arduino.h>
+#endif
 #include <stdio.h>
 #include <time.h>
 #include "uxn.h"
@@ -19,11 +21,13 @@ THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
 WITH REGARD TO THIS SOFTWARE.
 */
 
+#ifndef ARDUINO
 static SDL_AudioDeviceID audio_id;
 static SDL_Window *gWindow;
 static SDL_Renderer *gRenderer;
 static SDL_Texture *fgTexture, *bgTexture;
 static SDL_Rect gRect;
+#endif
 static Ppu ppu;
 static Apu apu[POLYPHONY];
 static Mpu mpu;
@@ -51,7 +55,12 @@ audio_callback(void *u, Uint8 *stream, int len)
 {
 	int i;
 	Sint16 *samples = (Sint16 *)stream;
+#ifndef ARDUINO
 	SDL_memset(stream, 0, len);
+#else
+	memset(stream, 0, len);
+#warning Callback not called (yet) :)
+#endif
 	for(i = 0; i < POLYPHONY; ++i)
 		apu_render(&apu[i], samples, samples + len / 2);
 	(void)u;
@@ -62,12 +71,16 @@ redraw(Uxn *u)
 {
 	if(debug)
 		inspect(&ppu, u->wst.dat, u->wst.ptr, u->rst.ptr);
+#ifndef ARDUINO
 	SDL_UpdateTexture(bgTexture, &gRect, ppu.bg.pixels, ppu.width * sizeof(Uint32));
 	SDL_UpdateTexture(fgTexture, &gRect, ppu.fg.pixels, ppu.width * sizeof(Uint32));
 	SDL_RenderClear(gRenderer);
 	SDL_RenderCopy(gRenderer, bgTexture, NULL, NULL);
 	SDL_RenderCopy(gRenderer, fgTexture, NULL, NULL);
 	SDL_RenderPresent(gRenderer);
+#else
+#warning Not implemented
+#endif
 	reqdraw = 0;
 }
 
@@ -82,13 +95,18 @@ void
 togglezoom(Uxn *u)
 {
 	zoom = zoom == 3 ? 1 : zoom + 1;
+#ifndef ARDUINO
 	SDL_SetWindowSize(gWindow, (ppu.width + PAD * 2) * zoom, (ppu.height + PAD * 2) * zoom);
+#else
+#warning togglezoom not implemented
+#endif
 	redraw(u);
 }
 
 void
 screencapture(void)
 {
+#ifndef ARDUINO
 	const Uint32 format = SDL_PIXELFORMAT_ARGB8888;
 	int w, h;
 	SDL_Surface *surface;
@@ -98,6 +116,9 @@ screencapture(void)
 	SDL_SaveBMP(surface, "screenshot.bmp");
 	SDL_FreeSurface(surface);
 	printf("Saved screenshot.bmp\n");
+#else
+#warning screencapture not implemented
+#endif
 }
 
 void
@@ -105,6 +126,7 @@ quit(void)
 {
 	free(ppu.fg.pixels);
 	free(ppu.bg.pixels);
+#ifndef ARDUINO
 	SDL_UnlockAudioDevice(audio_id);
 	SDL_DestroyTexture(bgTexture);
 	bgTexture = NULL;
@@ -116,8 +138,14 @@ quit(void)
 	gWindow = NULL;
 	SDL_Quit();
 	exit(0);
+#endif
+#ifdef ARDUINO
+	for(;;)
+		delay(1000);
+#endif
 }
 
+#ifndef ARDUINO
 int
 init(void)
 {
@@ -162,7 +190,16 @@ init(void)
 	SDL_PauseAudioDevice(audio_id, 0);
 	return 1;
 }
+#else
+int
+init_uxn(void)
+{
+#warning Not implemented
+	return 1;
+}
+#endif
 
+#ifndef ARDUINO
 void
 domouse(SDL_Event *event)
 {
@@ -184,7 +221,15 @@ domouse(SDL_Event *event)
 		break;
 	}
 }
+#else
+void
+domouse()
+{
+#warning Not implemented
+}
+#endif
 
+#ifndef ARDUINO
 void
 doctrl(Uxn *u, SDL_Event *event, int z)
 {
@@ -219,6 +264,14 @@ doctrl(Uxn *u, SDL_Event *event, int z)
 	} else
 		devctrl->dat[2] &= ~flag;
 }
+#else
+#warning different prototype
+void
+doctrl(Uxn *u)
+{
+#warning Not implemented
+}
+#endif
 
 #pragma mark - Devices
 
@@ -298,14 +351,18 @@ audio_talk(Device *d, Uint8 b0, Uint8 w)
 		else if(b0 == 0x4)
 			d->dat[0x4] = apu_get_vu(c);
 	} else if(b0 == 0xf) {
+#ifndef ARDUINO
 		SDL_LockAudioDevice(audio_id);
+#endif
 		c->len = mempeek16(d->dat, 0xa);
 		c->addr = &d->mem[mempeek16(d->dat, 0xc)];
 		c->volume[0] = d->dat[0xe] >> 4;
 		c->volume[1] = d->dat[0xe] & 0xf;
 		c->repeat = !(d->dat[0xf] & 0x80);
 		apu_start(c, mempeek16(d->dat, 0x8), d->dat[0xf] & 0x7f);
+#ifndef ARDUINO
 		SDL_UnlockAudioDevice(audio_id);
+#endif
 	}
 }
 
@@ -353,10 +410,20 @@ start(Uxn *u)
 	redraw(u);
 	while(1) {
 		int i;
+#ifndef ARDUINO
 		SDL_Event event;
+#endif
+#ifndef ARDUINO
 		double elapsed, start = 0;
 		if(!bench)
+
 			start = SDL_GetPerformanceCounter();
+#else
+		int elapsed, start = 0;
+		if(!bench)
+			start = micros();
+#endif
+#ifndef ARDUINO
 		while(SDL_PollEvent(&event) != 0) {
 			switch(event.type) {
 			case SDL_QUIT:
@@ -387,6 +454,9 @@ start(Uxn *u)
 				break;
 			}
 		}
+#else
+#warning Not implemented
+#endif
 		listenmpu(&mpu);
 		for(i = 0; i < mpu.queue; ++i) {
 			devmidi->dat[2] = mpu.events[i].message;
@@ -398,27 +468,49 @@ start(Uxn *u)
 		if(reqdraw)
 			redraw(u);
 		if(!bench) {
+#ifndef ARDUINO
 			elapsed = (SDL_GetPerformanceCounter() - start) / (double)SDL_GetPerformanceFrequency() * 1000.0f;
 			SDL_Delay(clamp(16.666f - elapsed, 0, 1000));
+#else
+			elapsed = micros() - start;
+			delayMicroseconds(clamp(16666 - elapsed, 0, 1000000));
+#endif
 		}
 	}
 	return 1;
 }
 
+#ifndef ARDUINO
 int
 main(int argc, char **argv)
+#else
+int
+uxn_main(char *rom_path)
+#endif
 {
 	Uxn u;
 	zoom = 2;
 
+#ifndef ARDUINO
 	if(argc < 2)
 		return error("Input", "Missing");
+#else
+	if(rom_path == NULL || rom_path[0] == 0)
+		error("Input", "Missing");
+#endif
 	if(!bootuxn(&u))
 		return error("Boot", "Failed");
+#ifndef ARDUINO
 	if(!loaduxn(&u, argv[1]))
 		return error("Load", "Failed");
 	if(!init())
 		return error("Init", "Failed");
+#else
+	if(!loaduxn(&u, rom_path))
+		return error("Load", "Failed");
+	if(!init_uxn())
+		return error("Init", "Failed");
+#endif
 
 	portuxn(&u, 0x0, "system", system_talk);
 	portuxn(&u, 0x1, "console", console_talk);
@@ -445,5 +537,3 @@ main(int argc, char **argv)
 	quit();
 	return 0;
 }
-
-#endif
