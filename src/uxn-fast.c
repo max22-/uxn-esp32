@@ -1,4 +1,4 @@
-#ifdef ARDUINO_UXN_FAST 
+#if defined(ARDUINO_UXN_FAST) || !defined(ARDUINO)
 
 #include <stdio.h>
 #include "uxn.h"
