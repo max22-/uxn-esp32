@@ -1,6 +1,6 @@
 </$objtype/mkfile
 
-TARG=bin/uxncli bin/uxnasm bin/uxnemu
+TARG=bin/uxncli bin/uxnasm bin/uxnemu bin/chr2img
 USM=`{walk -f projects/ | grep '\.tal$' | grep -v blank.tal}
 ROM=${USM:%.tal=%.rom}
 CFLAGS=$CFLAGS -I/sys/include/npe -I/sys/include/npe/SDL2
@@ -38,7 +38,10 @@ bin/uxnasm: uxnasm.$O
 bin/uxnemu: uxnemu.$O apu.$O mpu.$O ppu.$O uxn.$O
 	$LD $LDFLAGS -o $target $prereq
 
-(uxnasm|uxncli|uxnemu|uxn)\.$O:R: src/\1.c
+bin/chr2img: chr2img.$O
+	$LD $LDFLAGS -o $target $prereq
+
+(uxnasm|uxncli|uxnemu|uxn|chr2img)\.$O:R: src/\1.c
 	$CC $CFLAGS -Isrc -o $target src/$stem1.c
 
 (apu|mpu|ppu)\.$O:R: src/devices/\1.c
