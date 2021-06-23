@@ -12,6 +12,8 @@ THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
 WITH REGARD TO THIS SOFTWARE.
 */
 
+#include "../utility.h"
+
 static Uint8 font[][8] = {
 	{0x00, 0x7c, 0x82, 0x82, 0x82, 0x82, 0x82, 0x7c},
 	{0x00, 0x30, 0x10, 0x10, 0x10, 0x10, 0x10, 0x10},
@@ -57,8 +59,13 @@ putcolors(Ppu *p, Uint8 *addr)
 			r = (*(addr + i / 2) >> (!(i % 2) << 2)) & 0x0f,
 			g = (*(addr + 2 + i / 2) >> (!(i % 2) << 2)) & 0x0f,
 			b = (*(addr + 4 + i / 2) >> (!(i % 2) << 2)) & 0x0f;
+#ifndef ARDUINO
 		p->bg.colors[i] = 0xff000000 | (r << 20) | (r << 16) | (g << 12) | (g << 8) | (b << 4) | b;
 		p->fg.colors[i] = 0xff000000 | (r << 20) | (r << 16) | (g << 12) | (g << 8) | (b << 4) | b;
+#else
+		p->bg.colors[i] = (r << 12) | (g << 7) | (b << 1);
+		p->fg.colors[i] = (r << 12) | (g << 7) | (b << 1);
+#endif
 	}
 	p->fg.colors[0] = 0;
 	clear(p);
@@ -69,7 +76,11 @@ putpixel(Ppu *p, Layer *layer, Uint16 x, Uint16 y, Uint8 color)
 {
 	if(x >= p->width || y >= p->height)
 		return;
+#ifndef ARDUINO
 	layer->pixels[y * p->width + x] = layer->colors[color];
+#else
+	layer->pixels[y * p->width + x] = color;
+#endif
 }
 
 void
@@ -134,10 +145,17 @@ initppu(Ppu *p, Uint8 hor, Uint8 ver)
 	p->ver = ver;
 	p->width = 8 * p->hor;
 	p->height = 8 * p->ver;
+#ifndef ARDUINO
 	if(!(p->bg.pixels = malloc(p->width * p->height * sizeof(Uint32))))
 		return 0;
 	if(!(p->fg.pixels = malloc(p->width * p->height * sizeof(Uint32))))
 		return 0;
+#else
+	if(!(p->bg.pixels = ext_malloc(p->width * p->height * sizeof(Uint8))))
+		return 0;
+	if(!(p->fg.pixels = ext_malloc(p->width * p->height * sizeof(Uint8))))
+		return 0;
+#endif
 	clear(p);
 	return 1;
 }

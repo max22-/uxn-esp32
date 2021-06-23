@@ -18,7 +18,12 @@ typedef unsigned short Uint16;
 typedef unsigned int Uint32;
 
 typedef struct Layer {
+#ifndef ARDUINO
 	Uint32 *pixels, colors[4];
+#else
+	Uint8 *pixels;
+	Uint16 colors[4];
+#endif
 } Layer;
 
 typedef struct Ppu {
