@@ -12,6 +12,7 @@ clang-format -i src/devices/mpu.c
 clang-format -i src/uxnasm.c
 clang-format -i src/uxnemu.c
 clang-format -i src/uxncli.c
+clang-format -i src/chr2img.c
 
 echo "Cleaning.."
 rm -f ./bin/uxnasm
