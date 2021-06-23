@@ -1,6 +1,10 @@
 #include <Arduino.h>
-#include <M5Core2.h>
-#include <SPIFFS.h>
+#if defined(ESP32)
+	#include <SPIFFS.h>
+#endif
+#if defined(ARDUINO_M5STACK_Core2)
+	#include <M5Core2.h>
+#endif
 
 extern "C" {
 	#include "uxn.h"
@@ -61,8 +65,14 @@ console_talk(Device *d, Uint8 b0, Uint8 w)
 }
 
 void setup() {
-	M5.begin(true, false, true);
-	SPIFFS.begin();
+	#if defined(ARDUINO_M5STACK_Core2)
+		M5.begin(true, false, true);
+	#else
+		Serial.begin(115200);
+	#endif
+	#if defined(ESP32)
+		SPIFFS.begin();
+	#endif
 	if((u = (Uxn*)malloc(sizeof(Uxn))) == nullptr)
 		error("Memory", "Cannot allocate enough memory");
 	if(!bootuxn(u))
