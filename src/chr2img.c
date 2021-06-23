@@ -93,9 +93,10 @@ static int
 writebmp(int w, int h, u32int *p)
 {
 	/* clang-format off */
+	int sz = 14 + 40 + 4*4 + 4*w*h;
 	u8int hd[14+40+4*4] = {
 		'B', 'M',
-		0, 0, 0, 0, /* file size */
+		sz, sz>>8, sz>>16, sz>>24, /* file size */
 		0, 0,
 		0, 0,
 		14+40+4*4, 0, 0, 0, /* pixel data offset */
@@ -110,19 +111,12 @@ writebmp(int w, int h, u32int *p)
 		0, 0, 0, 0, /* dummy ver ppm */
 		0, 0, 0, 0, /* dummy num of colors */
 		0, 0, 0, 0, /* dummy important colors */
-		0, 0, 0, 0xff,
-		0, 0, 0xff, 0,
-		0, 0xff, 0, 0,
-		0xff, 0, 0, 0,
+		0, 0, 0, 0xff, /* R mask */
+		0, 0, 0xff, 0, /* G mask */
+		0, 0xff, 0, 0, /* B mask */
+		0xff, 0, 0, 0, /* A mask */
 	};
-	int sz;
 	/* clang-format on */
-
-	sz = 14 + 40 + 4 * 4 + 4 * w * h;
-	hd[2] = sz;
-	hd[3] = sz >> 8;
-	hd[4] = sz >> 16;
-	hd[5] = sz >> 24;
 
 	write(1, hd, sizeof(hd));
 	while(h-- >= 0)
