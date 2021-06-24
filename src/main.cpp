@@ -15,7 +15,7 @@ extern "C" {
 
 // Config
 
-static char* rom = (char*)"/spiffs/screen.rom";
+static char* rom = (char*)"/spiffs/piano.rom";
 static const Uint8 hor = 40, ver = 30;
 
 // *******
@@ -24,7 +24,7 @@ static const Uint8 hor = 40, ver = 30;
 static Uxn *u;
 static Ppu *ppu;
 static Uint16 *screenbuf;
-static Device *devscreen;
+static Device *devscreen, *devmouse;
 
 static Uint8 reqdraw = 0;
 
@@ -45,9 +45,6 @@ error(const char* msg, const char* err)
 void
 redraw()
 {
-	#warning redraw() not implemented
-
-	
 	Uint16 w = ppu->width, h = ppu->height;
 	for(int y = 0; y < h; y++) {
 		for(int x = 0; x < w; x++) {
@@ -132,11 +129,63 @@ screen_talk(Device *d, Uint8 b0, Uint8 w)
 }
 
 void
+domouse()
+{
+	static bool oldPressed = false;
+	bool pressed;
+	static Uint16 oldX = 0, oldY = 0;
+	Uint16 x = 0, y = 0;
+	Uint8 flag = 0;
+
+	#if defined(ARDUINO_M5STACK_Core2)
+	pressed = M5.Touch.ispressed();
+	if(pressed) {
+		TouchPoint_t c = M5.Touch.getPressPoint();
+		if(c.x >= 0 && c.y >= 0) {
+			x = c.x;
+			y = c.y;
+		}
+		else {
+			x = oldX;
+			y = oldY;
+		}
+		printf("(%d, %d)\n", x, y);
+	}
+	#else
+		#warning domouse() not implemented on this board
+	#endif
+
+	if(pressed) {	// Mouse moves
+		x = clamp(x, 0, ppu->hor * 8 - 1);
+		y = clamp(y, 0, ppu->ver * 8 - 1);
+		mempoke16(devmouse->dat, 0x2, x);
+		mempoke16(devmouse->dat, 0x4, y);
+	}
+
+	if(pressed != oldPressed) {	// Mouse clicks	
+		flag = 0x01;
+		// flag = 0x10; for the right button, but we don't have it on a touchscreen :(
+		if(pressed)
+			devmouse->dat[6] |= flag;
+		else
+			devmouse->dat[6] &= (~flag);
+		
+	}
+	if(pressed != oldPressed || x != oldX || y != oldY)
+		evaluxn(u, mempeek16(devmouse->dat, 0));
+
+	oldPressed = pressed;
+	oldX = x;
+	oldY = y;
+}
+
+void
 uxnmain()
 {
 	int elapsed, start;
 		start = micros();
 		
+		domouse();
 		if(reqdraw)
 			redraw();
 
@@ -173,7 +222,7 @@ void setup() {
 	portuxn(u, 0x6, (char*)"---", nil_talk);
 	portuxn(u, 0x7, (char*)"---", nil_talk);
 	portuxn(u, 0x8, (char*)"---", nil_talk);
-	portuxn(u, 0x9, (char*)"---", nil_talk);
+	devmouse = portuxn(u, 0x9, (char*)"mouse", nil_talk);
 	portuxn(u, 0xa, (char*)"---", nil_talk);
 	portuxn(u, 0xb, (char*)"---", nil_talk);
 	portuxn(u, 0xc, (char*)"---", nil_talk);
