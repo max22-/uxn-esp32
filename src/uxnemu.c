@@ -196,20 +196,18 @@ doctrl(Uxn *u, SDL_Event *event, int z)
 	}
 	if(mods & KMOD_ALT) devctrl->dat[2] |= 0x02;
 	if(mods & KMOD_SHIFT) devctrl->dat[2] |= 0x04;
+	/* clang-format off */
 	switch(event->key.keysym.sym) {
-	case SDLK_h:
-		if(z) switch(devctrl->dat[2] & 0x07) {
-			case 0x1: toggledebug(u); break;
-			case 0x2: togglezoom(u); break;
-			case 0x5: screencapture(); break;
-			}
-		break;
 	case SDLK_ESCAPE: flag = 0x08; break;
 	case SDLK_UP: flag = 0x10; break;
 	case SDLK_DOWN: flag = 0x20; break;
 	case SDLK_LEFT: flag = 0x40; break;
 	case SDLK_RIGHT: flag = 0x80; break;
+	case SDLK_F1: if(z) togglezoom(u); break;
+	case SDLK_F2: if(z) toggledebug(u); break;
+	case SDLK_F3: if(z) screencapture(); break;
 	}
+	/* clang-format on */
 	if(z) {
 		devctrl->dat[2] |= flag;
 		if(event->key.keysym.sym < 0x20 || event->key.keysym.sym == SDLK_DELETE)

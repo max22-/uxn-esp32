@@ -47,9 +47,9 @@ You can also use the emulator without graphics by using `uxncli`. You can find a
 
 ## Emulator Controls
 
-- `ctrl+h` toggle inspector
-- `alt+h` toggle zoom
-- `ctrl+shift+h` capture screen
+- `F1` toggle zoom
+- `F2` toggle debug
+- `F3` capture screen
 
 ## Need a hand?
 
