@@ -6,7 +6,7 @@ An assembler and emulator for the [Uxn stack-machine](https://wiki.xxiivv.com/si
 
 ### Linux 
 
-To build the Uxn emulator, you must have [SDL2](https://wiki.libsdl.org/).
+To build the Uxn emulator, you must have [SDL2](https://wiki.libsdl.org/). If you wish to use the `Midi` device, you must also have [Portmidi](http://portmedia.sourceforge.net/portmidi/) installed. The build script indicates whether it has detected Portmidi or not, but will build Uxn either way.
 
 ```sh
 ./build.sh 

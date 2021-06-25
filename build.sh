@@ -19,10 +19,17 @@ rm -f ./bin/uxnemu
 rm -f ./bin/uxncli
 rm -f ./bin/boot.rom
 
-echo "Building.."
 mkdir -p bin
 CFLAGS="-std=c89 -Wall -Wno-unknown-pragmas"
 UXNEMU_LDFLAGS="-L/usr/local/lib $(sdl2-config --cflags --libs)"
+if cc ${CFLAGS} -c src/devices/mpu.c -o bin/mpu.o 2>/dev/null; then
+	rm -f bin/mpu.o
+	echo "Building with portmidi.."
+	UXNEMU_LDFLAGS="${UXNEMU_LDFLAGS} -lportmidi"
+else
+	echo "Building without portmidi.."
+	CFLAGS="${CFLAGS} -DNO_PORTMIDI"
+fi
 if [ "${1}" = '--debug' ]; 
 then
 	echo "[debug]"
