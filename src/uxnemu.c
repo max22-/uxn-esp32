@@ -189,11 +189,7 @@ doctrl(Uxn *u, SDL_Event *event, int z)
 	Uint8 flag = 0x00;
 	SDL_Keymod mods = SDL_GetModState();
 	devctrl->dat[2] &= 0xf8;
-	if(mods & KMOD_CTRL) {
-		devctrl->dat[2] |= 0x01;
-		if(z && event->key.keysym.sym >= SDLK_a && event->key.keysym.sym <= SDLK_z)
-			devctrl->dat[3] = event->key.keysym.sym & 0x1f;
-	}
+	if(mods & KMOD_CTRL) devctrl->dat[2] |= 0x01;
 	if(mods & KMOD_ALT) devctrl->dat[2] |= 0x02;
 	if(mods & KMOD_SHIFT) devctrl->dat[2] |= 0x04;
 	/* clang-format off */
@@ -207,11 +203,14 @@ doctrl(Uxn *u, SDL_Event *event, int z)
 	case SDLK_F2: if(z) toggledebug(u); break;
 	case SDLK_F3: if(z) screencapture(); break;
 	}
+
 	/* clang-format on */
 	if(z) {
 		devctrl->dat[2] |= flag;
 		if(event->key.keysym.sym < 0x20 || event->key.keysym.sym == SDLK_DELETE)
 			devctrl->dat[3] = event->key.keysym.sym;
+		else if((mods & KMOD_CTRL) && event->key.keysym.sym >= SDLK_a && event->key.keysym.sym <= SDLK_z)
+			devctrl->dat[3] = event->key.keysym.sym - (mods & KMOD_SHIFT) * 0x20;
 	} else
 		devctrl->dat[2] &= ~flag;
 }
