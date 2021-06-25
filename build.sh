@@ -34,10 +34,10 @@ if [ "${1}" = '--debug' ];
 then
 	echo "[debug]"
 	CFLAGS="${CFLAGS} -DDEBUG -Wpedantic -Wshadow -Wextra -Werror=implicit-int -Werror=incompatible-pointer-types -Werror=int-conversion -Wvla -g -Og -fsanitize=address -fsanitize=undefined"
-    CORE='src/uxn.c'
+	CORE='src/uxn.c'
 else
 	CFLAGS="${CFLAGS} -DNDEBUG -Os -g0 -s"
-    CORE='src/uxn-fast.c'
+	CORE='src/uxn-fast.c'
 fi
 cc ${CFLAGS} src/uxnasm.c -o bin/uxnasm
 cc ${CFLAGS} ${CORE} src/devices/ppu.c src/devices/apu.c src/devices/mpu.c src/uxnemu.c ${UXNEMU_LDFLAGS} -o bin/uxnemu
