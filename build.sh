@@ -21,17 +21,20 @@ rm -f ./bin/boot.rom
 
 echo "Building.."
 mkdir -p bin
+CFLAGS="-std=c89 -Wall -Wno-unknown-pragmas"
+UXNEMU_LDFLAGS="-L/usr/local/lib $(sdl2-config --cflags --libs)"
 if [ "${1}" = '--debug' ]; 
 then
 	echo "[debug]"
-    cc -std=c89 -DDEBUG -Wall -Wno-unknown-pragmas -Wpedantic -Wshadow -Wextra -Werror=implicit-int -Werror=incompatible-pointer-types -Werror=int-conversion -Wvla -g -Og -fsanitize=address -fsanitize=undefined src/uxnasm.c -o bin/uxnasm
-	cc -std=c89 -DDEBUG -Wall -Wno-unknown-pragmas -Wpedantic -Wshadow -Wextra -Werror=implicit-int -Werror=incompatible-pointer-types -Werror=int-conversion -Wvla -g -Og -fsanitize=address -fsanitize=undefined src/uxn.c src/devices/ppu.c src/devices/apu.c src/devices/mpu.c src/uxnemu.c -L/usr/local/lib $(sdl2-config --cflags --libs) -o bin/uxnemu
-    cc -std=c89 -DDEBUG -Wall -Wno-unknown-pragmas -Wpedantic -Wshadow -Wextra -Werror=implicit-int -Werror=incompatible-pointer-types -Werror=int-conversion -Wvla -g -Og -fsanitize=address -fsanitize=undefined src/uxn.c src/uxncli.c -o bin/uxncli
+	CFLAGS="${CFLAGS} -DDEBUG -Wpedantic -Wshadow -Wextra -Werror=implicit-int -Werror=incompatible-pointer-types -Werror=int-conversion -Wvla -g -Og -fsanitize=address -fsanitize=undefined"
+    CORE='src/uxn.c'
 else
-	cc src/uxnasm.c -std=c89 -Os -DNDEBUG -g0 -s -Wall -Wno-unknown-pragmas -o bin/uxnasm
-	cc src/uxn-fast.c src/uxncli.c -std=c89 -Os -DNDEBUG -g0 -s -Wall -Wno-unknown-pragmas -o bin/uxncli
-	cc src/uxn-fast.c src/devices/ppu.c src/devices/apu.c src/devices/mpu.c src/uxnemu.c -std=c89 -Os -DNDEBUG -g0 -s -Wall -Wno-unknown-pragmas -L/usr/local/lib $(sdl2-config --cflags --libs) -o bin/uxnemu
+	CFLAGS="${CFLAGS} -DNDEBUG -Os -g0 -s"
+    CORE='src/uxn-fast.c'
 fi
+cc ${CFLAGS} src/uxnasm.c -o bin/uxnasm
+cc ${CFLAGS} ${CORE} src/devices/ppu.c src/devices/apu.c src/devices/mpu.c src/uxnemu.c ${UXNEMU_LDFLAGS} -o bin/uxnemu
+cc ${CFLAGS} ${CORE} src/uxncli.c -o bin/uxncli
 
 echo "Installing.."
 if [ -d "$HOME/bin" ] && [ -e ./bin/uxnemu ] && [ -e ./bin/uxnasm ]
