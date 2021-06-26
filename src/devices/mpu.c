@@ -1,3 +1,7 @@
+#ifdef ARDUINO
+#warning mpu not implemented yet
+#else
+
 #include "mpu.h"
 
 /*
@@ -52,3 +56,5 @@ putmidi(Mpu *m, Uint8 chan, Uint8 note, Uint8 velo)
 	Pm_WriteShort(m->output, Pt_Time(), Pm_Message(0x90 + chan, note, velo));
 #endif
 }
+
+#endif
