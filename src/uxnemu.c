@@ -1,5 +1,6 @@
 #include <SDL.h>
 #include <stdio.h>
+#include <unistd.h>
 #include <time.h>
 #include "uxn.h"
 #include "devices/ppu.h"
@@ -231,10 +232,10 @@ console_talk(Device *d, Uint8 b0, Uint8 w)
 {
 	if(!w) return;
 	switch(b0) {
-	case 0x8: printf("%c", d->dat[0x8]); break;
-	case 0x9: printf("0x%02x", d->dat[0x9]); break;
-	case 0xb: printf("0x%04x", mempeek16(d->dat, 0xa)); break;
-	case 0xd: printf("%s", &d->mem[mempeek16(d->dat, 0xc)]); break;
+	case 0x8: write(1, &d->dat[0x8], 1); break;
+	case 0x9: fprintf(stdout, "0x%02x", d->dat[0x9]); break;
+	case 0xb: fprintf(stdout, "0x%04x", mempeek16(d->dat, 0xa)); break;
+	case 0xd: fprintf(stdout, "%s", &d->mem[mempeek16(d->dat, 0xc)]); break;
 	}
 	fflush(stdout);
 }
