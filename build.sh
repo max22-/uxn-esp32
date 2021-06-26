@@ -1,45 +1,62 @@
 #!/usr/bin/env bash
 
-echo "Formatting.."
-clang-format -i src/uxn.h
-clang-format -i src/uxn.c
-clang-format -i src/devices/ppu.h
-clang-format -i src/devices/ppu.c
-clang-format -i src/devices/apu.h
-clang-format -i src/devices/apu.c
-clang-format -i src/devices/mpu.h
-clang-format -i src/devices/mpu.c
-clang-format -i src/uxnasm.c
-clang-format -i src/uxnemu.c
-clang-format -i src/uxncli.c
-
 echo "Cleaning.."
 rm -f ./bin/uxnasm
 rm -f ./bin/uxnemu
 rm -f ./bin/uxncli
 rm -f ./bin/boot.rom
 
-echo "Building.."
+# When clang-format is present
+
+if command -v clang-format &> /dev/null
+then
+	echo "Formatting.."
+	clang-format -i src/uxn.h
+	clang-format -i src/uxn.c
+	clang-format -i src/devices/ppu.h
+	clang-format -i src/devices/ppu.c
+	clang-format -i src/devices/apu.h
+	clang-format -i src/devices/apu.c
+	clang-format -i src/devices/mpu.h
+	clang-format -i src/devices/mpu.c
+	clang-format -i src/uxnasm.c
+	clang-format -i src/uxnemu.c
+	clang-format -i src/uxncli.c
+fi
+
 mkdir -p bin
+CFLAGS="-std=c89 -Wall -Wno-unknown-pragmas"
+UXNEMU_LDFLAGS="-L/usr/local/lib $(sdl2-config --cflags --libs)"
+
+if cc ${CFLAGS} -c src/devices/mpu.c -o bin/mpu.o 2>/dev/null; then
+	rm -f bin/mpu.o
+	echo "Building with portmidi.."
+	UXNEMU_LDFLAGS="${UXNEMU_LDFLAGS} -lportmidi"
+else
+	echo "Building without portmidi.."
+	CFLAGS="${CFLAGS} -DNO_PORTMIDI"
+fi
+
 if [ "${1}" = '--debug' ]; 
 then
 	echo "[debug]"
-    cc -std=c89 -DDEBUG -Wall -Wno-unknown-pragmas -Wpedantic -Wshadow -Wextra -Werror=implicit-int -Werror=incompatible-pointer-types -Werror=int-conversion -Wvla -g -Og -fsanitize=address -fsanitize=undefined src/uxnasm.c -o bin/uxnasm
-	cc -std=c89 -DDEBUG -Wall -Wno-unknown-pragmas -Wpedantic -Wshadow -Wextra -Werror=implicit-int -Werror=incompatible-pointer-types -Werror=int-conversion -Wvla -g -Og -fsanitize=address -fsanitize=undefined src/uxn.c src/devices/ppu.c src/devices/apu.c src/devices/mpu.c src/uxnemu.c -L/usr/local/lib $(sdl2-config --cflags --libs) -o bin/uxnemu
-    cc -std=c89 -DDEBUG -Wall -Wno-unknown-pragmas -Wpedantic -Wshadow -Wextra -Werror=implicit-int -Werror=incompatible-pointer-types -Werror=int-conversion -Wvla -g -Og -fsanitize=address -fsanitize=undefined src/uxn.c src/uxncli.c -o bin/uxncli
+	CFLAGS="${CFLAGS} -DDEBUG -Wpedantic -Wshadow -Wextra -Werror=implicit-int -Werror=incompatible-pointer-types -Werror=int-conversion -Wvla -g -Og -fsanitize=address -fsanitize=undefined"
+	CORE='src/uxn.c'
 else
-	cc src/uxnasm.c -std=c89 -Os -DNDEBUG -g0 -s -Wall -Wno-unknown-pragmas -o bin/uxnasm
-	cc src/uxn-fast.c src/uxncli.c -std=c89 -Os -DNDEBUG -g0 -s -Wall -Wno-unknown-pragmas -o bin/uxncli
-	cc src/uxn-fast.c src/devices/ppu.c src/devices/apu.c src/devices/mpu.c src/uxnemu.c -std=c89 -Os -DNDEBUG -g0 -s -Wall -Wno-unknown-pragmas -L/usr/local/lib $(sdl2-config --cflags --libs) -o bin/uxnemu
+	CFLAGS="${CFLAGS} -DNDEBUG -Os -g0 -s"
+	CORE='src/uxn-fast.c'
 fi
 
-echo "Installing.."
+cc ${CFLAGS} src/uxnasm.c -o bin/uxnasm
+cc ${CFLAGS} ${CORE} src/devices/ppu.c src/devices/apu.c src/devices/mpu.c src/uxnemu.c ${UXNEMU_LDFLAGS} -o bin/uxnemu
+cc ${CFLAGS} ${CORE} src/uxncli.c -o bin/uxncli
+
 if [ -d "$HOME/bin" ] && [ -e ./bin/uxnemu ] && [ -e ./bin/uxnasm ]
 then
+	echo "Installing in $HOME/bin"
 	cp ./bin/uxnemu $HOME/bin
 	cp ./bin/uxnasm $HOME/bin
 	cp ./bin/uxncli $HOME/bin
-    echo "Installed in $HOME/bin" 
 fi
 
 echo "Assembling.."

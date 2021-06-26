@@ -13,36 +13,42 @@ WITH REGARD TO THIS SOFTWARE.
 */
 
 int
-initmpu(Mpu *m, Uint8 device)
+initmpu(Mpu *m, Uint8 dev_in, Uint8 dev_out)
 {
-	/*
+#ifndef NO_PORTMIDI
 	int i;
 	Pm_Initialize();
 	for(i = 0; i < Pm_CountDevices(); ++i)
-		printf("Device #%d -> %s%s\n",
-			i,
-			Pm_GetDeviceInfo(i)->name,
-			i == device ? "[x]" : "[ ]");
-	Pm_OpenInput(&m->midi, device, NULL, 128, 0, NULL);
+		printf("Device #%d -> %s%s\n", i, Pm_GetDeviceInfo(i)->name, i == dev_in ? "[x]" : "[ ]");
+	Pm_OpenInput(&m->input, dev_in, NULL, 128, 0, NULL);
+	Pm_OpenOutput(&m->output, dev_out, NULL, 128, 0, NULL, 1);
 	m->queue = 0;
 	m->error = pmNoError;
-	*/
+#endif
 	(void)m;
-	(void)device;
+	(void)dev_in;
 	return 1;
 }
 
 void
-listenmpu(Mpu *m)
+getmidi(Mpu *m)
 {
-	/*
-	const int result = Pm_Read(m->midi, m->events, 32);
+#ifndef NO_PORTMIDI
+	const int result = Pm_Read(m->input, m->events, 32);
 	if(result < 0) {
 		m->error = (PmError)result;
 		m->queue = 0;
 		return;
 	}
 	m->queue = result;
-	*/
+#endif
 	(void)m;
+}
+
+void
+putmidi(Mpu *m, Uint8 chan, Uint8 note, Uint8 velo)
+{
+#ifndef NO_PORTMIDI
+	Pm_WriteShort(m->output, Pt_Time(), Pm_Message(0x90 + chan, note, velo));
+#endif
 }

@@ -128,7 +128,7 @@ init(void)
 	gRect.y = PAD;
 	gRect.w = ppu.width;
 	gRect.h = ppu.height;
-	if(!initmpu(&mpu, 1))
+	if(!initmpu(&mpu, 1, 0))
 		return error("MPU", "Init failure");
 	if(SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO) < 0)
 		return error("Init", SDL_GetError());
@@ -191,31 +191,28 @@ doctrl(Uxn *u, SDL_Event *event, int z)
 	Uint8 flag = 0x00;
 	SDL_Keymod mods = SDL_GetModState();
 	devctrl->dat[2] &= 0xf8;
-	if(mods & KMOD_CTRL) {
-		devctrl->dat[2] |= 0x01;
-		if(z && event->key.keysym.sym >= SDLK_a && event->key.keysym.sym <= SDLK_z)
-			devctrl->dat[3] = event->key.keysym.sym & 0x1f;
-	}
+	if(mods & KMOD_CTRL) devctrl->dat[2] |= 0x01;
 	if(mods & KMOD_ALT) devctrl->dat[2] |= 0x02;
 	if(mods & KMOD_SHIFT) devctrl->dat[2] |= 0x04;
+	/* clang-format off */
 	switch(event->key.keysym.sym) {
-	case SDLK_h:
-		if(z) switch(devctrl->dat[2] & 0x07) {
-			case 0x1: toggledebug(u); break;
-			case 0x2: togglezoom(u); break;
-			case 0x5: screencapture(); break;
-			}
-		break;
 	case SDLK_ESCAPE: flag = 0x08; break;
 	case SDLK_UP: flag = 0x10; break;
 	case SDLK_DOWN: flag = 0x20; break;
 	case SDLK_LEFT: flag = 0x40; break;
 	case SDLK_RIGHT: flag = 0x80; break;
+	case SDLK_F1: if(z) togglezoom(u); break;
+	case SDLK_F2: if(z) toggledebug(u); break;
+	case SDLK_F3: if(z) screencapture(); break;
 	}
+
+	/* clang-format on */
 	if(z) {
 		devctrl->dat[2] |= flag;
 		if(event->key.keysym.sym < 0x20 || event->key.keysym.sym == SDLK_DELETE)
 			devctrl->dat[3] = event->key.keysym.sym;
+		else if((mods & KMOD_CTRL) && event->key.keysym.sym >= SDLK_a && event->key.keysym.sym <= SDLK_z)
+			devctrl->dat[3] = event->key.keysym.sym - (mods & KMOD_SHIFT) * 0x20;
 	} else
 		devctrl->dat[2] &= ~flag;
 }
@@ -331,9 +328,11 @@ datetime_talk(Device *d, Uint8 b0, Uint8 w)
 void
 midi_talk(Device *d, Uint8 b0, Uint8 w)
 {
+	if(w && b0 == 0x9) {
+		putmidi(&mpu, d->dat[0x8], d->dat[0x9], 127);
+		putmidi(&mpu, d->dat[0x8], d->dat[0x9], 0);
+	}
 	(void)d;
-	(void)b0;
-	(void)w;
 }
 
 void
@@ -387,7 +386,7 @@ start(Uxn *u)
 				break;
 			}
 		}
-		listenmpu(&mpu);
+		getmidi(&mpu);
 		for(i = 0; i < mpu.queue; ++i) {
 			devmidi->dat[2] = mpu.events[i].message;
 			devmidi->dat[3] = mpu.events[i].message >> 8;
