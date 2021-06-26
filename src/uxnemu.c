@@ -38,7 +38,7 @@ clamp(int val, int min, int max)
 int
 error(char *msg, const char *err)
 {
-	printf("Error %s: %s\n", msg, err);
+	fprintf(stderr, "Error %s: %s\n", msg, err);
 	return 0;
 }
 
@@ -93,7 +93,7 @@ screencapture(void)
 	SDL_RenderReadPixels(gRenderer, NULL, format, surface->pixels, surface->pitch);
 	SDL_SaveBMP(surface, "screenshot.bmp");
 	SDL_FreeSurface(surface);
-	printf("Saved screenshot.bmp\n");
+	fprintf(stderr, "Saved screenshot.bmp\n");
 }
 
 void
@@ -269,10 +269,10 @@ file_talk(Device *d, Uint8 b0, Uint8 w)
 		Uint16 addr = mempeek16(d->dat, b0 - 1);
 		FILE *f = fopen(name, read ? "r" : (offset ? "a" : "w"));
 		if(f) {
-			printf("%s %04x %s %s: ", read ? "Loading" : "Saving", addr, read ? "from" : "to", name);
+			fprintf(stderr, "%s %04x %s %s: ", read ? "Loading" : "Saving", addr, read ? "from" : "to", name);
 			if(fseek(f, offset, SEEK_SET) != -1)
 				result = read ? fread(&d->mem[addr], 1, length, f) : fwrite(&d->mem[addr], 1, length, f);
-			printf("%04x bytes\n", result);
+			fprintf(stderr, "%04x bytes\n", result);
 			fclose(f);
 		}
 		mempoke16(d->dat, 0x2, result);
