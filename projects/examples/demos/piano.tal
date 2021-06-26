@@ -53,7 +53,6 @@
 	;on-frame   .Screen/vector DEO2
 	;on-control .Controller/vector DEO2
 	;on-mouse   .Mouse/vector DEO2
-	;on-midi    .Midi/vector DEO2
 
 	( find center )
 	.Screen/width DEI2 2// .center/x STZ2
@@ -150,13 +149,6 @@ BRK
 
 	;draw-octave JSR2
 	;draw-wave JSR2
-
-BRK
-
-@on-midi ( -> )
-	
-	.Midi/note DEI #00 ! #01 JCN [ BRK ]
-	.Midi/note DEI .Audio0/pitch .Midi/channel DEI #04 MOD #10 * + DEO
 
 BRK
 

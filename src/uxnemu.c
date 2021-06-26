@@ -4,7 +4,6 @@
 #include "uxn.h"
 #include "devices/ppu.h"
 #include "devices/apu.h"
-#include "devices/mpu.h"
 
 /*
 Copyright (c) 2021 Devine Lu Linvega
@@ -24,8 +23,7 @@ static SDL_Texture *fgTexture, *bgTexture;
 static SDL_Rect gRect;
 static Ppu ppu;
 static Apu apu[POLYPHONY];
-static Mpu mpu;
-static Device *devscreen, *devmouse, *devctrl, *devmidi, *devaudio0;
+static Device *devscreen, *devmouse, *devctrl, *devaudio0;
 
 #define PAD 16
 
@@ -126,8 +124,6 @@ init(void)
 	gRect.y = PAD;
 	gRect.w = ppu.width;
 	gRect.h = ppu.height;
-	if(!initmpu(&mpu, 1, 0))
-		return error("MPU", "Init failure");
 	if(SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO) < 0)
 		return error("Init", SDL_GetError());
 	gWindow = SDL_CreateWindow("Uxn", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, (ppu.width + PAD * 2) * zoom, (ppu.height + PAD * 2) * zoom, SDL_WINDOW_SHOWN);
@@ -324,16 +320,6 @@ datetime_talk(Device *d, Uint8 b0, Uint8 w)
 }
 
 void
-midi_talk(Device *d, Uint8 b0, Uint8 w)
-{
-	if(w && b0 == 0x9) {
-		putmidi(&mpu, d->dat[0x8], d->dat[0x9], 127);
-		putmidi(&mpu, d->dat[0x8], d->dat[0x9], 0);
-	}
-	(void)d;
-}
-
-void
 nil_talk(Device *d, Uint8 b0, Uint8 w)
 {
 	(void)d;
@@ -349,7 +335,6 @@ start(Uxn *u)
 	evaluxn(u, 0x0100);
 	redraw(u);
 	while(1) {
-		int i;
 		SDL_Event event;
 		double elapsed, start = 0;
 		if(!bench)
@@ -384,13 +369,6 @@ start(Uxn *u)
 				break;
 			}
 		}
-		getmidi(&mpu);
-		for(i = 0; i < mpu.queue; ++i) {
-			devmidi->dat[2] = mpu.events[i].message;
-			devmidi->dat[3] = mpu.events[i].message >> 8;
-			devmidi->dat[4] = mpu.events[i].message >> 16;
-			evaluxn(u, mempeek16(devmidi->dat, 0));
-		}
 		evaluxn(u, mempeek16(devscreen->dat, 0));
 		if(reqdraw)
 			redraw(u);
@@ -424,7 +402,7 @@ main(int argc, char **argv)
 	portuxn(&u, 0x4, "audio1", audio_talk);
 	portuxn(&u, 0x5, "audio2", audio_talk);
 	portuxn(&u, 0x6, "audio3", audio_talk);
-	devmidi = portuxn(&u, 0x7, "midi", midi_talk);
+	portuxn(&u, 0x7, "---", nil_talk);
 	devctrl = portuxn(&u, 0x8, "controller", nil_talk);
 	devmouse = portuxn(&u, 0x9, "mouse", nil_talk);
 	portuxn(&u, 0xa, "file", file_talk);
