@@ -15,6 +15,7 @@ WITH REGARD TO THIS SOFTWARE.
 
 #ifndef NO_PORTMIDI
 #include <portmidi.h>
+#include <porttime.h>
 #else
 typedef struct {
 	int message;
@@ -27,10 +28,11 @@ typedef struct {
 	Uint8 queue;
 	PmEvent events[32];
 #ifndef NO_PORTMIDI
-	PmStream *midi;
+	PmStream *input, *output;
 	PmError error;
 #endif
 } Mpu;
 
-int initmpu(Mpu *m, Uint8 device);
-void listenmpu(Mpu *m);
+int initmpu(Mpu *m, Uint8 dev_in, Uint8 dev_out);
+void getmidi(Mpu *m);
+void putmidi(Mpu *m, Uint8 chan, Uint8 note, Uint8 velo);

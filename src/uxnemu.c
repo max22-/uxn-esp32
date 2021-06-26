@@ -126,7 +126,7 @@ init(void)
 	gRect.y = PAD;
 	gRect.w = ppu.width;
 	gRect.h = ppu.height;
-	if(!initmpu(&mpu, 1))
+	if(!initmpu(&mpu, 1, 0))
 		return error("MPU", "Init failure");
 	if(SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO) < 0)
 		return error("Init", SDL_GetError());
@@ -326,9 +326,11 @@ datetime_talk(Device *d, Uint8 b0, Uint8 w)
 void
 midi_talk(Device *d, Uint8 b0, Uint8 w)
 {
+	if(w && b0 == 0x9) {
+		putmidi(&mpu, d->dat[0x8], d->dat[0x9], 127);
+		putmidi(&mpu, d->dat[0x8], d->dat[0x9], 0);
+	}
 	(void)d;
-	(void)b0;
-	(void)w;
 }
 
 void
@@ -382,7 +384,7 @@ start(Uxn *u)
 				break;
 			}
 		}
-		listenmpu(&mpu);
+		getmidi(&mpu);
 		for(i = 0; i < mpu.queue; ++i) {
 			devmidi->dat[2] = mpu.events[i].message;
 			devmidi->dat[3] = mpu.events[i].message >> 8;
