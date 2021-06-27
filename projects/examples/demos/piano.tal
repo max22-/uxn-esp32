@@ -155,9 +155,7 @@ BRK
 
 @on-message ( -> )
 	
-	.Console/rbyte DEI 
-		DUP #0c MOD .last-note STZ 
-	;play JSR2
+	.Console/rbyte DEI ;play JSR2
 	;draw-octave JSR2
 
 BRK
@@ -243,7 +241,7 @@ BRK
 BRK
 
 @play ( pitch -- )
-		
+	
 	DUP #0c MOD .last-note STZ 
 	.Audio0/pitch DEO
 
