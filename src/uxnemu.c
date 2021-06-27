@@ -377,7 +377,7 @@ start(Uxn *u)
 				break;
 			}
 		}
-		while(read(0, &devconsole->dat[0x8], 1) > 0)
+		while(read(0, &devconsole->dat[0x2], 1) > 0)
 			evaluxn(u, mempeek16(devconsole->dat, 0));
 		evaluxn(u, mempeek16(devscreen->dat, 0));
 		if(reqdraw)
