@@ -31,11 +31,15 @@ Begin by building the assembler and emulator by running the build script. The as
 ./build.sh
 ```
 
+### Assembler 
+
 The following command will create an Uxn-compatible rom from an [uxntal file](https://wiki.xxiivv.com/site/uxntal.html), point to a different .tal file in `/projects` to assemble a different rom. 
 
 ```
 bin/uxnasm projects/examples/demos/life.tal bin/life.rom
 ```
+
+### Emulator
 
 To start the rom, point the emulator to the newly created rom:
 
@@ -44,6 +48,14 @@ bin/uxnemu bin/life.rom
 ```
 
 You can also use the emulator without graphics by using `uxncli`. You can find additional roms [here](https://sr.ht/~rabbits/uxn/sources).
+
+### I/O
+
+You can send events from Uxn to another application, or another instance of uxn, with the Unix pipe. For a companion application that translates notes data into midi, see the [shim](https://git.sr.ht/~rabbits/shim).
+
+```
+uxnemu orca.rom | shim
+```
 
 ## Emulator Controls
 

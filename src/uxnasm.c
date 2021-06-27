@@ -18,7 +18,7 @@ typedef signed char Sint8;
 typedef unsigned short Uint16;
 
 typedef struct {
-	char name[64], items[128][64];
+	char name[64], items[256][64];
 	Uint8 len;
 	Uint16 refs;
 } Macro;
@@ -141,7 +141,7 @@ sublabel(char *src, char *scope, char *name)
 int
 error(char *name, char *id)
 {
-	printf("Error: %s[%s]\n", name, id);
+	fprintf(stderr, "Error: %s[%s]\n", name, id);
 	return 0;
 }
 
@@ -167,7 +167,6 @@ makemacro(char *name, FILE *f)
 			return error("Word too long", name);
 		scpy(word, m->items[m->len++], 64);
 	}
-	printf("New macro #%d: %s, %d items\n", p.mlen, m->name, m->len);
 	return 1;
 }
 
@@ -185,7 +184,6 @@ makelabel(char *name, Uint16 addr)
 	l->addr = addr;
 	l->refs = 0;
 	scpy(name, l->name, 64);
-	printf("New label #%d: %s, at 0x%04x\n", p.llen, l->name, l->addr);
 	return 1;
 }
 
@@ -293,23 +291,22 @@ pass1(FILE *f)
 	int ccmnt = 0;
 	Uint16 addr = 0;
 	char w[64], scope[64], subw[64];
-	printf("Pass 1\n");
 	while(fscanf(f, "%s", w) == 1) {
 		if(skipblock(w, &ccmnt, '(', ')')) continue;
 		if(w[0] == '|') {
 			if(!sihx(w + 1))
-				return error("Invalid padding", w);
+				return error("Pass 1 - Invalid padding", w);
 			addr = shex(w + 1);
 		} else if(w[0] == '%') {
 			if(!makemacro(w + 1, f))
-				return error("Invalid macro", w);
+				return error("Pass 1 - Invalid macro", w);
 		} else if(w[0] == '@') {
 			if(!makelabel(w + 1, addr))
-				return error("Invalid label", w);
+				return error("Pass 1 - Invalid label", w);
 			scpy(w + 1, scope, 64);
 		} else if(w[0] == '&') {
 			if(!makelabel(sublabel(subw, scope, w + 1), addr))
-				return error("Invalid sublabel", w);
+				return error("Pass 1 - Invalid sublabel", w);
 		} else if(sihx(w))
 			addr += slen(w) / 2;
 		else
@@ -324,7 +321,6 @@ pass2(FILE *f)
 {
 	int ccmnt = 0, cmacr = 0;
 	char w[64], scope[64], subw[64];
-	printf("Pass 2\n");
 	while(fscanf(f, "%s", w) == 1) {
 		if(w[0] == '%') continue;
 		if(w[0] == '&') continue;
@@ -334,7 +330,7 @@ pass2(FILE *f)
 		if(skipblock(w, &cmacr, '{', '}')) continue;
 		if(w[0] == '|') {
 			if(p.length && shex(w + 1) < p.ptr)
-				return error("Memory Overwrite", w);
+				return error("Pass 2 - Memory Overwrite", w);
 			p.ptr = shex(w + 1);
 			continue;
 		} else if(w[0] == '$') {
@@ -347,7 +343,7 @@ pass2(FILE *f)
 		if(w[1] == '&')
 			scpy(sublabel(subw, scope, w + 2), w + 1, 64);
 		if(!parsetoken(w))
-			return error("Unknown label in second pass", w);
+			return error("Pass 2 - Unknown label", w);
 	}
 	return 1;
 }
@@ -356,15 +352,15 @@ void
 cleanup(char *filename)
 {
 	int i;
-	printf("Assembled %s(%d bytes), %d labels, %d macros.\n\n", filename, (p.length - TRIM), p.llen, p.mlen);
 	for(i = 0; i < p.llen; ++i)
 		if(p.labels[i].name[0] >= 'A' && p.labels[i].name[0] <= 'Z')
 			continue; /* Ignore capitalized labels(devices) */
 		else if(!p.labels[i].refs)
-			printf("--- Unused label: %s\n", p.labels[i].name);
+			fprintf(stderr, "--- Unused label: %s\n", p.labels[i].name);
 	for(i = 0; i < p.mlen; ++i)
 		if(!p.macros[i].refs)
-			printf("--- Unused macro: %s\n", p.macros[i].name);
+			fprintf(stderr, "--- Unused macro: %s\n", p.macros[i].name);
+	printf("Assembled %s(%d bytes), %d labels, %d macros.\n", filename, (p.length - TRIM), p.llen, p.mlen);
 }
 
 int
