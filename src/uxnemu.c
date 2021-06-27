@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <time.h>
+#include <fcntl.h>
 #include "uxn.h"
 
 #pragma GCC diagnostic push
@@ -28,7 +29,7 @@ static SDL_Texture *fgTexture, *bgTexture;
 static SDL_Rect gRect;
 static Ppu ppu;
 static Apu apu[POLYPHONY];
-static Device *devscreen, *devmouse, *devctrl, *devaudio0;
+static Device *devscreen, *devmouse, *devctrl, *devaudio0, *devconsole;
 
 #define PAD 16
 
@@ -234,14 +235,16 @@ system_talk(Device *d, Uint8 b0, Uint8 w)
 void
 console_talk(Device *d, Uint8 b0, Uint8 w)
 {
+	char buffer[7], *p = buffer;
+	int len = 0;
 	if(!w) return;
 	switch(b0) {
-	case 0x8: write(1, &d->dat[0x8], 1); break;
-	case 0x9: fprintf(stdout, "0x%02x", d->dat[0x9]); break;
-	case 0xb: fprintf(stdout, "0x%04x", mempeek16(d->dat, 0xa)); break;
-	case 0xd: fprintf(stdout, "%s", &d->mem[mempeek16(d->dat, 0xc)]); break;
+	case 0x8: len = 1, p = (char *)&d->dat[0x8]; break;
+	case 0x9: len = sprintf(p, "0x%02x", d->dat[0x9]); break;
+	case 0xb: len = sprintf(p, "0x%04x", mempeek16(d->dat, 0xa)); break;
+	case 0xd: len = strlen(p = (char *)&d->mem[mempeek16(d->dat, 0xc)]); break;
 	}
-	fflush(stdout);
+	if(len) write(1, p, len);
 }
 
 void
@@ -374,6 +377,8 @@ start(Uxn *u)
 				break;
 			}
 		}
+		while(read(0, &devconsole->dat[0x8], 1) > 0)
+			evaluxn(u, mempeek16(devconsole->dat, 0));
 		evaluxn(u, mempeek16(devscreen->dat, 0));
 		if(reqdraw)
 			redraw(u);
@@ -391,6 +396,9 @@ main(int argc, char **argv)
 	Uxn u;
 	zoom = 2;
 
+	/* set stdin nonblocking */
+	fcntl(0, F_SETFL, fcntl(0, F_GETFL, 0) | O_NONBLOCK);
+
 	if(argc < 2)
 		return error("Input", "Missing");
 	if(!bootuxn(&u))
@@ -401,7 +409,7 @@ main(int argc, char **argv)
 		return error("Init", "Failed");
 
 	portuxn(&u, 0x0, "system", system_talk);
-	portuxn(&u, 0x1, "console", console_talk);
+	devconsole = portuxn(&u, 0x1, "console", console_talk);
 	devscreen = portuxn(&u, 0x2, "screen", screen_talk);
 	devaudio0 = portuxn(&u, 0x3, "audio0", audio_talk);
 	portuxn(&u, 0x4, "audio1", audio_talk);

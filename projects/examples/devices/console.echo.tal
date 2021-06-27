@@ -1,0 +1,14 @@
+( dev/console )
+
+|10 @Console [ &vector $2 &pad $6 &char $1 &byte $1 &short $2 &string $2 ]
+
+( init )
+
+|0100 ( -> )
+	;on-stdin .Console/vector DEO2
+BRK
+
+@on-stdin ( -> )
+	.Console/char DEI .Console/byte DEO
+	#0a .Console/char DEO
+BRK

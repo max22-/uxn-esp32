@@ -1,5 +1,7 @@
 #include <stdio.h>
 #include <time.h>
+#include <unistd.h>
+#include <string.h>
 #include "uxn.h"
 
 /*
@@ -14,6 +16,8 @@ WITH REGARD TO THIS SOFTWARE.
 */
 
 #pragma mark - Core
+
+static Device *devconsole;
 
 int
 error(char *msg, const char *err)
@@ -41,14 +45,16 @@ printstack(Stack *s)
 void
 console_talk(Device *d, Uint8 b0, Uint8 w)
 {
+	char buffer[7], *p = buffer;
+	int len = 0;
 	if(!w) return;
 	switch(b0) {
-	case 0x8: printf("%c", d->dat[0x8]); break;
-	case 0x9: printf("0x%02x", d->dat[0x9]); break;
-	case 0xb: printf("0x%04x", mempeek16(d->dat, 0xa)); break;
-	case 0xd: printf("%s", &d->mem[mempeek16(d->dat, 0xc)]); break;
+	case 0x8: len = 1, p = (char *)&d->dat[0x8]; break;
+	case 0x9: len = sprintf(p, "0x%02x", d->dat[0x9]); break;
+	case 0xb: len = sprintf(p, "0x%04x", mempeek16(d->dat, 0xa)); break;
+	case 0xd: len = strlen(p = (char *)&d->mem[mempeek16(d->dat, 0xc)]); break;
 	}
-	fflush(stdout);
+	if(len) write(1, p, len);
 }
 
 void
@@ -106,6 +112,9 @@ start(Uxn *u)
 {
 	if(!evaluxn(u, PAGE_PROGRAM))
 		return error("Reset", "Failed");
+	while(mempeek16(devconsole->dat, 0))
+		while(read(0, &devconsole->dat[0x8], 1) > 0)
+			evaluxn(u, mempeek16(devconsole->dat, 0));
 	return 1;
 }
 
@@ -122,7 +131,7 @@ main(int argc, char **argv)
 		return error("Load", "Failed");
 
 	portuxn(&u, 0x0, "empty", nil_talk);
-	portuxn(&u, 0x1, "console", console_talk);
+	devconsole = portuxn(&u, 0x1, "console", console_talk);
 	portuxn(&u, 0x2, "empty", nil_talk);
 	portuxn(&u, 0x3, "empty", nil_talk);
 	portuxn(&u, 0x4, "empty", nil_talk);
