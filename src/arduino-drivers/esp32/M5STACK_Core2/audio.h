@@ -2,7 +2,7 @@
 
 #include <M5Core2.h>
 
-typedef void (*audio_callback_t)(int16_t*, size_t);
+typedef void (*audio_callback_t)(int16_t *, size_t);
 
 bool initaudio(audio_callback_t);
 void audio_lock();

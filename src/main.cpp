@@ -1,27 +1,26 @@
 #include <Arduino.h>
 #if defined(ESP32)
-	#include <SPIFFS.h>
+#include <SPIFFS.h>
 #endif
 #if defined(ARDUINO_M5STACK_Core2)
-	#include <M5Core2.h>
-	#include "arduino-drivers/esp32/M5STACK_Core2/audio.h"
+#include <M5Core2.h>
+#include "arduino-drivers/esp32/M5STACK_Core2/audio.h"
 #endif
 
 extern "C" {
-	#include "uxn.h"
-	#include "devices/ppu.h"
-	#include "devices/apu.h"
+#include "uxn.h"
+#include "devices/ppu.h"
+#include "devices/apu.h"
 }
 
 #include "utility.h"
 
 // Config
 
-static char* rom = (char*)"/spiffs/piano.rom";
+static char *rom = (char *)"/spiffs/piano.rom";
 static const Uint8 hor = 40, ver = 30;
 
 // *******
-
 
 static Uxn *u;
 static Ppu *ppu;
@@ -38,7 +37,7 @@ clamp(int val, int min, int max)
 }
 
 void
-error(const char* msg, const char* err)
+error(const char *msg, const char *err)
 {
 	printf("Error %s: %s\n", msg, err);
 	for(;;)
@@ -46,7 +45,7 @@ error(const char* msg, const char* err)
 }
 
 static void
-audio_callback(Sint16 *stream, size_t bytes)	// len is the number 
+audio_callback(Sint16 *stream, size_t bytes) // len is the number
 {
 	int i;
 	memset(stream, 0, bytes);
@@ -60,20 +59,19 @@ redraw()
 	Uint16 w = ppu->width, h = ppu->height;
 	for(int y = 0; y < h; y++) {
 		for(int x = 0; x < w; x++) {
-			int l = x+y*w;
-			Uint8 
+			int l = x + y * w;
+			Uint8
 				bgcolor = ppu->bg.pixels[l],
 				fgcolor = ppu->fg.pixels[l];
 			screenbuf[l] = fgcolor == 0 ? ppu->bg.colors[bgcolor] : ppu->fg.colors[fgcolor];
 		}
 	}
 
-
-	#if defined(ARDUINO_M5STACK_Core2)
+#if defined(ARDUINO_M5STACK_Core2)
 	M5.Lcd.drawBitmap(0, 0, ppu->width, ppu->height, screenbuf);
-	#else
-	#warning redraw not implemented for this board
-	#endif
+#else
+#warning redraw not implemented for this board
+#endif
 	reqdraw = 0;
 }
 
@@ -82,7 +80,7 @@ inituxn(void)
 {
 	if(!initppu(ppu, hor, ver))
 		error("PPU", "Init failure");
-	if((screenbuf = (Uint16*)ext_malloc(sizeof(Uint16)*ppu->width*ppu->height)) == nullptr)
+	if((screenbuf = (Uint16 *)ext_malloc(sizeof(Uint16) * ppu->width * ppu->height)) == nullptr)
 		error("PPU", "Can't allocate memory");
 	initaudio(audio_callback);
 	return 1;
@@ -171,39 +169,37 @@ domouse()
 	Uint16 x = 0, y = 0;
 	Uint8 flag = 0;
 
-	#if defined(ARDUINO_M5STACK_Core2)
+#if defined(ARDUINO_M5STACK_Core2)
 	pressed = M5.Touch.ispressed();
 	if(pressed) {
 		TouchPoint_t c = M5.Touch.getPressPoint();
 		if(c.x >= 0 && c.y >= 0) {
 			x = c.x;
 			y = c.y;
-		}
-		else {
+		} else {
 			x = oldX;
 			y = oldY;
 		}
 		printf("(%d, %d)\n", x, y);
 	}
-	#else
-		#warning domouse() not implemented on this board
-	#endif
+#else
+#warning domouse() not implemented on this board
+#endif
 
-	if(pressed) {	// Mouse moves
+	if(pressed) { // Mouse moves
 		x = clamp(x, 0, ppu->hor * 8 - 1);
 		y = clamp(y, 0, ppu->ver * 8 - 1);
 		mempoke16(devmouse->dat, 0x2, x);
 		mempoke16(devmouse->dat, 0x4, y);
 	}
 
-	if(pressed != oldPressed) {	// Mouse clicks	
+	if(pressed != oldPressed) { // Mouse clicks
 		flag = 0x01;
 		// flag = 0x10; for the right button, but we don't have it on a touchscreen :(
 		if(pressed)
 			devmouse->dat[6] |= flag;
 		else
 			devmouse->dat[6] &= (~flag);
-		
 	}
 	if(pressed != oldPressed || x != oldX || y != oldY)
 		evaluxn(u, mempeek16(devmouse->dat, 0));
@@ -217,38 +213,40 @@ void
 uxnmain()
 {
 	int elapsed, start;
-		start = micros();
-		
-		domouse();
+	start = micros();
 
-		evaluxn(u, mempeek16(devscreen->dat, 0));
+	domouse();
 
-		if(reqdraw)
-			redraw();
+	evaluxn(u, mempeek16(devscreen->dat, 0));
 
-		elapsed = micros() - start;
-		delayMicroseconds(clamp(16666 - elapsed, 0, 1000000));
+	if(reqdraw)
+		redraw();
+
+	elapsed = micros() - start;
+	delayMicroseconds(clamp(16666 - elapsed, 0, 1000000));
 }
 
-void setup() {
-	#if defined(ARDUINO_M5STACK_Core2)
-		M5.begin(true, false, true);
-	#else
-		Serial.begin(115200);
-	#endif
-	#if defined(ESP32)
-		SPIFFS.begin();
-	#endif
-	if((u = (Uxn*)malloc(sizeof(Uxn))) == nullptr)
+void
+setup()
+{
+#if defined(ARDUINO_M5STACK_Core2)
+	M5.begin(true, false, true);
+#else
+	Serial.begin(115200);
+#endif
+#if defined(ESP32)
+	SPIFFS.begin();
+#endif
+	if((u = (Uxn *)malloc(sizeof(Uxn))) == nullptr)
 		error("Memory", "Cannot allocate enough memory for uxn");
-	if((ppu = (Ppu*)malloc(sizeof(Ppu))) == nullptr)
+	if((ppu = (Ppu *)malloc(sizeof(Ppu))) == nullptr)
 		error("Memory", "Cannot allocate enough memory for the ppu");
-		for(int i = 0; i < POLYPHONY; i++) {
-			if((apu[i] = (Apu*)malloc(sizeof(Apu))) == nullptr)
-				error("Memory", "Cannot allocate enough memory for the apu");
-		}
 	for(int i = 0; i < POLYPHONY; i++) {
-		if((apu[i] = (Apu*)malloc(sizeof(Apu))) == nullptr)
+		if((apu[i] = (Apu *)malloc(sizeof(Apu))) == nullptr)
+			error("Memory", "Cannot allocate enough memory for the apu");
+	}
+	for(int i = 0; i < POLYPHONY; i++) {
+		if((apu[i] = (Apu *)malloc(sizeof(Apu))) == nullptr)
 			error("Memory", "Cannot allocate enough memory for the apu");
 		memset(apu[i], 0, sizeof(apu));
 	}
@@ -259,22 +257,22 @@ void setup() {
 	if(!inituxn())
 		error("Init", "failed");
 
-	portuxn(u, 0x0, (char*)"system", system_talk);
-	portuxn(u, 0x1, (char*)"console", console_talk);
-	devscreen = portuxn(u, 0x2, (char*)"screen", screen_talk);
-	devaudio0 = portuxn(u, 0x3, (char*)"audio0", audio_talk);
-	portuxn(u, 0x4, (char*)"audio1", audio_talk);
-	portuxn(u, 0x5, (char*)"audio2", audio_talk);
-	portuxn(u, 0x6, (char*)"audio3", audio_talk);
-	portuxn(u, 0x7, (char*)"---", nil_talk);
-	portuxn(u, 0x8, (char*)"---", nil_talk);
-	devmouse = portuxn(u, 0x9, (char*)"mouse", nil_talk);
-	portuxn(u, 0xa, (char*)"---", nil_talk);
-	portuxn(u, 0xb, (char*)"---", nil_talk);
-	portuxn(u, 0xc, (char*)"---", nil_talk);
-	portuxn(u, 0xd, (char*)"---", nil_talk);
-	portuxn(u, 0xe, (char*)"---", nil_talk);
-	portuxn(u, 0xf, (char*)"---", nil_talk);
+	portuxn(u, 0x0, (char *)"system", system_talk);
+	portuxn(u, 0x1, (char *)"console", console_talk);
+	devscreen = portuxn(u, 0x2, (char *)"screen", screen_talk);
+	devaudio0 = portuxn(u, 0x3, (char *)"audio0", audio_talk);
+	portuxn(u, 0x4, (char *)"audio1", audio_talk);
+	portuxn(u, 0x5, (char *)"audio2", audio_talk);
+	portuxn(u, 0x6, (char *)"audio3", audio_talk);
+	portuxn(u, 0x7, (char *)"---", nil_talk);
+	portuxn(u, 0x8, (char *)"---", nil_talk);
+	devmouse = portuxn(u, 0x9, (char *)"mouse", nil_talk);
+	portuxn(u, 0xa, (char *)"---", nil_talk);
+	portuxn(u, 0xb, (char *)"---", nil_talk);
+	portuxn(u, 0xc, (char *)"---", nil_talk);
+	portuxn(u, 0xd, (char *)"---", nil_talk);
+	portuxn(u, 0xe, (char *)"---", nil_talk);
+	portuxn(u, 0xf, (char *)"---", nil_talk);
 
 	/* Write screen size to dev/screen */
 	mempoke16(devscreen->dat, 2, ppu->hor * 8);
@@ -282,10 +280,10 @@ void setup() {
 
 	evaluxn(u, 0x100);
 	redraw();
-
 }
 
-void loop() {
+void
+loop()
+{
 	uxnmain();
 }
-
