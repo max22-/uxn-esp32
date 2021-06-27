@@ -1,10 +1,14 @@
-#include <SDL.h>
 #include <stdio.h>
 #include <unistd.h>
 #include <time.h>
 #include "uxn.h"
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wpedantic"
+#include <SDL.h>
 #include "devices/ppu.h"
 #include "devices/apu.h"
+#pragma GCC diagnostic pop
 
 /*
 Copyright (c) 2021 Devine Lu Linvega
