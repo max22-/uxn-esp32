@@ -36,6 +36,7 @@ else
 	CORE='src/uxn-fast.c'
 fi
 
+echo "Building.."
 cc ${CFLAGS} src/uxnasm.c -o bin/uxnasm
 cc ${CFLAGS} ${CORE} src/devices/ppu.c src/devices/apu.c src/uxnemu.c ${UXNEMU_LDFLAGS} -o bin/uxnemu
 cc ${CFLAGS} ${CORE} src/uxncli.c -o bin/uxncli

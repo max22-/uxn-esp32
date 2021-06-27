@@ -41,7 +41,7 @@ static const char *errors[] = {"underflow", "overflow", "division by zero"};
 int
 haltuxn(Uxn *u, Uint8 error, char *name, int id)
 {
-	fprintf(stderr,"Halted: %s %s#%04x, at 0x%04x\n", name, errors[error - 1], id, u->ram.ptr);
+	fprintf(stderr, "Halted: %s %s#%04x, at 0x%04x\n", name, errors[error - 1], id, u->ram.ptr);
 	u->ram.ptr = 0;
 	return 0;
 }
