@@ -4,11 +4,13 @@
 #endif
 #if defined(ARDUINO_M5STACK_Core2)
 	#include <M5Core2.h>
+	#include "arduino-drivers/esp32/M5STACK_Core2/audio.h"
 #endif
 
 extern "C" {
 	#include "uxn.h"
 	#include "devices/ppu.h"
+	#include "devices/apu.h"
 }
 
 #include "utility.h"
@@ -23,8 +25,9 @@ static const Uint8 hor = 40, ver = 30;
 
 static Uxn *u;
 static Ppu *ppu;
+static Apu *apu[POLYPHONY];
 static Uint16 *screenbuf;
-static Device *devscreen, *devmouse;
+static Device *devscreen, *devmouse, *devaudio0;
 
 static Uint8 reqdraw = 0;
 
@@ -40,6 +43,15 @@ error(const char* msg, const char* err)
 	printf("Error %s: %s\n", msg, err);
 	for(;;)
 		delay(1000);
+}
+
+static void
+audio_callback(Sint16 *stream, size_t bytes)	// len is the number 
+{
+	int i;
+	memset(stream, 0, bytes);
+	for(i = 0; i < POLYPHONY; ++i)
+		apu_render(apu[i], stream, stream + bytes / sizeof(Sint16));
 }
 
 void
@@ -72,6 +84,7 @@ inituxn(void)
 		error("PPU", "Init failure");
 	if((screenbuf = (Uint16*)ext_malloc(sizeof(Uint16)*ppu->width*ppu->height)) == nullptr)
 		error("PPU", "Can't allocate memory");
+	initaudio(audio_callback);
 	return 1;
 }
 
@@ -125,6 +138,27 @@ screen_talk(Device *d, Uint8 b0, Uint8 w)
 		else
 			putchr(ppu, layer, x, y, addr, d->dat[0xe] & 0xf, mode & 0x2, mode & 0x4);
 		reqdraw = 1;
+	}
+}
+
+static void
+audio_talk(Device *d, Uint8 b0, Uint8 w)
+{
+	Apu *c = apu[d - devaudio0];
+	if(!w) {
+		if(b0 == 0x2)
+			mempoke16(d->dat, 0x2, c->i);
+		else if(b0 == 0x4)
+			d->dat[0x4] = apu_get_vu(c);
+	} else if(b0 == 0xf) {
+		audio_lock();
+		c->len = mempeek16(d->dat, 0xa);
+		c->addr = &d->mem[mempeek16(d->dat, 0xc)];
+		c->volume[0] = d->dat[0xe] >> 4;
+		c->volume[1] = d->dat[0xe] & 0xf;
+		c->repeat = !(d->dat[0xf] & 0x80);
+		apu_start(c, mempeek16(d->dat, 0x8), d->dat[0xf] & 0x7f);
+		audio_unlock();
 	}
 }
 
@@ -186,6 +220,9 @@ uxnmain()
 		start = micros();
 		
 		domouse();
+
+		evaluxn(u, mempeek16(devscreen->dat, 0));
+
 		if(reqdraw)
 			redraw();
 
@@ -206,6 +243,15 @@ void setup() {
 		error("Memory", "Cannot allocate enough memory for uxn");
 	if((ppu = (Ppu*)malloc(sizeof(Ppu))) == nullptr)
 		error("Memory", "Cannot allocate enough memory for the ppu");
+		for(int i = 0; i < POLYPHONY; i++) {
+			if((apu[i] = (Apu*)malloc(sizeof(Apu))) == nullptr)
+				error("Memory", "Cannot allocate enough memory for the apu");
+		}
+	for(int i = 0; i < POLYPHONY; i++) {
+		if((apu[i] = (Apu*)malloc(sizeof(Apu))) == nullptr)
+			error("Memory", "Cannot allocate enough memory for the apu");
+		memset(apu[i], 0, sizeof(apu));
+	}
 	if(!bootuxn(u))
 		error("Boot", "Failed");
 	if(!loaduxn(u, rom))
@@ -216,10 +262,10 @@ void setup() {
 	portuxn(u, 0x0, (char*)"system", system_talk);
 	portuxn(u, 0x1, (char*)"console", console_talk);
 	devscreen = portuxn(u, 0x2, (char*)"screen", screen_talk);
-	portuxn(u, 0x3, (char*)"---", nil_talk);
-	portuxn(u, 0x4, (char*)"---", nil_talk);
-	portuxn(u, 0x5, (char*)"---", nil_talk);
-	portuxn(u, 0x6, (char*)"---", nil_talk);
+	devaudio0 = portuxn(u, 0x3, (char*)"audio0", audio_talk);
+	portuxn(u, 0x4, (char*)"audio1", audio_talk);
+	portuxn(u, 0x5, (char*)"audio2", audio_talk);
+	portuxn(u, 0x6, (char*)"audio3", audio_talk);
 	portuxn(u, 0x7, (char*)"---", nil_talk);
 	portuxn(u, 0x8, (char*)"---", nil_talk);
 	devmouse = portuxn(u, 0x9, (char*)"mouse", nil_talk);
