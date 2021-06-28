@@ -19,14 +19,14 @@ WITH REGARD TO THIS SOFTWARE.
 
 static Device *devconsole;
 
-int
+static int
 error(char *msg, const char *err)
 {
 	printf("Error %s: %s\n", msg, err);
 	return 0;
 }
 
-void
+static void
 printstack(Stack *s)
 {
 	Uint8 x, y;
@@ -42,14 +42,14 @@ printstack(Stack *s)
 
 #pragma mark - Devices
 
-void
+static void
 console_talk(Device *d, Uint8 b0, Uint8 w)
 {
 	if(w && b0 == 0x8)
 		write(1, (char *)&d->dat[0x8], 1);
 }
 
-void
+static void
 file_talk(Device *d, Uint8 b0, Uint8 w)
 {
 	Uint8 read = b0 == 0xd;
@@ -70,7 +70,7 @@ file_talk(Device *d, Uint8 b0, Uint8 w)
 	}
 }
 
-void
+static void
 datetime_talk(Device *d, Uint8 b0, Uint8 w)
 {
 	time_t seconds = time(NULL);
@@ -89,7 +89,7 @@ datetime_talk(Device *d, Uint8 b0, Uint8 w)
 	(void)w;
 }
 
-void
+static void
 nil_talk(Device *d, Uint8 b0, Uint8 w)
 {
 	(void)d;
@@ -99,7 +99,7 @@ nil_talk(Device *d, Uint8 b0, Uint8 w)
 
 #pragma mark - Generics
 
-int
+static int
 start(Uxn *u)
 {
 	if(!evaluxn(u, PAGE_PROGRAM))

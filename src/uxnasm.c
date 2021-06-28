@@ -39,21 +39,19 @@ Program p;
 
 /* clang-format off */
 
-char ops[][4] = {
+static char ops[][4] = {
 	"BRK", "LIT", "NOP", "POP", "DUP", "SWP", "OVR", "ROT",
 	"EQU", "NEQ", "GTH", "LTH", "JMP", "JCN", "JSR", "STH",
 	"LDZ", "STZ", "LDR", "STR", "LDA", "STA", "DEI", "DEO",
 	"ADD", "SUB", "MUL", "DIV", "AND", "ORA", "EOR", "SFT"
 };
 
-int   scin(char *s, char c) { int i = 0; while(s[i]) if(s[i++] == c) return i - 1; return -1; } /* string char index */
-int   scmp(char *a, char *b, int len) { int i = 0; while(a[i] == b[i] && i < len) if(!a[i++]) return 1; return 0; } /* string compare */
-int   sihx(char *s) { int i = 0; char c; while((c = s[i++])) if(!(c >= '0' && c <= '9') && !(c >= 'a' && c <= 'f')) return 0; return i > 1; } /* string is hexadecimal */
-int   ssin(char *s, char *ss) { int a = 0, b = 0; while(s[a]) { if(s[a] == ss[b]) { if(!ss[b + 1]) return a - b; b++; } else b = 0; a++; } return -1; } /* string substring index */
-int   shex(char *s) { int n = 0, i = 0; char c; while((c = s[i++])) if(c >= '0' && c <= '9') n = n * 16 + (c - '0'); else if(c >= 'a' && c <= 'f') n = n * 16 + 10 + (c - 'a'); return n; } /* string to num */
-int   slen(char *s) { int i = 0; while(s[i] && s[++i]) ; return i; } /* string length */
-char *scpy(char *src, char *dst, int len) { int i = 0; while((dst[i] = src[i]) && i < len - 2) i++; dst[i + 1] = '\0'; return dst; } /* string copy */
-char *scat(char *dst, const char *src) { char *ptr = dst + slen(dst); while(*src) *ptr++ = *src++; *ptr = '\0'; return dst; } /* string cat */
+static int   scmp(char *a, char *b, int len) { int i = 0; while(a[i] == b[i] && i < len) if(!a[i++]) return 1; return 0; } /* string compare */
+static int   sihx(char *s) { int i = 0; char c; while((c = s[i++])) if(!(c >= '0' && c <= '9') && !(c >= 'a' && c <= 'f')) return 0; return i > 1; } /* string is hexadecimal */
+static int   shex(char *s) { int n = 0, i = 0; char c; while((c = s[i++])) if(c >= '0' && c <= '9') n = n * 16 + (c - '0'); else if(c >= 'a' && c <= 'f') n = n * 16 + 10 + (c - 'a'); return n; } /* string to num */
+static int   slen(char *s) { int i = 0; while(s[i] && s[++i]) ; return i; } /* string length */
+static char *scpy(char *src, char *dst, int len) { int i = 0; while((dst[i] = src[i]) && i < len - 2) i++; dst[i + 1] = '\0'; return dst; } /* string copy */
+static char *scat(char *dst, const char *src) { char *ptr = dst + slen(dst); while(*src) *ptr++ = *src++; *ptr = '\0'; return dst; } /* string cat */
 
 #pragma mark - Helpers
 
@@ -61,7 +59,7 @@ char *scat(char *dst, const char *src) { char *ptr = dst + slen(dst); while(*src
 
 #pragma mark - I/O
 
-void
+static void
 pushbyte(Uint8 b, int lit)
 {
 	if(lit) pushbyte(0x01, 0);
@@ -69,7 +67,7 @@ pushbyte(Uint8 b, int lit)
 	p.length = p.ptr;
 }
 
-void
+static void
 pushshort(Uint16 s, int lit)
 {
 	if(lit) pushbyte(0x21, 0);
@@ -77,7 +75,7 @@ pushshort(Uint16 s, int lit)
 	pushbyte(s & 0xff, 0);
 }
 
-void
+static void
 pushword(char *s)
 {
 	int i = 0;
@@ -85,7 +83,7 @@ pushword(char *s)
 	while((c = s[i++])) pushbyte(c, 0);
 }
 
-Macro *
+static Macro *
 findmacro(char *name)
 {
 	int i;
@@ -95,7 +93,7 @@ findmacro(char *name)
 	return NULL;
 }
 
-Label *
+static Label *
 findlabel(char *name)
 {
 	int i;
@@ -105,7 +103,7 @@ findlabel(char *name)
 	return NULL;
 }
 
-Uint8
+static Uint8
 findopcode(char *s)
 {
 	int i;
@@ -130,7 +128,7 @@ findopcode(char *s)
 	return 0;
 }
 
-char *
+static char *
 sublabel(char *src, char *scope, char *name)
 {
 	return scat(scat(scpy(scope, src, 64), "/"), name);
@@ -138,14 +136,14 @@ sublabel(char *src, char *scope, char *name)
 
 #pragma mark - Parser
 
-int
+static int
 error(char *name, char *id)
 {
 	fprintf(stderr, "Error: %s[%s]\n", name, id);
 	return 0;
 }
 
-int
+static int
 makemacro(char *name, FILE *f)
 {
 	Macro *m;
@@ -170,7 +168,7 @@ makemacro(char *name, FILE *f)
 	return 1;
 }
 
-int
+static int
 makelabel(char *name, Uint16 addr)
 {
 	Label *l;
@@ -187,7 +185,7 @@ makelabel(char *name, Uint16 addr)
 	return 1;
 }
 
-int
+static int
 skipblock(char *w, int *cap, char a, char b)
 {
 	if(w[0] == b) {
@@ -199,7 +197,7 @@ skipblock(char *w, int *cap, char a, char b)
 	return 0;
 }
 
-int
+static int
 walktoken(char *w)
 {
 	Macro *m;
@@ -226,7 +224,7 @@ walktoken(char *w)
 	return error("Unknown label in first pass", w);
 }
 
-int
+static int
 parsetoken(char *w)
 {
 	Label *l;
@@ -285,7 +283,7 @@ parsetoken(char *w)
 	return error("Invalid token", w);
 }
 
-int
+static int
 pass1(FILE *f)
 {
 	int ccmnt = 0;
@@ -316,7 +314,7 @@ pass1(FILE *f)
 	return 1;
 }
 
-int
+static int
 pass2(FILE *f)
 {
 	int ccmnt = 0, cmacr = 0;
@@ -348,7 +346,7 @@ pass2(FILE *f)
 	return 1;
 }
 
-void
+static void
 cleanup(char *filename)
 {
 	int i;

@@ -33,15 +33,15 @@ static Device *devscreen, *devmouse, *devctrl, *devaudio0, *devconsole;
 
 #define PAD 16
 
-Uint8 zoom = 0, debug = 0, reqdraw = 0, bench = 0;
+static Uint8 zoom = 0, debug = 0, reqdraw = 0, bench = 0;
 
-int
+static int
 clamp(int val, int min, int max)
 {
 	return (val >= min) ? (val <= max) ? val : max : min;
 }
 
-int
+static int
 error(char *msg, const char *err)
 {
 	fprintf(stderr, "Error %s: %s\n", msg, err);
@@ -59,7 +59,7 @@ audio_callback(void *u, Uint8 *stream, int len)
 	(void)u;
 }
 
-void
+static void
 redraw(Uxn *u)
 {
 	if(debug)
@@ -73,14 +73,14 @@ redraw(Uxn *u)
 	reqdraw = 0;
 }
 
-void
+static void
 toggledebug(Uxn *u)
 {
 	debug = !debug;
 	redraw(u);
 }
 
-void
+static void
 togglezoom(Uxn *u)
 {
 	zoom = zoom == 3 ? 1 : zoom + 1;
@@ -88,7 +88,7 @@ togglezoom(Uxn *u)
 	redraw(u);
 }
 
-void
+static void
 screencapture(void)
 {
 	const Uint32 format = SDL_PIXELFORMAT_ARGB8888;
@@ -102,7 +102,7 @@ screencapture(void)
 	fprintf(stderr, "Saved screenshot.bmp\n");
 }
 
-void
+static void
 quit(void)
 {
 	free(ppu.fg.pixels);
@@ -120,7 +120,7 @@ quit(void)
 	exit(0);
 }
 
-int
+static int
 init(void)
 {
 	SDL_AudioSpec as;
@@ -163,7 +163,7 @@ init(void)
 	return 1;
 }
 
-void
+static void
 domouse(SDL_Event *event)
 {
 	Uint8 flag = 0x00;
@@ -185,7 +185,7 @@ domouse(SDL_Event *event)
 	}
 }
 
-void
+static void
 doctrl(Uxn *u, SDL_Event *event, int z)
 {
 	Uint8 flag = 0x00;
@@ -219,7 +219,7 @@ doctrl(Uxn *u, SDL_Event *event, int z)
 
 #pragma mark - Devices
 
-void
+static void
 system_talk(Device *d, Uint8 b0, Uint8 w)
 {
 	if(!w) {
@@ -232,14 +232,14 @@ system_talk(Device *d, Uint8 b0, Uint8 w)
 	(void)b0;
 }
 
-void
+static void
 console_talk(Device *d, Uint8 b0, Uint8 w)
 {
 	if(w && b0 == 0x8)
 		write(1, (char *)&d->dat[0x8], 1);
 }
 
-void
+static void
 screen_talk(Device *d, Uint8 b0, Uint8 w)
 {
 	if(w && b0 == 0xe) {
@@ -258,7 +258,7 @@ screen_talk(Device *d, Uint8 b0, Uint8 w)
 	}
 }
 
-void
+static void
 file_talk(Device *d, Uint8 b0, Uint8 w)
 {
 	Uint8 read = b0 == 0xd;
@@ -300,7 +300,7 @@ audio_talk(Device *d, Uint8 b0, Uint8 w)
 	}
 }
 
-void
+static void
 datetime_talk(Device *d, Uint8 b0, Uint8 w)
 {
 	time_t seconds = time(NULL);
@@ -319,7 +319,7 @@ datetime_talk(Device *d, Uint8 b0, Uint8 w)
 	(void)w;
 }
 
-void
+static void
 nil_talk(Device *d, Uint8 b0, Uint8 w)
 {
 	(void)d;
@@ -329,7 +329,7 @@ nil_talk(Device *d, Uint8 b0, Uint8 w)
 
 #pragma mark - Generics
 
-int
+static int
 start(Uxn *u)
 {
 	evaluxn(u, 0x0100);
