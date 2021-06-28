@@ -1,6 +1,6 @@
 ( dev/console )
 
-|10 @Console [ &vector $2 &read $1 &pad $5 &write $1 ]
+|18 @Console/write
 
 ( init )
 
