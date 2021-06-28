@@ -1,7 +1,6 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <time.h>
-#include <fcntl.h>
 #include "uxn.h"
 
 #pragma GCC diagnostic push
@@ -30,6 +29,7 @@ static SDL_Rect gRect;
 static Ppu ppu;
 static Apu apu[POLYPHONY];
 static Device *devscreen, *devmouse, *devctrl, *devaudio0, *devconsole;
+static Uint32 stdin_event;
 
 #define PAD 16
 
@@ -330,6 +330,17 @@ nil_talk(Device *d, Uint8 b0, Uint8 w)
 #pragma mark - Generics
 
 static int
+in_reader(void *p)
+{
+	SDL_Event event;
+	event.type = stdin_event;
+	while(read(0, &event.cbutton.button, 1) > 0)
+		SDL_PushEvent(&event);
+	return 0;
+	(void)p;
+}
+
+static int
 start(Uxn *u)
 {
 	evaluxn(u, 0x0100);
@@ -367,10 +378,13 @@ start(Uxn *u)
 				if(event.window.event == SDL_WINDOWEVENT_EXPOSED)
 					redraw(u);
 				break;
+			default:
+				if(event.type == stdin_event) {
+					devconsole->dat[0x2] = event.cbutton.button;
+					evaluxn(u, mempeek16(devconsole->dat, 0));
+				}
 			}
 		}
-		while(read(0, &devconsole->dat[0x2], 1) > 0)
-			evaluxn(u, mempeek16(devconsole->dat, 0));
 		evaluxn(u, mempeek16(devscreen->dat, 0));
 		if(reqdraw)
 			redraw(u);
@@ -388,8 +402,8 @@ main(int argc, char **argv)
 	Uxn u;
 	zoom = 2;
 
-	/* set stdin nonblocking */
-	fcntl(0, F_SETFL, fcntl(0, F_GETFL, 0) | O_NONBLOCK);
+	stdin_event = SDL_RegisterEvents(1);
+	SDL_CreateThread(in_reader, "stdin", NULL);
 
 	if(argc < 2)
 		return error("Input", "Missing");

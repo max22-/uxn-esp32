@@ -104,7 +104,7 @@ start(Uxn *u)
 {
 	if(!evaluxn(u, PAGE_PROGRAM))
 		return error("Reset", "Failed");
-	while(mempeek16(devconsole->dat, 0))
+	if(mempeek16(devconsole->dat, 0))
 		while(read(0, &devconsole->dat[0x2], 1) > 0)
 			evaluxn(u, mempeek16(devconsole->dat, 0));
 	return 1;
