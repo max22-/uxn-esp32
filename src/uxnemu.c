@@ -330,7 +330,7 @@ nil_talk(Device *d, Uint8 b0, Uint8 w)
 #pragma mark - Generics
 
 static int
-in_reader(void *p)
+stdin_handler(void *p)
 {
 	SDL_Event event;
 	event.type = stdin_event;
@@ -403,7 +403,7 @@ main(int argc, char **argv)
 	zoom = 2;
 
 	stdin_event = SDL_RegisterEvents(1);
-	SDL_CreateThread(in_reader, "stdin", NULL);
+	SDL_CreateThread(stdin_handler, "stdin", NULL);
 
 	if(argc < 2)
 		return error("Input", "Missing");
