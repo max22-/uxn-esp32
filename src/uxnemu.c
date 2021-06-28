@@ -235,16 +235,8 @@ system_talk(Device *d, Uint8 b0, Uint8 w)
 void
 console_talk(Device *d, Uint8 b0, Uint8 w)
 {
-	char buffer[7], *p = buffer;
-	int len = 0;
-	if(!w) return;
-	switch(b0) {
-	case 0x8: len = 1, p = (char *)&d->dat[0x8]; break;
-	case 0x9: len = sprintf(p, "0x%02x", d->dat[0x9]); break;
-	case 0xb: len = sprintf(p, "0x%04x", mempeek16(d->dat, 0xa)); break;
-	case 0xd: len = strlen(p = (char *)&d->mem[mempeek16(d->dat, 0xc)]); break;
-	}
-	if(len) write(1, p, len);
+	if(w && b0 == 0x8)
+		write(1, (char *)&d->dat[0x8], 1);
 }
 
 void
