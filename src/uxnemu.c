@@ -343,8 +343,8 @@ stdin_handler(void *p)
 	(void)p;
 }
 
-static int
-start(Uxn *u)
+static void
+run(Uxn *u)
 {
 	evaluxn(u, 0x0100);
 	redraw(u);
@@ -356,8 +356,7 @@ start(Uxn *u)
 		while(SDL_PollEvent(&event) != 0) {
 			switch(event.type) {
 			case SDL_QUIT:
-				quit();
-				break;
+				return;
 			case SDL_TEXTINPUT:
 				devctrl->dat[3] = event.text.text[0]; /* fall-thru */
 			case SDL_KEYDOWN:
@@ -396,7 +395,6 @@ start(Uxn *u)
 			SDL_Delay(clamp(16.666f - elapsed, 0, 1000));
 		}
 	}
-	return 1;
 }
 
 int
@@ -438,7 +436,7 @@ main(int argc, char **argv)
 	mempoke16(devscreen->dat, 2, ppu.hor * 8);
 	mempoke16(devscreen->dat, 4, ppu.ver * 8);
 
-	start(&u);
+	run(&u);
 	quit();
 	return 0;
 }

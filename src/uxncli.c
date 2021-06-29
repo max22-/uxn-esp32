@@ -99,15 +99,14 @@ nil_talk(Device *d, Uint8 b0, Uint8 w)
 
 #pragma mark - Generics
 
-static int
-start(Uxn *u)
+static void
+run(Uxn *u)
 {
 	if(!evaluxn(u, PAGE_PROGRAM))
-		return error("Reset", "Failed");
-	if(mempeek16(devconsole->dat, 0))
+		error("Reset", "Failed");
+	else if(mempeek16(devconsole->dat, 0))
 		while(read(0, &devconsole->dat[0x2], 1) > 0)
 			evaluxn(u, mempeek16(devconsole->dat, 0));
-	return 1;
 }
 
 int
@@ -139,7 +138,7 @@ main(int argc, char **argv)
 	portuxn(&u, 0xe, "empty", nil_talk);
 	portuxn(&u, 0xf, "empty", nil_talk);
 
-	start(&u);
+	run(&u);
 
 	if(argc > 2)
 		printstack(&u.wst);
