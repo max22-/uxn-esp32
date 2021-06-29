@@ -91,13 +91,13 @@ togglezoom(Uxn *u)
 static void
 screencapture(void)
 {
-	const Uint32 format = SDL_PIXELFORMAT_ARGB8888;
+	const Uint32 format = SDL_PIXELFORMAT_RGB24;
 	time_t t = time(NULL);
 	char fname[64];
 	int w, h;
 	SDL_Surface *surface;
 	SDL_GetRendererOutputSize(gRenderer, &w, &h);
-	surface = SDL_CreateRGBSurfaceWithFormat(0, w, h, 32, format);
+	surface = SDL_CreateRGBSurfaceWithFormat(0, w, h, 24, format);
 	SDL_RenderReadPixels(gRenderer, NULL, format, surface->pixels, surface->pitch);
 	strftime(fname, sizeof(fname), "screenshot-%Y%m%d-%H%M%S.bmp", localtime(&t));
 	SDL_SaveBMP(surface, fname);
