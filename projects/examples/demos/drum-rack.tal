@@ -1,8 +1,4 @@
-( drum rack 
-
-	TODO
-		- When selecting a pad, should highlight note in octave
-)
+( drum rack )
 
 %+  { ADD } %-   { SUB }  %*  { MUL } %/   { DIV }
 %<  { LTH } %>   { GTH }  %=  { EQU } %!   { NEQ }
@@ -24,6 +20,7 @@
 ( devices )
 
 |00 @System     [ &vector $2 &pad      $6 &r      $2 &g     $2 &b      $2 ]
+|10 @Console    [ &vector $2 &read     $1 &pad    $5 &write $1 ]
 |20 @Screen     [ &vector $2 &width    $2 &height $2 &pad   $2 &x      $2 &y     $2 &addr   $2 &color $1 ]
 |30 @Audio0     [ &vector $2 &position $2 &output $1 &pad   $3 &adsr   $2 &length $2 &addr  $2 &volume $1 &pitch $1 ]
 |40 @Audio1     [ &vector $2 &position $2 &output $1 &pad   $3 &adsr   $2 &length $2 &addr  $2 &volume $1 &pitch $1 ]
@@ -67,6 +64,7 @@
 	;on-control .Controller/vector DEO2
 	;on-mouse   .Mouse/vector DEO2
 	;on-frame   .Screen/vector DEO2
+	;on-message .Console/vector DEO2
 
 	( channel defaults )
 	#dd   .Audio0/volume DEO 
@@ -148,6 +146,12 @@
 	POP2
 
 	;draw-octave JSR2
+
+BRK
+
+@on-message ( -> )
+	
+	.Console/read DEI #10 MOD ;play-pad JSR2
 
 BRK
 
@@ -298,8 +302,8 @@ BRK
 
 BRK
 
-@play-pad ( note pad -- )
-	
+@play-pad ( pad -- )
+
 	( unselect last )
 	.pads/last LDZ #01 ;draw-pad JSR2
 	DUP .pads/last STZ 
