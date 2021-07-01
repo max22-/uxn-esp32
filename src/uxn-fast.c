@@ -43,7 +43,7 @@ static const char *errors[] = {"underflow", "overflow", "division by zero"};
 int
 haltuxn(Uxn *u, Uint8 error, char *name, int id)
 {
-	printf("Halted: %s %s#%04x, at 0x%04x\n", name, errors[error - 1], id, u->ram.ptr);
+	fprintf(stderr, "Halted: %s %s#%04x, at 0x%04x\n", name, errors[error - 1], id, u->ram.ptr);
 	u->ram.ptr = 0;
 	return 0;
 }
@@ -4054,11 +4054,11 @@ loaduxn(Uxn *u, char *filepath)
 {
 	FILE *f;
 	if(!(f = fopen(filepath, "rb"))) {
-		printf("Halted: Missing input rom.\n");
+		fprintf(stderr, "Halted: Missing input rom.\n");
 		return 0;
 	}
 	fread(u->ram.dat + PAGE_PROGRAM, sizeof(u->ram.dat) - PAGE_PROGRAM, 1, f);
-	printf("Uxn loaded[%s].\n", filepath);
+	fprintf(stderr, "Uxn loaded[%s].\n", filepath);
 	return 1;
 }
 
@@ -4070,7 +4070,7 @@ portuxn(Uxn *u, Uint8 id, char *name, void (*talkfn)(Device *d, Uint8 b0, Uint8 
 	d->u = u;
 	d->mem = u->ram.dat;
 	d->talk = talkfn;
-	printf("Device added #%02x: %s, at 0x%04x \n", id, name, d->addr);
+	fprintf(stderr, "Device added #%02x: %s, at 0x%04x \n", id, name, d->addr);
 	return d;
 }
 

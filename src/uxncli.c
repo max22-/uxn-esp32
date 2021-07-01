@@ -2,6 +2,8 @@
 
 #include <stdio.h>
 #include <time.h>
+#include <unistd.h>
+#include <string.h>
 #include "uxn.h"
 
 /*
@@ -17,14 +19,16 @@ WITH REGARD TO THIS SOFTWARE.
 
 #pragma mark - Core
 
-int
+static Device *devconsole;
+
+static int
 error(char *msg, const char *err)
 {
 	printf("Error %s: %s\n", msg, err);
 	return 0;
 }
 
-void
+static void
 printstack(Stack *s)
 {
 	Uint8 x, y;
@@ -40,20 +44,14 @@ printstack(Stack *s)
 
 #pragma mark - Devices
 
-void
+static void
 console_talk(Device *d, Uint8 b0, Uint8 w)
 {
-	if(!w) return;
-	switch(b0) {
-	case 0x8: printf("%c", d->dat[0x8]); break;
-	case 0x9: printf("0x%02x", d->dat[0x9]); break;
-	case 0xb: printf("0x%04x", mempeek16(d->dat, 0xa)); break;
-	case 0xd: printf("%s", &d->mem[mempeek16(d->dat, 0xc)]); break;
-	}
-	fflush(stdout);
+	if(w && b0 == 0x8)
+		write(1, (char *)&d->dat[0x8], 1);
 }
 
-void
+static void
 file_talk(Device *d, Uint8 b0, Uint8 w)
 {
 	Uint8 read = b0 == 0xd;
@@ -74,7 +72,7 @@ file_talk(Device *d, Uint8 b0, Uint8 w)
 	}
 }
 
-void
+static void
 datetime_talk(Device *d, Uint8 b0, Uint8 w)
 {
 	time_t seconds = time(NULL);
@@ -93,7 +91,7 @@ datetime_talk(Device *d, Uint8 b0, Uint8 w)
 	(void)w;
 }
 
-void
+static void
 nil_talk(Device *d, Uint8 b0, Uint8 w)
 {
 	(void)d;
@@ -103,12 +101,14 @@ nil_talk(Device *d, Uint8 b0, Uint8 w)
 
 #pragma mark - Generics
 
-int
-start(Uxn *u)
+static void
+run(Uxn *u)
 {
 	if(!evaluxn(u, PAGE_PROGRAM))
-		return error("Reset", "Failed");
-	return 1;
+		error("Reset", "Failed");
+	else if(mempeek16(devconsole->dat, 0))
+		while(read(0, &devconsole->dat[0x2], 1) > 0)
+			evaluxn(u, mempeek16(devconsole->dat, 0));
 }
 
 int
@@ -124,7 +124,7 @@ main(int argc, char **argv)
 		return error("Load", "Failed");
 
 	portuxn(&u, 0x0, "empty", nil_talk);
-	portuxn(&u, 0x1, "console", console_talk);
+	devconsole = portuxn(&u, 0x1, "console", console_talk);
 	portuxn(&u, 0x2, "empty", nil_talk);
 	portuxn(&u, 0x3, "empty", nil_talk);
 	portuxn(&u, 0x4, "empty", nil_talk);
@@ -140,7 +140,7 @@ main(int argc, char **argv)
 	portuxn(&u, 0xe, "empty", nil_talk);
 	portuxn(&u, 0xf, "empty", nil_talk);
 
-	start(&u);
+	run(&u);
 
 	if(argc > 2)
 		printstack(&u.wst);

@@ -1,8 +1,4 @@
-( drum rack 
-
-	TODO
-		- When selecting a pad, should highlight note in octave
-)
+( drum rack )
 
 %+  { ADD } %-   { SUB }  %*  { MUL } %/   { DIV }
 %<  { LTH } %>   { GTH }  %=  { EQU } %!   { NEQ }
@@ -24,7 +20,7 @@
 ( devices )
 
 |00 @System     [ &vector $2 &pad      $6 &r      $2 &g     $2 &b      $2 ]
-|10 @Console    [ &pad    $8 &char     $1 &byte   $1 &short $2 &string $2 ]
+|10 @Console    [ &vector $2 &read     $1 &pad    $5 &write $1 ]
 |20 @Screen     [ &vector $2 &width    $2 &height $2 &pad   $2 &x      $2 &y     $2 &addr   $2 &color $1 ]
 |30 @Audio0     [ &vector $2 &position $2 &output $1 &pad   $3 &adsr   $2 &length $2 &addr  $2 &volume $1 &pitch $1 ]
 |40 @Audio1     [ &vector $2 &position $2 &output $1 &pad   $3 &adsr   $2 &length $2 &addr  $2 &volume $1 &pitch $1 ]
@@ -68,7 +64,7 @@
 	;on-control .Controller/vector DEO2
 	;on-mouse   .Mouse/vector DEO2
 	;on-frame   .Screen/vector DEO2
-	;on-midi    .Midi/vector DEO2
+	;on-message .Console/vector DEO2
 
 	( channel defaults )
 	#dd   .Audio0/volume DEO 
@@ -153,6 +149,12 @@
 
 BRK
 
+@on-message ( -> )
+	
+	.Console/read DEI #10 MOD ;play-pad JSR2
+
+BRK
+
 @on-frame ( -> )
 	
 	( update VU monitors )
@@ -186,23 +188,6 @@ BRK
 	.Mouse/x DEI2 DUP2 .oct-view/x1 LDZ2 >> ROT ROT .oct-view/x2 LDZ2 #0001 ++ << #0101 ==
 	.Mouse/y DEI2 DUP2 .oct-view/y1 LDZ2 >> ROT ROT .oct-view/y2 LDZ2 << #0101 ==
 	#0101 == ;on-touch-oct JCN2
-
-BRK
-
-@on-midi ( -> )
-	
-	.Midi/note DEI #00 ! #01 JCN [ BRK ]
-
-	( drums )
-	.Midi/channel DEI #90 ! ,&no-drum JCN 
-		.Midi/note DEI #10 MOD ;play-pad JSR2
-		BRK
-	&no-drum
-
-	( TODO: synths )
-	;pad-addr #0008 ++ LDA2 .Audio0/addr DEO2
-	#0008 .Audio0/length DEO2
-	.Midi/note DEI .Audio0/pitch DEO
 
 BRK
 
@@ -317,8 +302,8 @@ BRK
 
 BRK
 
-@play-pad ( note pad -- )
-	
+@play-pad ( pad -- )
+
 	( unselect last )
 	.pads/last LDZ #01 ;draw-pad JSR2
 	DUP .pads/last STZ 

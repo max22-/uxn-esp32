@@ -1,12 +1,16 @@
 #ifndef ARDUINO
 
-#include <SDL.h>
 #include <stdio.h>
+#include <unistd.h>
 #include <time.h>
 #include "uxn.h"
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wpedantic"
+#include <SDL.h>
 #include "devices/ppu.h"
 #include "devices/apu.h"
-#include "devices/mpu.h"
+#pragma GCC diagnostic pop
 
 /*
 Copyright (c) 2021 Devine Lu Linvega
@@ -26,23 +30,23 @@ static SDL_Texture *fgTexture, *bgTexture;
 static SDL_Rect gRect;
 static Ppu ppu;
 static Apu apu[POLYPHONY];
-static Mpu mpu;
-static Device *devscreen, *devmouse, *devctrl, *devmidi, *devaudio0;
+static Device *devscreen, *devmouse, *devctrl, *devaudio0, *devconsole;
+static Uint32 stdin_event;
 
 #define PAD 16
 
-Uint8 zoom = 0, debug = 0, reqdraw = 0, bench = 0;
+static Uint8 zoom = 0, debug = 0, reqdraw = 0, bench = 0;
 
-int
+static int
 clamp(int val, int min, int max)
 {
 	return (val >= min) ? (val <= max) ? val : max : min;
 }
 
-int
+static int
 error(char *msg, const char *err)
 {
-	printf("Error %s: %s\n", msg, err);
+	fprintf(stderr, "Error %s: %s\n", msg, err);
 	return 0;
 }
 
@@ -57,7 +61,7 @@ audio_callback(void *u, Uint8 *stream, int len)
 	(void)u;
 }
 
-void
+static void
 redraw(Uxn *u)
 {
 	if(debug)
@@ -71,14 +75,14 @@ redraw(Uxn *u)
 	reqdraw = 0;
 }
 
-void
+static void
 toggledebug(Uxn *u)
 {
 	debug = !debug;
 	redraw(u);
 }
 
-void
+static void
 togglezoom(Uxn *u)
 {
 	zoom = zoom == 3 ? 1 : zoom + 1;
@@ -86,21 +90,24 @@ togglezoom(Uxn *u)
 	redraw(u);
 }
 
-void
+static void
 screencapture(void)
 {
-	const Uint32 format = SDL_PIXELFORMAT_ARGB8888;
+	const Uint32 format = SDL_PIXELFORMAT_RGB24;
+	time_t t = time(NULL);
+	char fname[64];
 	int w, h;
 	SDL_Surface *surface;
 	SDL_GetRendererOutputSize(gRenderer, &w, &h);
-	surface = SDL_CreateRGBSurfaceWithFormat(0, w, h, 32, format);
+	surface = SDL_CreateRGBSurfaceWithFormat(0, w, h, 24, format);
 	SDL_RenderReadPixels(gRenderer, NULL, format, surface->pixels, surface->pitch);
-	SDL_SaveBMP(surface, "screenshot.bmp");
+	strftime(fname, sizeof(fname), "screenshot-%Y%m%d-%H%M%S.bmp", localtime(&t));
+	SDL_SaveBMP(surface, fname);
 	SDL_FreeSurface(surface);
-	printf("Saved screenshot.bmp\n");
+	fprintf(stderr, "Saved %s\n", fname);
 }
 
-void
+static void
 quit(void)
 {
 	free(ppu.fg.pixels);
@@ -118,7 +125,7 @@ quit(void)
 	exit(0);
 }
 
-int
+static int
 init(void)
 {
 	SDL_AudioSpec as;
@@ -128,8 +135,6 @@ init(void)
 	gRect.y = PAD;
 	gRect.w = ppu.width;
 	gRect.h = ppu.height;
-	if(!initmpu(&mpu, 1, 0))
-		return error("MPU", "Init failure");
 	if(SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO) < 0)
 		return error("Init", SDL_GetError());
 	gWindow = SDL_CreateWindow("Uxn", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, (ppu.width + PAD * 2) * zoom, (ppu.height + PAD * 2) * zoom, SDL_WINDOW_SHOWN);
@@ -163,7 +168,7 @@ init(void)
 	return 1;
 }
 
-void
+static void
 domouse(SDL_Event *event)
 {
 	Uint8 flag = 0x00;
@@ -185,7 +190,7 @@ domouse(SDL_Event *event)
 	}
 }
 
-void
+static void
 doctrl(Uxn *u, SDL_Event *event, int z)
 {
 	Uint8 flag = 0x00;
@@ -219,7 +224,7 @@ doctrl(Uxn *u, SDL_Event *event, int z)
 
 #pragma mark - Devices
 
-void
+static void
 system_talk(Device *d, Uint8 b0, Uint8 w)
 {
 	if(!w) {
@@ -232,20 +237,14 @@ system_talk(Device *d, Uint8 b0, Uint8 w)
 	(void)b0;
 }
 
-void
+static void
 console_talk(Device *d, Uint8 b0, Uint8 w)
 {
-	if(!w) return;
-	switch(b0) {
-	case 0x8: printf("%c", d->dat[0x8]); break;
-	case 0x9: printf("0x%02x", d->dat[0x9]); break;
-	case 0xb: printf("0x%04x", mempeek16(d->dat, 0xa)); break;
-	case 0xd: printf("%s", &d->mem[mempeek16(d->dat, 0xc)]); break;
-	}
-	fflush(stdout);
+	if(w && b0 == 0x8)
+		write(1, (char *)&d->dat[0x8], 1);
 }
 
-void
+static void
 screen_talk(Device *d, Uint8 b0, Uint8 w)
 {
 	if(w && b0 == 0xe) {
@@ -264,7 +263,7 @@ screen_talk(Device *d, Uint8 b0, Uint8 w)
 	}
 }
 
-void
+static void
 file_talk(Device *d, Uint8 b0, Uint8 w)
 {
 	Uint8 read = b0 == 0xd;
@@ -275,10 +274,10 @@ file_talk(Device *d, Uint8 b0, Uint8 w)
 		Uint16 addr = mempeek16(d->dat, b0 - 1);
 		FILE *f = fopen(name, read ? "r" : (offset ? "a" : "w"));
 		if(f) {
-			printf("%s %04x %s %s: ", read ? "Loading" : "Saving", addr, read ? "from" : "to", name);
+			fprintf(stderr, "%s %04x %s %s: ", read ? "Loading" : "Saving", addr, read ? "from" : "to", name);
 			if(fseek(f, offset, SEEK_SET) != -1)
 				result = read ? fread(&d->mem[addr], 1, length, f) : fwrite(&d->mem[addr], 1, length, f);
-			printf("%04x bytes\n", result);
+			fprintf(stderr, "%04x bytes\n", result);
 			fclose(f);
 		}
 		mempoke16(d->dat, 0x2, result);
@@ -306,7 +305,7 @@ audio_talk(Device *d, Uint8 b0, Uint8 w)
 	}
 }
 
-void
+static void
 datetime_talk(Device *d, Uint8 b0, Uint8 w)
 {
 	time_t seconds = time(NULL);
@@ -325,17 +324,7 @@ datetime_talk(Device *d, Uint8 b0, Uint8 w)
 	(void)w;
 }
 
-void
-midi_talk(Device *d, Uint8 b0, Uint8 w)
-{
-	if(w && b0 == 0x9) {
-		putmidi(&mpu, d->dat[0x8], d->dat[0x9], 127);
-		putmidi(&mpu, d->dat[0x8], d->dat[0x9], 0);
-	}
-	(void)d;
-}
-
-void
+static void
 nil_talk(Device *d, Uint8 b0, Uint8 w)
 {
 	(void)d;
@@ -345,13 +334,23 @@ nil_talk(Device *d, Uint8 b0, Uint8 w)
 
 #pragma mark - Generics
 
-int
-start(Uxn *u)
+static int
+stdin_handler(void *p)
+{
+	SDL_Event event;
+	event.type = stdin_event;
+	while(read(0, &event.cbutton.button, 1) > 0)
+		SDL_PushEvent(&event);
+	return 0;
+	(void)p;
+}
+
+static void
+run(Uxn *u)
 {
 	evaluxn(u, 0x0100);
 	redraw(u);
 	while(1) {
-		int i;
 		SDL_Event event;
 		double elapsed, start = 0;
 		if(!bench)
@@ -359,8 +358,7 @@ start(Uxn *u)
 		while(SDL_PollEvent(&event) != 0) {
 			switch(event.type) {
 			case SDL_QUIT:
-				quit();
-				break;
+				return;
 			case SDL_TEXTINPUT:
 				devctrl->dat[3] = event.text.text[0]; /* fall-thru */
 			case SDL_KEYDOWN:
@@ -384,14 +382,12 @@ start(Uxn *u)
 				if(event.window.event == SDL_WINDOWEVENT_EXPOSED)
 					redraw(u);
 				break;
+			default:
+				if(event.type == stdin_event) {
+					devconsole->dat[0x2] = event.cbutton.button;
+					evaluxn(u, mempeek16(devconsole->dat, 0));
+				}
 			}
-		}
-		getmidi(&mpu);
-		for(i = 0; i < mpu.queue; ++i) {
-			devmidi->dat[2] = mpu.events[i].message;
-			devmidi->dat[3] = mpu.events[i].message >> 8;
-			devmidi->dat[4] = mpu.events[i].message >> 16;
-			evaluxn(u, mempeek16(devmidi->dat, 0));
 		}
 		evaluxn(u, mempeek16(devscreen->dat, 0));
 		if(reqdraw)
@@ -401,7 +397,6 @@ start(Uxn *u)
 			SDL_Delay(clamp(16.666f - elapsed, 0, 1000));
 		}
 	}
-	return 1;
 }
 
 int
@@ -409,6 +404,9 @@ main(int argc, char **argv)
 {
 	Uxn u;
 	zoom = 2;
+
+	stdin_event = SDL_RegisterEvents(1);
+	SDL_CreateThread(stdin_handler, "stdin", NULL);
 
 	if(argc < 2)
 		return error("Input", "Missing");
@@ -420,13 +418,13 @@ main(int argc, char **argv)
 		return error("Init", "Failed");
 
 	portuxn(&u, 0x0, "system", system_talk);
-	portuxn(&u, 0x1, "console", console_talk);
+	devconsole = portuxn(&u, 0x1, "console", console_talk);
 	devscreen = portuxn(&u, 0x2, "screen", screen_talk);
 	devaudio0 = portuxn(&u, 0x3, "audio0", audio_talk);
 	portuxn(&u, 0x4, "audio1", audio_talk);
 	portuxn(&u, 0x5, "audio2", audio_talk);
 	portuxn(&u, 0x6, "audio3", audio_talk);
-	devmidi = portuxn(&u, 0x7, "midi", midi_talk);
+	portuxn(&u, 0x7, "---", nil_talk);
 	devctrl = portuxn(&u, 0x8, "controller", nil_talk);
 	devmouse = portuxn(&u, 0x9, "mouse", nil_talk);
 	portuxn(&u, 0xa, "file", file_talk);
@@ -440,7 +438,7 @@ main(int argc, char **argv)
 	mempoke16(devscreen->dat, 2, ppu.hor * 8);
 	mempoke16(devscreen->dat, 4, ppu.ver * 8);
 
-	start(&u);
+	run(&u);
 	quit();
 	return 0;
 }

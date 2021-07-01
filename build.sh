@@ -17,8 +17,6 @@ then
 	clang-format -i src/devices/ppu.c
 	clang-format -i src/devices/apu.h
 	clang-format -i src/devices/apu.c
-	clang-format -i src/devices/mpu.h
-	clang-format -i src/devices/mpu.c
 	clang-format -i src/uxnasm.c
 	clang-format -i src/uxnemu.c
 	clang-format -i src/uxncli.c
@@ -27,15 +25,6 @@ fi
 mkdir -p bin
 CFLAGS="-std=c89 -Wall -Wno-unknown-pragmas"
 UXNEMU_LDFLAGS="-L/usr/local/lib $(sdl2-config --cflags --libs)"
-
-if cc ${CFLAGS} -c src/devices/mpu.c -o bin/mpu.o 2>/dev/null; then
-	rm -f bin/mpu.o
-	echo "Building with portmidi.."
-	UXNEMU_LDFLAGS="${UXNEMU_LDFLAGS} -lportmidi"
-else
-	echo "Building without portmidi.."
-	CFLAGS="${CFLAGS} -DNO_PORTMIDI"
-fi
 
 if [ "${1}" = '--debug' ]; 
 then
@@ -47,8 +36,9 @@ else
 	CORE='src/uxn-fast.c'
 fi
 
+echo "Building.."
 cc ${CFLAGS} src/uxnasm.c -o bin/uxnasm
-cc ${CFLAGS} ${CORE} src/devices/ppu.c src/devices/apu.c src/devices/mpu.c src/uxnemu.c ${UXNEMU_LDFLAGS} -o bin/uxnemu
+cc ${CFLAGS} ${CORE} src/devices/ppu.c src/devices/apu.c src/uxnemu.c ${UXNEMU_LDFLAGS} -o bin/uxnemu
 cc ${CFLAGS} ${CORE} src/uxncli.c -o bin/uxncli
 
 if [ -d "$HOME/bin" ] && [ -e ./bin/uxnemu ] && [ -e ./bin/uxnasm ]

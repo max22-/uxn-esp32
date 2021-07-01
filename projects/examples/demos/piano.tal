@@ -19,7 +19,7 @@
 ( devices )
 
 |00 @System     [ &vector $2 &pad      $6 &r      $2 &g     $2 &b      $2 ]
-|10 @Console    [ &pad    $8 &char     $1 &byte   $1 &short $2 &string $2 ]
+|10 @Console    [ &vector $2 &read     $1 &pad    $5 &write $1 ]
 |20 @Screen     [ &vector $2 &width    $2 &height $2 &pad   $2 &x      $2 &y      $2 &addr $2 &color $1 ]
 |30 @Audio0     [ &vector $2 &position $2 &output $1 &pad   $3 &adsr   $2 &length $2 &addr $2 &volume $1 &pitch $1 ]
 |70 @Midi       [ &vector $2 &channel  $1 &note   $1 &velocity $1 ]
@@ -53,7 +53,7 @@
 	;on-frame   .Screen/vector DEO2
 	;on-control .Controller/vector DEO2
 	;on-mouse   .Mouse/vector DEO2
-	;on-midi    .Midi/vector DEO2
+	;on-message .Console/vector DEO2
 
 	( find center )
 	.Screen/width DEI2 2// .center/x STZ2
@@ -117,21 +117,21 @@ BRK
 
 	.Controller/key DEI
 	DUP #61 ! ,&no-c JCN
-		#00 .last-note STZ ;notes LDA ;play JSR2 &no-c
+		#30 .octave LDZ #0c * + ;play JSR2 &no-c
 	DUP #73 ! ,&no-d JCN
-		#01 .last-note STZ ;notes #0001 ++ LDA ;play JSR2 &no-d
+		#32 .octave LDZ #0c * + ;play JSR2 &no-d
 	DUP #64 ! ,&no-e JCN
-		#02 .last-note STZ ;notes #0002 ++ LDA ;play JSR2 &no-e
+		#34 .octave LDZ #0c * + ;play JSR2 &no-e
 	DUP #66 ! ,&no-f JCN
-		#03 .last-note STZ ;notes #0003 ++ LDA ;play JSR2 &no-f
+		#35 .octave LDZ #0c * + ;play JSR2 &no-f
 	DUP #67 ! ,&no-g JCN
-		#04 .last-note STZ ;notes #0004 ++ LDA ;play JSR2 &no-g
+		#37 .octave LDZ #0c * + ;play JSR2 &no-g
 	DUP #68 ! ,&no-a JCN
-		#05 .last-note STZ ;notes #0005 ++ LDA ;play JSR2 &no-a
+		#39 .octave LDZ #0c * + ;play JSR2 &no-a
 	DUP #6a ! ,&no-b JCN
-		#06 .last-note STZ ;notes #0006 ++ LDA ;play JSR2 &no-b
+		#3b .octave LDZ #0c * + ;play JSR2 &no-b
 	DUP #6b ! ,&no-c2 JCN
-		#07 .last-note STZ ;notes #0007 ++ LDA ;play JSR2 &no-c2
+		#3c .octave LDZ #0c * + ;play JSR2 &no-c2
 	POP
 
 	( release )
@@ -153,10 +153,10 @@ BRK
 
 BRK
 
-@on-midi ( -> )
+@on-message ( -> )
 	
-	.Midi/note DEI #00 ! #01 JCN [ BRK ]
-	.Midi/note DEI .Audio0/pitch .Midi/channel DEI #04 MOD #10 * + DEO
+	.Console/read DEI ;play JSR2
+	;draw-octave JSR2
 
 BRK
 
@@ -198,7 +198,7 @@ BRK
 	&no-mod
 
 	.Mouse/x DEI2 .octave-view/x1 LDZ2 -- 8// SWP POP #06 > ,&no-key JCN
-		.Mouse/x DEI2 .octave-view/x1 LDZ2 -- 8// DUP2 SWP POP .last-note STZ ;notes ++ LDA ;play JSR2
+		.Mouse/x DEI2 .octave-view/x1 LDZ2 -- 8// ;notes ++ LDA .octave LDZ #0c * + ;play JSR2
 		( release ) #00 .Mouse/state DEO
 		;draw-octave JSR2
 	&no-key
@@ -242,7 +242,8 @@ BRK
 
 @play ( pitch -- )
 	
-	.octave LDZ #0c * + .Audio0/pitch DEO
+	DUP #0c MOD .last-note STZ 
+	.Audio0/pitch DEO
 
 RTN
 
@@ -254,11 +255,8 @@ RTN
 	.pointer/y LDZ2 .Screen/y DEO2 
 	#30 .Screen/color DEO
 	( record pointer positions )
-	.Mouse/x DEI2 .pointer/x STZ2 
-	.Mouse/y DEI2 .pointer/y STZ2
-	( draw new cursor )
-	.pointer/x LDZ2 .Screen/x DEO2 
-	.pointer/y LDZ2 .Screen/y DEO2 
+	.Mouse/x DEI2 DUP2 .pointer/x STZ2 .Screen/x DEO2 
+	.Mouse/y DEI2 DUP2 .pointer/y STZ2 .Screen/y DEO2  
 	( colorize on state )
 	#31 [ .Mouse/state DEI #00 ! ] + .Screen/color DEO
 
@@ -269,12 +267,12 @@ RTN
 	.octave-view/x1 LDZ2 .octave-view/y1 LDZ2
 
 	OVR2 OVR2 ;keys-left-icns #21 .last-note LDZ #00 = + ;draw-key JSR2
-	OVR2 #0008 ++ OVR2 ;keys-middle-icns #21 .last-note LDZ #01 = + ;draw-key JSR2
-	OVR2 #0010 ++ OVR2 ;keys-right-icns #21 .last-note LDZ #02 = + ;draw-key JSR2
-	OVR2 #0018 ++ OVR2 ;keys-left-icns #21 .last-note LDZ #03 = + ;draw-key JSR2
-	OVR2 #0020 ++ OVR2 ;keys-middle-icns #21 .last-note LDZ #04 = + ;draw-key JSR2
-	OVR2 #0028 ++ OVR2 ;keys-middle-icns #21 .last-note LDZ #05 = + ;draw-key JSR2
-	SWP2 #0030 ++ SWP2 ;keys-right-icns #21 .last-note LDZ #06 = + ;draw-key JSR2
+	OVR2 #0008 ++ OVR2 ;keys-middle-icns #21 .last-note LDZ #02 = + ;draw-key JSR2
+	OVR2 #0010 ++ OVR2 ;keys-right-icns #21 .last-note LDZ #04 = + ;draw-key JSR2
+	OVR2 #0018 ++ OVR2 ;keys-left-icns #21 .last-note LDZ #05 = + ;draw-key JSR2
+	OVR2 #0020 ++ OVR2 ;keys-middle-icns #21 .last-note LDZ #07 = + ;draw-key JSR2
+	OVR2 #0028 ++ OVR2 ;keys-middle-icns #21 .last-note LDZ #09 = + ;draw-key JSR2
+	SWP2 #0030 ++ SWP2 ;keys-right-icns #21 .last-note LDZ #0b = + ;draw-key JSR2
 
 	.octave-view/x1 LDZ2 #0048 ++ .Screen/x DEO2
 
@@ -474,8 +472,8 @@ RTN
 	0010 1010 fe7c 3810 
 
 @notes 
-	3c 3e 40 41 43 45 47
-	48 4a 4c 4d 4f 51 53 
+	30 32 34 35
+	37 39 3b 3c
 
 @keys-left-icns 
 	7c7c 7c7c 7c7c 7c7c

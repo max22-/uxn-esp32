@@ -20,7 +20,7 @@ typedef signed char Sint8;
 typedef unsigned short Uint16;
 
 typedef struct {
-	char name[64], items[128][64];
+	char name[64], items[256][64];
 	Uint8 len;
 	Uint16 refs;
 } Macro;
@@ -41,21 +41,19 @@ Program p;
 
 /* clang-format off */
 
-char ops[][4] = {
+static char ops[][4] = {
 	"BRK", "LIT", "NOP", "POP", "DUP", "SWP", "OVR", "ROT",
 	"EQU", "NEQ", "GTH", "LTH", "JMP", "JCN", "JSR", "STH",
 	"LDZ", "STZ", "LDR", "STR", "LDA", "STA", "DEI", "DEO",
 	"ADD", "SUB", "MUL", "DIV", "AND", "ORA", "EOR", "SFT"
 };
 
-int   scin(char *s, char c) { int i = 0; while(s[i]) if(s[i++] == c) return i - 1; return -1; } /* string char index */
-int   scmp(char *a, char *b, int len) { int i = 0; while(a[i] == b[i] && i < len) if(!a[i++]) return 1; return 0; } /* string compare */
-int   sihx(char *s) { int i = 0; char c; while((c = s[i++])) if(!(c >= '0' && c <= '9') && !(c >= 'a' && c <= 'f')) return 0; return i > 1; } /* string is hexadecimal */
-int   ssin(char *s, char *ss) { int a = 0, b = 0; while(s[a]) { if(s[a] == ss[b]) { if(!ss[b + 1]) return a - b; b++; } else b = 0; a++; } return -1; } /* string substring index */
-int   shex(char *s) { int n = 0, i = 0; char c; while((c = s[i++])) if(c >= '0' && c <= '9') n = n * 16 + (c - '0'); else if(c >= 'a' && c <= 'f') n = n * 16 + 10 + (c - 'a'); return n; } /* string to num */
-int   slen(char *s) { int i = 0; while(s[i] && s[++i]) ; return i; } /* string length */
-char *scpy(char *src, char *dst, int len) { int i = 0; while((dst[i] = src[i]) && i < len - 2) i++; dst[i + 1] = '\0'; return dst; } /* string copy */
-char *scat(char *dst, const char *src) { char *ptr = dst + slen(dst); while(*src) *ptr++ = *src++; *ptr = '\0'; return dst; } /* string cat */
+static int   scmp(char *a, char *b, int len) { int i = 0; while(a[i] == b[i] && i < len) if(!a[i++]) return 1; return 0; } /* string compare */
+static int   sihx(char *s) { int i = 0; char c; while((c = s[i++])) if(!(c >= '0' && c <= '9') && !(c >= 'a' && c <= 'f')) return 0; return i > 1; } /* string is hexadecimal */
+static int   shex(char *s) { int n = 0, i = 0; char c; while((c = s[i++])) if(c >= '0' && c <= '9') n = n * 16 + (c - '0'); else if(c >= 'a' && c <= 'f') n = n * 16 + 10 + (c - 'a'); return n; } /* string to num */
+static int   slen(char *s) { int i = 0; while(s[i] && s[++i]) ; return i; } /* string length */
+static char *scpy(char *src, char *dst, int len) { int i = 0; while((dst[i] = src[i]) && i < len - 2) i++; dst[i + 1] = '\0'; return dst; } /* string copy */
+static char *scat(char *dst, const char *src) { char *ptr = dst + slen(dst); while(*src) *ptr++ = *src++; *ptr = '\0'; return dst; } /* string cat */
 
 #pragma mark - Helpers
 
@@ -63,7 +61,7 @@ char *scat(char *dst, const char *src) { char *ptr = dst + slen(dst); while(*src
 
 #pragma mark - I/O
 
-void
+static void
 pushbyte(Uint8 b, int lit)
 {
 	if(lit) pushbyte(0x01, 0);
@@ -71,7 +69,7 @@ pushbyte(Uint8 b, int lit)
 	p.length = p.ptr;
 }
 
-void
+static void
 pushshort(Uint16 s, int lit)
 {
 	if(lit) pushbyte(0x21, 0);
@@ -79,7 +77,7 @@ pushshort(Uint16 s, int lit)
 	pushbyte(s & 0xff, 0);
 }
 
-void
+static void
 pushword(char *s)
 {
 	int i = 0;
@@ -87,7 +85,7 @@ pushword(char *s)
 	while((c = s[i++])) pushbyte(c, 0);
 }
 
-Macro *
+static Macro *
 findmacro(char *name)
 {
 	int i;
@@ -97,7 +95,7 @@ findmacro(char *name)
 	return NULL;
 }
 
-Label *
+static Label *
 findlabel(char *name)
 {
 	int i;
@@ -107,7 +105,7 @@ findlabel(char *name)
 	return NULL;
 }
 
-Uint8
+static Uint8
 findopcode(char *s)
 {
 	int i;
@@ -132,7 +130,7 @@ findopcode(char *s)
 	return 0;
 }
 
-char *
+static char *
 sublabel(char *src, char *scope, char *name)
 {
 	return scat(scat(scpy(scope, src, 64), "/"), name);
@@ -140,14 +138,14 @@ sublabel(char *src, char *scope, char *name)
 
 #pragma mark - Parser
 
-int
+static int
 error(char *name, char *id)
 {
-	printf("Error: %s[%s]\n", name, id);
+	fprintf(stderr, "Error: %s[%s]\n", name, id);
 	return 0;
 }
 
-int
+static int
 makemacro(char *name, FILE *f)
 {
 	Macro *m;
@@ -169,11 +167,10 @@ makemacro(char *name, FILE *f)
 			return error("Word too long", name);
 		scpy(word, m->items[m->len++], 64);
 	}
-	printf("New macro #%d: %s, %d items\n", p.mlen, m->name, m->len);
 	return 1;
 }
 
-int
+static int
 makelabel(char *name, Uint16 addr)
 {
 	Label *l;
@@ -187,11 +184,10 @@ makelabel(char *name, Uint16 addr)
 	l->addr = addr;
 	l->refs = 0;
 	scpy(name, l->name, 64);
-	printf("New label #%d: %s, at 0x%04x\n", p.llen, l->name, l->addr);
 	return 1;
 }
 
-int
+static int
 skipblock(char *w, int *cap, char a, char b)
 {
 	if(w[0] == b) {
@@ -203,7 +199,7 @@ skipblock(char *w, int *cap, char a, char b)
 	return 0;
 }
 
-int
+static int
 walktoken(char *w)
 {
 	Macro *m;
@@ -230,7 +226,7 @@ walktoken(char *w)
 	return error("Unknown label in first pass", w);
 }
 
-int
+static int
 parsetoken(char *w)
 {
 	Label *l;
@@ -289,29 +285,28 @@ parsetoken(char *w)
 	return error("Invalid token", w);
 }
 
-int
+static int
 pass1(FILE *f)
 {
 	int ccmnt = 0;
 	Uint16 addr = 0;
 	char w[64], scope[64], subw[64];
-	printf("Pass 1\n");
 	while(fscanf(f, "%s", w) == 1) {
 		if(skipblock(w, &ccmnt, '(', ')')) continue;
 		if(w[0] == '|') {
 			if(!sihx(w + 1))
-				return error("Invalid padding", w);
+				return error("Pass 1 - Invalid padding", w);
 			addr = shex(w + 1);
 		} else if(w[0] == '%') {
 			if(!makemacro(w + 1, f))
-				return error("Invalid macro", w);
+				return error("Pass 1 - Invalid macro", w);
 		} else if(w[0] == '@') {
 			if(!makelabel(w + 1, addr))
-				return error("Invalid label", w);
+				return error("Pass 1 - Invalid label", w);
 			scpy(w + 1, scope, 64);
 		} else if(w[0] == '&') {
 			if(!makelabel(sublabel(subw, scope, w + 1), addr))
-				return error("Invalid sublabel", w);
+				return error("Pass 1 - Invalid sublabel", w);
 		} else if(sihx(w))
 			addr += slen(w) / 2;
 		else
@@ -321,12 +316,11 @@ pass1(FILE *f)
 	return 1;
 }
 
-int
+static int
 pass2(FILE *f)
 {
 	int ccmnt = 0, cmacr = 0;
 	char w[64], scope[64], subw[64];
-	printf("Pass 2\n");
 	while(fscanf(f, "%s", w) == 1) {
 		if(w[0] == '%') continue;
 		if(w[0] == '&') continue;
@@ -336,7 +330,7 @@ pass2(FILE *f)
 		if(skipblock(w, &cmacr, '{', '}')) continue;
 		if(w[0] == '|') {
 			if(p.length && shex(w + 1) < p.ptr)
-				return error("Memory Overwrite", w);
+				return error("Pass 2 - Memory Overwrite", w);
 			p.ptr = shex(w + 1);
 			continue;
 		} else if(w[0] == '$') {
@@ -349,24 +343,24 @@ pass2(FILE *f)
 		if(w[1] == '&')
 			scpy(sublabel(subw, scope, w + 2), w + 1, 64);
 		if(!parsetoken(w))
-			return error("Unknown label in second pass", w);
+			return error("Pass 2 - Unknown label", w);
 	}
 	return 1;
 }
 
-void
+static void
 cleanup(char *filename)
 {
 	int i;
-	printf("Assembled %s(%d bytes), %d labels, %d macros.\n\n", filename, (p.length - TRIM), p.llen, p.mlen);
 	for(i = 0; i < p.llen; ++i)
 		if(p.labels[i].name[0] >= 'A' && p.labels[i].name[0] <= 'Z')
 			continue; /* Ignore capitalized labels(devices) */
 		else if(!p.labels[i].refs)
-			printf("--- Unused label: %s\n", p.labels[i].name);
+			fprintf(stderr, "--- Unused label: %s\n", p.labels[i].name);
 	for(i = 0; i < p.mlen; ++i)
 		if(!p.macros[i].refs)
-			printf("--- Unused macro: %s\n", p.macros[i].name);
+			fprintf(stderr, "--- Unused macro: %s\n", p.macros[i].name);
+	printf("Assembled %s(%d bytes), %d labels, %d macros.\n", filename, (p.length - TRIM), p.llen, p.mlen);
 }
 
 int

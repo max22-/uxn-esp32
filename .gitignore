@@ -7,7 +7,7 @@
 *io.bit
 *.bak
 /*-test
-/screenshot.bmp
+/screenshot-*.bmp
 .pio/
 .vscode/
 data/

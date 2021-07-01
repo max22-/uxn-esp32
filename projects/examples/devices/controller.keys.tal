@@ -8,13 +8,9 @@
 %RTN { JMP2r }
 %TOS { #00 SWP }
 
-%DEBUG  { .Console/byte DEO #0a .Console/char DEO }
-%DEBUG2 { .Console/short DEO2 #0a .Console/char DEO }
-
 ( devices )
 
 |00 @System     [ &vector $2 &pad    $6 &r      $2 &g     $2 &b      $2 ]
-|10 @Console    &vector $2 &pad      $6 &char   $1 &byte  $1 &short  $2 &string $2 ]
 |20 @Screen     [ &vector $2 &width  $2 &height $2 &pad   $2 &x      $2 &y $2 &addr $2 &color $1 ]
 |80 @Controller [ &vector $2 &button $1 &key    $1 ]
 

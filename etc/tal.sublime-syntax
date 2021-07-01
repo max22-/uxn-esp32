@@ -114,9 +114,9 @@ contexts:
         - match: '\}'
           pop: true
 
-    - match: '\('
+    - match: '\( '
       scope: comment
       push:
         - meta_scope: comment.line
-        - match: '\)'
+        - match: ' \)'
           pop: true
