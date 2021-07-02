@@ -1,0 +1,206 @@
+( font )
+
+%+  { ADD } %-   { SUB }  %*  { MUL }  %/  { DIV }
+%<  { LTH } %>   { GTH }  %=  { EQU }  %!  { NEQ }
+%++ { ADD2 } %-- { SUB2 } %** { MUL2 } %// { DIV2 }
+%<< { LTH2 } %>> { GTH2 } %== { EQU2 } %!! { NEQ2 }
+
+%RTN { JMP2r }
+%TOS { #00 SWP }
+%INCR { SWP #01 ADD SWP }
+%GET-ITERATORS { SWP2k POP SWP POP }
+
+%DEBUG  { ;print-hex JSR2 #0a .Console/write DEO }
+%DEBUG2 { SWP ;print-hex JSR2 ;print-hex JSR2 #0a .Console/write DEO }
+
+( devices )
+
+|00 @System     [ &vector $2 &pad    $6 &r      $2 &g     $2 &b      $2 ]
+|10 @Console    [ &vector $2 &read     $1 &pad    $5 &write $1 ]
+|20 @Screen     [ &vector $2 &width  $2 &height $2 &pad   $2 &x      $2 &y $2 &addr $2 &color $1 ]
+|80 @Controller [ &vector $2 &button $1 &key    $1 ]
+|a0 @File       [ &vector $2 &success $2 &offset $2 &pad $2 &name $2 &length $2 &load $2 &save $2 ]
+
+( variables )
+
+|0000
+
+@position
+	&x $2
+	&y $2
+
+( init )
+
+|0100 ( -> )
+
+	( theme ) 
+	#0f73 .System/r DEO2 
+	#0fe3 .System/g DEO2 
+	#0fc3 .System/b DEO2
+
+	( load font )
+	#4000 .File/length DEO2
+	;fontpath .File/name DEO2
+	;font-data .File/load DEO2
+
+	#0000 #0030 ;sometext #21 ;draw-uf3 JSR2
+	
+BRK
+
+@draw-uf3 ( x* y* text* color -- )
+		
+	STH 
+	STH2
+	.Screen/y DEO2
+	.Screen/x DEO2
+	STH2r
+	&loop
+		LDAk #0a ! ,&no-linebreak JCN
+			#0000 .Screen/x DEO2
+			.Screen/y DEI2 #0018 ++ .Screen/y DEO2
+		&no-linebreak
+		LDAk STHkr ;draw-letter3 JSR2
+		#0001 ++
+		LDAk ,&loop JCN
+	POP2
+	POPr
+
+RTN
+
+@draw-letter3 ( char color -- )
+	
+	POP 
+
+	DUP TOS #0048 ** ;font-data #0100 ++ ++ .Screen/addr DEO2
+
+	.Screen/x DEI2 .position/x STZ2
+	.Screen/y DEI2 .position/y STZ2
+
+	#00 #03
+	&ver
+		#00 #03
+		&hor
+			GET-ITERATORS
+			TOS #0008 ** .position/y LDZ2 ++ .Screen/y DEO2
+			TOS #0008 ** .position/x LDZ2 ++ .Screen/x DEO2
+			#21 .Screen/color DEO
+			.Screen/addr DEI2 #0008 ++ .Screen/addr DEO2
+			INCR
+			LTHk ,&hor JCN
+		POP2
+
+		INCR
+		LTHk ,&ver JCN
+	POP2
+
+	TOS ;font-data ++ LDA TOS .position/x LDZ2 ++ .Screen/x DEO2
+
+	.position/y LDZ2 .Screen/y DEO2
+
+RTN
+
+@draw-label ( x* y* text* color -- )
+		
+	STH 
+	STH2
+	.Screen/y DEO2
+	.Screen/x DEO2
+	STH2r
+	&loop
+		LDAk #0a ! ,&no-linebreak JCN
+			#0000 .Screen/x DEO2
+			.Screen/y DEI2 #0010 ++ .Screen/y DEO2
+
+		&no-linebreak
+		LDAk STHkr ;draw-letter JSR2
+		#0001 ++
+		LDAk ,&loop JCN
+	POP2
+	POPr
+
+RTN
+
+@draw-letter ( char color -- )
+
+	STH
+
+	STHk TOS #0020 ** ;font-data #0100 ++ ++ .Screen/addr DEO2
+	OVRr STHr .Screen/color DEO
+
+	.Screen/y DEI2 #0008 ++ .Screen/y DEO2
+	.Screen/addr DEI2 #0010 ++ .Screen/addr DEO2
+	OVRr STHr .Screen/color DEO
+
+	.Screen/x DEI2 #0008 ++ .Screen/x DEO2
+	.Screen/addr DEI2 #0008 ++ .Screen/addr DEO2
+	OVRr STHr .Screen/color DEO
+
+	.Screen/y DEI2 #0008 -- .Screen/y DEO2
+	.Screen/addr DEI2 #0010 -- .Screen/addr DEO2
+	OVRr STHr .Screen/color DEO
+
+	STHkr TOS ;font-data ++ LDA TOS .Screen/x DEI2 ++ #0008 -- .Screen/x DEO2
+
+	POPr POPr
+
+RTN
+
+@draw-short ( short* color -- )
+
+	STH SWP 
+	DUP #04 SFT TOS #0008 ** ;font-hex ++ .Screen/addr DEO2
+	( draw ) STHkr .Screen/color DEO
+	#0f AND TOS #0008 ** ;font-hex ++ .Screen/addr DEO2
+	.Screen/x DEI2 #0008 ++ .Screen/x DEO2
+	( draw ) STHkr .Screen/color DEO
+	DUP #04 SFT TOS #0008 ** ;font-hex ++ .Screen/addr DEO2
+	.Screen/x DEI2 #0008 ++ .Screen/x DEO2
+	( draw ) STHkr .Screen/color DEO
+	#0f AND TOS #0008 ** ;font-hex ++ .Screen/addr DEO2
+	.Screen/x DEI2 #0008 ++ .Screen/x DEO2
+	( draw ) STHr .Screen/color DEO
+
+RTN
+
+@print-hex ( value -- )
+	
+	STHk #04 SFT ,&parse JSR .Console/write DEO
+	STHr #0f AND ,&parse JSR .Console/write DEO
+	RTN
+	&parse ( value -- char )
+		DUP #09 GTH ,&above JCN #30 ADD RTN &above #09 SUB #60 ADD RTN
+
+RTN
+
+@cursor 
+	ffff ffff ffff ffff
+
+@font-hex 
+	003c 464a 5262 3c00 0018 0808 0808 1c00
+	003c 4202 3c40 7e00 003c 421c 0242 3c00
+	000c 1424 447e 0400 007e 407c 0242 3c00
+	003c 407c 4242 3c00 007e 0204 0810 1000
+	003c 423c 4242 3c00 003c 4242 3e02 3c00
+	003c 4242 7e42 4200 007c 427c 4242 7c00
+	003c 4240 4042 3c00 007c 4242 4242 7c00
+	007e 4078 4040 7e00 007e 4078 4040 4000 
+
+@sometext 
+	4927 6c6c 206d 616b 6520 6120 736f 756e
+	6420 7468 6174 2773 2073 6f20 616c 6f6e
+	6520 0a74 6861 7420 6e6f 206f 6e65 2063
+	616e 206d 6973 7320 6974 2c20 7468 6174
+	2077 686f 6576 6572 200a 6865 6172 7320
+	6974 2077 696c 6c20 7765 6570 2069 6e20
+	7468 6569 7220 736f 756c 732c 200a 616e
+	6420 6865 6172 7468 7320 7769 6c6c 2073
+	6565 6d20 7761 726d 6572 2c20 0a61 6e64
+	2062 6569 6e67 2069 6e73 6964 6520 7769
+	6c6c 2073 6565 6d20 6265 7474 6572 200a
+	746f 2061 6c6c 2077 686f 2068 6561 7220
+	6974 2069 6e20 7468 6520 6469 7374 616e
+	7420 746f 776e 732e 20 $1
+
+@fontpath "projects/fonts/newyork18.uf3
+
+@font-data
