@@ -43,7 +43,7 @@
 	;fontpath .File/name DEO2
 	;font-data .File/load DEO2
 
-	#0000 #0030 ;sometext #21 ;draw-uf3 JSR2
+	#0000 #0030 ;sometext #21 ;draw-label JSR2
 	
 BRK
 
@@ -201,6 +201,6 @@ RTN
 	6974 2069 6e20 7468 6520 6469 7374 616e
 	7420 746f 776e 732e 20 $1
 
-@fontpath "projects/fonts/helvetica24.uf3
+@fontpath "projects/fonts/venice14.uf2
 
 @font-data
