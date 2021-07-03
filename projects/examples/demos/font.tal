@@ -10,9 +10,6 @@
 %INCR { SWP #01 ADD SWP }
 %GET-ITERATORS { SWP2k POP SWP POP }
 
-%DEBUG  { ;print-hex JSR2 #0a .Console/write DEO }
-%DEBUG2 { SWP ;print-hex JSR2 ;print-hex JSR2 #0a .Console/write DEO }
-
 ( devices )
 
 |00 @System     [ &vector $2 &pad    $6 &r      $2 &g     $2 &b      $2 ]
@@ -40,140 +37,52 @@
 
 	( load font )
 	#4000 .File/length DEO2
-	;fontpath .File/name DEO2
+	;font-path .File/name DEO2
 	;font-data .File/load DEO2
 
-	#0000 #0030 ;sometext #21 ;draw-label JSR2
+	( draw label )
+	#0000 #0030 ;body #21 ;draw-uf2 JSR2
 	
 BRK
 
-@draw-uf3 ( x* y* text* color -- )
-		
-	STH 
-	STH2
-	.Screen/y DEO2
-	.Screen/x DEO2
-	STH2r
-	&loop
-		LDAk #0a ! ,&no-linebreak JCN
-			#0000 .Screen/x DEO2
-			.Screen/y DEI2 #0018 ++ .Screen/y DEO2
-		&no-linebreak
-		LDAk STHkr ;draw-letter3 JSR2
-		#0001 ++
-		LDAk ,&loop JCN
-	POP2
-	POPr
-
-RTN
-
-@draw-letter3 ( char color -- )
+@draw-uf2 ( x* y* text* color -- )
 	
-	POP 
-
-	DUP TOS #0048 ** ;font-data #0100 ++ ++ .Screen/addr DEO2
-
-	.Screen/x DEI2 .position/x STZ2
-	.Screen/y DEI2 .position/y STZ2
-
-	#00 #03
-	&ver
-		#00 #03
-		&hor
-			GET-ITERATORS
-			TOS #0008 ** .position/y LDZ2 ++ .Screen/y DEO2
-			TOS #0008 ** .position/x LDZ2 ++ .Screen/x DEO2
-			#21 .Screen/color DEO
-			.Screen/addr DEI2 #0008 ++ .Screen/addr DEO2
-			INCR
-			LTHk ,&hor JCN
-		POP2
-
-		INCR
-		LTHk ,&ver JCN
-	POP2
-
-	TOS ;font-data ++ LDA TOS .position/x LDZ2 ++ .Screen/x DEO2
-
-	.position/y LDZ2 .Screen/y DEO2
-
-RTN
-
-@draw-label ( x* y* text* color -- )
-		
 	STH 
-	STH2
-	.Screen/y DEO2
-	.Screen/x DEO2
-	STH2r
+	SWP2 .Screen/y DEO2
+	SWP2 DUP2 .Screen/x DEO2 SWP2
 	&loop
-		LDAk #0a ! ,&no-linebreak JCN
-			#0000 .Screen/x DEO2
-			.Screen/y DEI2 #0010 ++ .Screen/y DEO2
-
-		&no-linebreak
-		LDAk STHkr ;draw-letter JSR2
-		#0001 ++
+		LDAk 
+		DUP #0a ! ,&no-linebreak JCN
+			( move down ) OVR2 .Screen/x DEO2
+			( incr y ) .Screen/y DEI2 #0010 ++ .Screen/y DEO2 
+			POP ,&continue JMP &no-linebreak
+		STHkr ,&sprite JSR
+		&continue
+		( incr addr ) #0001 ++
 		LDAk ,&loop JCN
-	POP2
-	POPr
-
-RTN
-
-@draw-letter ( char color -- )
-
-	STH
-
-	STHk TOS #0020 ** ;font-data #0100 ++ ++ .Screen/addr DEO2
-	OVRr STHr .Screen/color DEO
-
-	.Screen/y DEI2 #0008 ++ .Screen/y DEO2
-	.Screen/addr DEI2 #0010 ++ .Screen/addr DEO2
-	OVRr STHr .Screen/color DEO
-
-	.Screen/x DEI2 #0008 ++ .Screen/x DEO2
-	.Screen/addr DEI2 #0008 ++ .Screen/addr DEO2
-	OVRr STHr .Screen/color DEO
-
-	.Screen/y DEI2 #0008 -- .Screen/y DEO2
-	.Screen/addr DEI2 #0010 -- .Screen/addr DEO2
-	OVRr STHr .Screen/color DEO
-
-	STHkr TOS ;font-data ++ LDA TOS .Screen/x DEI2 ++ #0008 -- .Screen/x DEO2
-
-	POPr POPr
-
-RTN
-
-@draw-short ( short* color -- )
-
-	STH SWP 
-	DUP #04 SFT TOS #0008 ** ;font-hex ++ .Screen/addr DEO2
-	( draw ) STHkr .Screen/color DEO
-	#0f AND TOS #0008 ** ;font-hex ++ .Screen/addr DEO2
-	.Screen/x DEI2 #0008 ++ .Screen/x DEO2
-	( draw ) STHkr .Screen/color DEO
-	DUP #04 SFT TOS #0008 ** ;font-hex ++ .Screen/addr DEO2
-	.Screen/x DEI2 #0008 ++ .Screen/x DEO2
-	( draw ) STHkr .Screen/color DEO
-	#0f AND TOS #0008 ** ;font-hex ++ .Screen/addr DEO2
-	.Screen/x DEI2 #0008 ++ .Screen/x DEO2
-	( draw ) STHr .Screen/color DEO
-
-RTN
-
-@print-hex ( value -- )
-	
-	STHk #04 SFT ,&parse JSR .Console/write DEO
-	STHr #0f AND ,&parse JSR .Console/write DEO
+	POP2 POP2 POPr
 	RTN
-	&parse ( value -- char )
-		DUP #09 GTH ,&above JCN #30 ADD RTN &above #09 SUB #60 ADD RTN
+
+	&sprite ( char color -- )
+		STH
+		( get addr ) STHk TOS #0020 ** ;font-data #0100 ++ ++ .Screen/addr DEO2
+		SWPr
+			( top-left ) STHkr .Screen/color DEO
+			.Screen/y DEI2 #0008 ++ .Screen/y DEO2
+			.Screen/addr DEI2 #0010 ++ .Screen/addr DEO2
+			( bottom-left ) STHkr .Screen/color DEO
+			.Screen/x DEI2 #0008 ++ .Screen/x DEO2
+			.Screen/addr DEI2 #0008 ++ .Screen/addr DEO2
+			( bottom-right ) STHkr .Screen/color DEO
+			.Screen/y DEI2 #0008 -- .Screen/y DEO2
+			.Screen/addr DEI2 #0010 -- .Screen/addr DEO2
+			( top-right ) STHkr .Screen/color DEO
+		SWPr
+		( get width ) STHkr TOS ;font-data ++ LDA TOS .Screen/x DEI2 ++ #0008 -- .Screen/x DEO2
+		POPr POPr
+	RTN
 
 RTN
-
-@cursor 
-	ffff ffff ffff ffff
 
 @font-hex 
 	003c 464a 5262 3c00 0018 0808 0808 1c00
@@ -185,7 +94,7 @@ RTN
 	003c 4240 4042 3c00 007c 4242 4242 7c00
 	007e 4078 4040 7e00 007e 4078 4040 4000 
 
-@sometext 
+@body 
 	4927 6c6c 206d 616b 6520 6120 736f 756e
 	6420 7468 6174 2773 2073 6f20 616c 6f6e
 	6520 0a74 6861 7420 6e6f 206f 6e65 2063
@@ -201,6 +110,6 @@ RTN
 	6974 2069 6e20 7468 6520 6469 7374 616e
 	7420 746f 776e 732e 20 $1
 
-@fontpath "projects/fonts/venice14.uf2
+@font-path "projects/fonts/venice14.uf2
 
 @font-data
