@@ -8,7 +8,6 @@
 %RTN { JMP2r }
 %TOS { #00 SWP }
 %INCR { SWP #01 ADD SWP }
-%GET-ITERATORS { SWP2k POP SWP POP }
 
 ( devices )
 
@@ -19,10 +18,6 @@
 ( variables )
 
 |0000
-
-@position
-	&x $2
-	&y $2
 
 ( init )
 
@@ -37,72 +32,24 @@
 	#4000 .File/length DEO2
 	;font-path-large .File/name DEO2
 	;font-data .File/load DEO2
-
-	( draw label )
-	#0000 #0020 ;title #21 ;draw-uf3 JSR2
+		( draw label )
+		#0000 #0020 ;title #21 ;draw-uf3 JSR2
 
 	( load font )
 	#4000 .File/length DEO2
 	;font-path-medium .File/name DEO2
 	;font-data .File/load DEO2
-
-	( draw label )
-	#0000 #0048 ;body #21 ;draw-uf2 JSR2
+		( draw label )
+		#0000 #0048 ;body #21 ;draw-uf2 JSR2
 
 	( load font )
 	#4000 .File/length DEO2
 	;font-path-small .File/name DEO2
 	;font-data .File/load DEO2
-
-	( draw label )
-	#0010 #00b8 ;footer #21 ;draw-uf2 JSR2
+		( draw label )
+		#0010 #00b8 ;footer #21 ;draw-uf2 JSR2
 	
 BRK
-
-@draw-uf3 ( x* y* text* color -- )
-		
-	STH 
-	SWP2 .Screen/y DEO2
-	SWP2 DUP2 .Screen/x DEO2 SWP2
-	&loop
-		LDAk 
-		DUP #0a ! ,&no-linebreak JCN
-			( move down ) OVR2 .Screen/x DEO2
-			( incr y ) .Screen/y DEI2 #0010 ++ .Screen/y DEO2 
-			POP ,&continue JMP &no-linebreak
-		STHkr ,&sprite JSR
-		&continue
-		( incr addr ) #0001 ++
-		LDAk ,&loop JCN
-	POP2 POP2 POPr
-	RTN
-
-	&sprite ( char color -- )
-		POP 
-		DUP TOS #0048 ** ;font-data #0100 ++ ++ .Screen/addr DEO2
-		.Screen/x DEI2 .position/x STZ2
-		.Screen/y DEI2 .position/y STZ2
-		#00 #03
-		&ver
-			#00 #03
-			&hor
-				GET-ITERATORS
-				TOS #0008 ** .position/y LDZ2 ++ .Screen/y DEO2
-				TOS #0008 ** .position/x LDZ2 ++ .Screen/x DEO2
-				#21 .Screen/color DEO
-				.Screen/addr DEI2 #0008 ++ .Screen/addr DEO2
-				INCR
-				LTHk ,&hor JCN
-			POP2
-
-			INCR
-			LTHk ,&ver JCN
-		POP2
-		TOS ;font-data ++ LDA TOS .position/x LDZ2 ++ .Screen/x DEO2
-		.position/y LDZ2 .Screen/y DEO2
-	RTN
-
-RTN
 
 @draw-uf2 ( x* y* text* color -- )
 	
@@ -143,6 +90,48 @@ RTN
 		SWPr
 		( use width ) .Screen/x DEI2 ++ #0008 -- .Screen/x DEO2
 		POPr POPr
+	RTN
+
+RTN
+
+@draw-uf3 ( x* y* text* color -- )
+		
+	STH 
+	SWP2 .Screen/y DEO2
+	SWP2 DUP2 .Screen/x DEO2 SWP2
+	&loop
+		LDAk 
+		DUP #0a ! ,&no-linebreak JCN
+			( move down ) OVR2 .Screen/x DEO2
+			( incr y ) .Screen/y DEI2 #0010 ++ .Screen/y DEO2 
+			POP ,&continue JMP &no-linebreak
+		STHkr ,&sprite JSR
+		&continue
+		( incr addr ) #0001 ++
+		LDAk ,&loop JCN
+	POP2 POP2 POPr
+	RTN
+
+	&sprite ( char color -- )
+		STH 
+		( get addr ) DUP TOS #0048 ** ;font-data #0100 ++ ++ .Screen/addr DEO2
+		( get width ) TOS ;font-data ++ LDA TOS
+		#00 #03
+		&ver
+			#00 #03
+			&hor
+				#21 .Screen/color DEO
+				.Screen/x DEI2 #0008 ++ .Screen/x DEO2 
+				.Screen/addr DEI2 #0008 ++ .Screen/addr DEO2
+				INCR LTHk ,&hor JCN
+			POP2
+			.Screen/y DEI2 #0008 ++ .Screen/y DEO2 
+			.Screen/x DEI2 #0018 -- .Screen/x DEO2 
+			INCR LTHk ,&ver JCN
+		POP2
+		.Screen/y DEI2 #0018 -- .Screen/y DEO2 
+		( use width ) .Screen/x DEI2 ++ .Screen/x DEO2
+		POPr
 	RTN
 
 RTN
