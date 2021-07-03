@@ -62,19 +62,19 @@ BRK
 @draw-uf3 ( x* y* text* color -- )
 		
 	STH 
-	STH2
-	.Screen/y DEO2
-	.Screen/x DEO2
-	STH2r
+	SWP2 .Screen/y DEO2
+	SWP2 DUP2 .Screen/x DEO2 SWP2
 	&loop
-		LDAk #0a ! ,&no-linebreak JCN
-			#0000 .Screen/x DEO2
-			.Screen/y DEI2 #0018 ++ .Screen/y DEO2
-		&no-linebreak
-		LDAk STHkr ,&sprite JSR
-		#0001 ++
+		LDAk 
+		DUP #0a ! ,&no-linebreak JCN
+			( move down ) OVR2 .Screen/x DEO2
+			( incr y ) .Screen/y DEI2 #0010 ++ .Screen/y DEO2 
+			POP ,&continue JMP &no-linebreak
+		STHkr ,&sprite JSR
+		&continue
+		( incr addr ) #0001 ++
 		LDAk ,&loop JCN
-	POP2 POPr
+	POP2 POP2 POPr
 	RTN
 
 	&sprite ( char color -- )
