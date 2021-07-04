@@ -221,7 +221,7 @@ walktoken(char *w)
 			res += walktoken(m->items[i]);
 		return res;
 	}
-	return error("Unknown label in first pass", w);
+	return error("Invalid token", w);
 }
 
 static int
@@ -328,7 +328,7 @@ pass2(FILE *f)
 		if(skipblock(w, &cmacr, '{', '}')) continue;
 		if(w[0] == '|') {
 			if(p.length && shex(w + 1) < p.ptr)
-				return error("Pass 2 - Memory Overwrite", w);
+				return error("Pass 2 - Memory overwrite", w);
 			p.ptr = shex(w + 1);
 			continue;
 		} else if(w[0] == '$') {
@@ -366,7 +366,7 @@ main(int argc, char *argv[])
 {
 	FILE *f;
 	if(argc < 3)
-		return !error("Input", "Missing");
+		return !error("Usage", "input.tal output.rom");
 	if(!(f = fopen(argv[1], "r")))
 		return !error("Open", "Failed");
 	if(!pass1(f) || !pass2(f))
