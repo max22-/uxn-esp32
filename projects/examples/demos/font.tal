@@ -80,7 +80,7 @@ BRK
 			( left-bottom ) STHkr .Screen/color DEO
 			.Screen/x DEI2 #0008 ++ .Screen/x DEO2
 			.Screen/y DEI2 #0008 -- .Screen/y DEO2
-			DUP #09 < ,&thin JCN
+			DUP #0a < ,&thin JCN
 			.Screen/addr DEI2 #0008 -- .Screen/addr DEO2
 			( right-top )  STHkr .Screen/color DEO
 			.Screen/addr DEI2 #0010 ++ .Screen/addr DEO2
@@ -160,10 +160,10 @@ RTN
 	79 $1
 
 @font-path-large  
-	"projects/fonts/newyork24.uf3 $1
+	"projects/fonts/times24.uf3 $1
 @font-path-medium 
-	"projects/fonts/venice14.uf2 $1
+	"projects/fonts/times15.uf2 $1
 @font-path-small  
-	"projects/fonts/geneva12.uf2 $1
+	"projects/fonts/times12.uf2 $1
 
 @font-data
