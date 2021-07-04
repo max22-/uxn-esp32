@@ -9,9 +9,13 @@
 %TOS { #00 SWP }
 %INCR { SWP #01 ADD SWP }
 
+%DEBUG  { ;print-hex JSR2 #0a .Console/write DEO }
+%DEBUG2 { SWP ;print-hex JSR2 ;print-hex JSR2 #0a .Console/write DEO }
+
 ( devices )
 
 |00 @System  &vector $2 &pad     $6 &r      $2 &g     $2 &b      $2
+|10 @Console &vector $2 &read    $1 &pad    $5 &write $1 
 |20 @Screen  &vector $2 &width   $2 &height $2 &pad   $2 &x      $2 &y      $2 &addr $2 &color $1
 |a0 @File    &vector $2 &success $2 &offset $2 &pad   $2 &name   $2 &length $2 &load $2 &save  $2
 
@@ -24,30 +28,30 @@
 |0100 ( -> )
 
 	( theme ) 
-	#0f7f .System/r DEO2 
-	#0fe0 .System/g DEO2 
-	#0fc0 .System/b DEO2
+	#0fca .System/r DEO2 
+	#0eba .System/g DEO2 
+	#0ec9 .System/b DEO2
 
 	( load font )
 	#4000 .File/length DEO2
 	;font-path-large .File/name DEO2
 	;font-data .File/load DEO2
 		( draw label )
-		#0000 #0020 ;title #21 ;draw-uf3 JSR2
+		#0020 #0020 ;title #21 ;draw-uf3 JSR2
 
 	( load font )
 	#4000 .File/length DEO2
 	;font-path-medium .File/name DEO2
 	;font-data .File/load DEO2
 		( draw label )
-		#0000 #0048 ;body #21 ;draw-uf2 JSR2
+		#0020 #0048 ;body #22 ;draw-uf2 JSR2
 
 	( load font )
 	#4000 .File/length DEO2
 	;font-path-small .File/name DEO2
 	;font-data .File/load DEO2
 		( draw label )
-		#0010 #00b8 ;footer #21 ;draw-uf2 JSR2
+		#0030 #00b8 ;footer #23 ;draw-uf2 JSR2
 	
 BRK
 
@@ -59,7 +63,7 @@ BRK
 	&loop
 		LDAk 
 		DUP #0a ! ,&no-linebreak JCN
-			( move down ) OVR2 .Screen/x DEO2
+			( move down ) STH OVR2 .Screen/x DEO2 STHr
 			( incr y ) .Screen/y DEI2 #0010 ++ .Screen/y DEO2 
 			POP ,&continue JMP &no-linebreak
 		STHkr ,&sprite JSR
@@ -120,7 +124,7 @@ RTN
 		&ver
 			#00 #03
 			&hor
-				#21 .Screen/color DEO
+				STHkr .Screen/color DEO
 				.Screen/x DEI2 #0008 ++ .Screen/x DEO2 
 				.Screen/addr DEI2 #0008 ++ .Screen/addr DEO2
 				INCR LTHk ,&hor JCN
@@ -133,6 +137,17 @@ RTN
 		( use width ) .Screen/x DEI2 ++ .Screen/x DEO2
 		POPr
 	RTN
+
+RTN
+
+
+@print-hex ( value -- )
+	
+	STHk #04 SFT ,&parse JSR .Console/write DEO
+	STHr #0f AND ,&parse JSR .Console/write DEO
+	RTN
+	&parse ( value -- char )
+		DUP #09 GTH ,&above JCN #30 ADD RTN &above #09 SUB #60 ADD RTN
 
 RTN
 
@@ -160,10 +175,10 @@ RTN
 	79 $1
 
 @font-path-large  
-	"projects/fonts/times24.uf3 $1
+	"projects/fonts/diamond20.uf3 $1
 @font-path-medium 
-	"projects/fonts/times15.uf2 $1
+	"projects/fonts/venice14.uf2 $1
 @font-path-small  
-	"projects/fonts/times12.uf2 $1
+	"projects/fonts/terminal12.uf2 $1
 
 @font-data
