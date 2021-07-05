@@ -29,7 +29,7 @@
 	#0fa7 .System/b DEO2
 
 	( load font )
-	#4000 .File/length DEO2
+	#6000 .File/length DEO2
 	;font-path-large .File/name DEO2
 	;font-data .File/load DEO2
 		( draw label )
@@ -50,6 +50,28 @@
 		#0030 #00b8 ;footer #23 ;draw-uf2 JSR2
 	
 BRK
+
+@draw-uf1 ( x* y* text* color -- )
+	
+	STH 
+	SWP2 .Screen/y DEO2
+	SWP2 DUP2 .Screen/x DEO2 SWP2
+	&loop
+		LDAk 
+		DUP #0a ! ,&no-linebreak JCN
+			( move down ) STH OVR2 .Screen/x DEO2 STHr
+			( incr y ) .Screen/y DEI2 #0010 ++ .Screen/y DEO2 
+			POP ,&continue JMP &no-linebreak
+		( get addr ) STHk TOS #0008 ** ;font-data #0100 ++ ++ .Screen/addr DEO2
+		( get width ) STHr TOS ;font-data ++ LDA TOS
+		( draw ) STHkr .Screen/color DEO
+		( use width ) .Screen/x DEI2 ++ .Screen/x DEO2
+		&continue
+		( incr addr ) #0001 ++
+		LDAk ,&loop JCN
+	POP2 POP2 POPr
+
+RTN
 
 @draw-uf2 ( x* y* text* color -- )
 	
@@ -160,10 +182,10 @@ RTN
 	79 $1
 
 @font-path-large  
-	"projects/fonts/diamond20.uf3 $1
+	"projects/fonts/geneva24.uf3 $1
 @font-path-medium 
 	"projects/fonts/venice14.uf2 $1
 @font-path-small  
-	"projects/fonts/terminal12.uf2 $1
+	"projects/fonts/newyork12.uf2 $1
 
 @font-data
