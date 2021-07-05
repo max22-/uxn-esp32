@@ -31,4 +31,4 @@ void putcolors(Ppu *p, Uint8 *addr);
 void putpixel(Ppu *p, Layer *layer, Uint16 x, Uint16 y, Uint8 color);
 void puticn(Ppu *p, Layer *layer, Uint16 x, Uint16 y, Uint8 *sprite, Uint8 color, Uint8 flipx, Uint8 flipy);
 void putchr(Ppu *p, Layer *layer, Uint16 x, Uint16 y, Uint8 *sprite, Uint8 color, Uint8 flipx, Uint8 flipy);
-void inspect(Ppu *p, Uint8 *stack, Uint8 wptr, Uint8 rptr);
+void inspect(Ppu *p, Uint8 *stack, Uint8 wptr, Uint8 rptr, Uint8 *memory);

@@ -63,7 +63,7 @@ static void
 redraw(Uxn *u)
 {
 	if(debug)
-		inspect(&ppu, u->wst.dat, u->wst.ptr, u->rst.ptr);
+		inspect(&ppu, u->wst.dat, u->wst.ptr, u->rst.ptr, u->ram.dat);
 	SDL_UpdateTexture(bgTexture, &gRect, ppu.bg.pixels, ppu.width * sizeof(Uint32));
 	SDL_UpdateTexture(fgTexture, &gRect, ppu.fg.pixels, ppu.width * sizeof(Uint32));
 	SDL_RenderClear(gRenderer);
