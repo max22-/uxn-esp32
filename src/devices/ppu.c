@@ -107,14 +107,14 @@ inspect(Ppu *p, Uint8 *stack, Uint8 wptr, Uint8 rptr, Uint8 *memory)
 		puticn(p, &p->fg, x, y, font[(b >> 4) & 0xf], 1 + (wptr == i) * 0x7, 0, 0);
 		puticn(p, &p->fg, x + 8, y, font[b & 0xf], 1 + (wptr == i) * 0x7, 0, 0);
 	}
+	/* return pointer */
+	puticn(p, &p->fg, 0x8, y + 0x10, font[(rptr >> 4) & 0xf], 0x2, 0, 0);
+	puticn(p, &p->fg, 0x10, y + 0x10, font[rptr & 0xf], 0x2, 0, 0);
 	for(i = 0; i < 0x40; ++i) { /* memory */
 		x = ((i % 8) * 3 + 1) * 8, y = (i / 8 + 1) * 8 + p->height - 0x50, b = memory[i];
 		puticn(p, &p->fg, x, y, font[(b >> 4) & 0xf], 3, 0, 0);
 		puticn(p, &p->fg, x + 8, y, font[b & 0xf], 3, 0, 0);
 	}
-	/* return pointer */
-	puticn(p, &p->fg, 0x8, y + 0x10, font[(rptr >> 4) & 0xf], 0x2, 0, 0);
-	puticn(p, &p->fg, 0x10, y + 0x10, font[rptr & 0xf], 0x2, 0, 0);
 	for(x = 0; x < 0x10; ++x) { /* guides */
 		putpixel(p, &p->fg, x, p->height / 2, 2);
 		putpixel(p, &p->fg, p->width - x, p->height / 2, 2);
