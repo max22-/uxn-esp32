@@ -188,8 +188,10 @@ BRK
 	.Mouse/x DEI2 .octave-view/x1 LDZ2 -- 8// SWP POP #09 ! ,&no-mod JCN
 		.Mouse/y DEI2 .octave-view/y1 LDZ2 -- 8// SWP POP 
 		DUP #00 ! ,&no-incr JCN
+			.octave LDZ #03 = ,&no-incr JCN
 			.octave LDZ #01 + .octave STZ &no-incr
 		DUP #02 ! ,&no-decr JCN
+			.octave LDZ #ff = ,&no-decr JCN
 			.octave LDZ #01 - .octave STZ &no-decr
 		POP
 		( release ) #00 .Mouse/state DEO
