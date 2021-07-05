@@ -47,7 +47,7 @@
 	;font-path-small .File/name DEO2
 	;font-data .File/load DEO2
 		( draw label )
-		#0030 #00b8 ;footer #23 ;draw-uf2 JSR2
+		#0030 #00b8 ;footer #23 ;draw-uf1 JSR2
 	
 BRK
 
@@ -186,6 +186,6 @@ RTN
 @font-path-medium 
 	"projects/fonts/venice14.uf2 $1
 @font-path-small  
-	"projects/fonts/newyork12.uf2 $1
+	"projects/fonts/atari.uf1 $1
 
 @font-data
