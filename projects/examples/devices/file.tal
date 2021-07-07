@@ -6,7 +6,7 @@
 ( devices )
 
 |00 @System     [ &vector $2 &pad    $6 &r      $2 &g     $2 &b      $2 ]
-|10 @Console    [ &pad    $8 &char   $1 &byte   $1 &short $2 &string $2 ]
+|10 @Console    [ &pad    $8 &write  $1 ]
 |20 @Screen     [ &vector $2 &width  $2 &height $2 &pad   $2 &x      $2 &y $2 &addr $2 &color $1 ]
 |a0 @File       [ &vector $2 &success $2 &offset $2 &pad $2 &name $2 &length $2 &load $2 &save $2 ]
 
@@ -30,13 +30,13 @@
 
 	.File/success DEI2 ORA ;on-success JCN2
 
-	;failedtxt .Console/string DEO2
+	;failedtxt ;print-string JSR2
 
 BRK
 
 @on-success ( -> )
 	
-	;successtxt .Console/string DEO2
+	;successtxt ;print-string JSR2
 
 	( draw image )
 	MEMORY .Screen/addr DEO2
@@ -61,6 +61,15 @@ BRK
 	MEMORY   .File/save DEO2
 
 BRK
+
+@print-string ( ptr* -- )
+	LDAk DUP ,&keep-going JCN
+	POP POP2 JMP2r
+
+	&keep-going
+	.Console/write DEO
+	#0001 ADD2
+	,print-string JMP
 
 @successtxt "Success! 09 $1
 @failedtxt  "Failed. 09 $1

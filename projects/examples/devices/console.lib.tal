@@ -1,12 +1,12 @@
 ( dev/console )
 
 %RTN { JMP2r }
-%PRINT { .Console/string DEO2 }
-%BR { #0a .Console/char DEO }
+%PRINT { ;print JSR2 }
+%BR { #0a .Console/write DEO }
 
 ( devices )
 
-|10 @Console    [ &pad $8 &char $1 &byte $1 &short $2 &string $2 ]
+|10 @Console    [ &pad $8 &write $1 ]
 
 ( variables )
 
@@ -18,46 +18,51 @@
 
 |0100 ( -> )
 		
-	;char-txt PRINT #42 .Console/char DEO BR
-	;byte-txt PRINT #ab .Console/byte DEO BR
-	;short-txt PRINT #cdef .Console/short DEO2 BR
-	;string-txt PRINT ;hello-word .Console/string DEO2 BR
+	;char-txt PRINT #42 .Console/write DEO BR
+	;byte-txt PRINT #ab ;print-byte JSR2 BR
+	;short-txt PRINT #cdef ;print-short JSR2 BR
+	;string-txt PRINT ;hello-word ;print JSR2 BR
 
 	;hello-word ;print JSR2
-	#ffff ;print-hexadecimal JSR2
+	#ffff ;print-short JSR2
 	;is-word ;print JSR2
-	#ffff ;print-decimal JSR2
+	#ffff ;print-short-decimal JSR2
 	
 BRK
 
-@print ( addr -- )
+@print ( addr* -- )
 	
 	&loop
-		( send ) DUP2 LDA .Console/char DEO
+		( send ) DUP2 LDA .Console/write DEO
 		( incr ) #0001 ADD2
 		( loop ) DUP2 LDA ,&loop JCN
 	POP2
 
 RTN
 
-@print-hexadecimal ( short -- )
-	LIT '0 .Console/char DEO
-	LIT 'x .Console/char DEO
-	DUP2 #0c SFT2 ,&digit JSR
-	DUP2 #08 SFT2 ,&digit JSR
-	DUP2 #04 SFT2 ,&digit JSR
-	              ,&digit JSR
+@print-short ( short* -- )
+	LIT '0 .Console/write DEO
+	LIT 'x .Console/write DEO
+	OVR #04 SFT ,&hex JSR
+	SWP #0f AND ,&hex JSR
+	DUP #04 SFT ,&hex JSR
+	    #0f AND ,&hex JMP
+
+	&hex
+	#30 ADD DUP #39 GTH #27 MUL ADD .Console/write DEO
 RTN
 
-	&digit
-	#0f AND DUP #0a LTH ,&not-alpha JCN
-		#27 ADD
-	&not-alpha
-	LIT '0 ADD .Console/char DEO
-	POP
+@print-byte ( byte -- )
+	LIT '0 .Console/write DEO
+	LIT 'x .Console/write DEO
+	DUP #04 SFT ,&hex JSR
+	    #0f AND ,&hex JMP
+
+	&hex
+	#30 ADD DUP #39 GTH #27 MUL ADD .Console/write DEO
 RTN
 
-@print-decimal ( short -- )
+@print-short-decimal ( short -- )
 	#00 .number/started STZ
 	DUP2 #2710 DIV2 DUP2 ,&digit JSR #2710 MUL2 SUB2
 	DUP2 #03e8 DIV2 DUP2 ,&digit JSR #03e8 MUL2 SUB2
@@ -65,7 +70,7 @@ RTN
 	DUP2 #000a DIV2 DUP2 ,&digit JSR #000a MUL2 SUB2
 	                     ,&digit JSR
 	.number/started LDZ ,&end JCN
-	LIT '0 .Console/char DEO
+	LIT '0 .Console/write DEO
 	&end
 RTN
 
@@ -73,7 +78,7 @@ RTN
 	SWP POP
 	DUP .number/started LDZ ORA #02 JCN
 	POP JMP2r
-	LIT '0 ADD .Console/char DEO
+	LIT '0 ADD .Console/write DEO
 	#01 .number/started STZ
 RTN
 
