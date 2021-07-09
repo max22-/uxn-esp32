@@ -110,8 +110,8 @@ inspect(Ppu *p, Uint8 *stack, Uint8 wptr, Uint8 rptr, Uint8 *memory)
 	/* return pointer */
 	puticn(p, &p->fg, 0x8, y + 0x10, font[(rptr >> 4) & 0xf], 0x2, 0, 0);
 	puticn(p, &p->fg, 0x10, y + 0x10, font[rptr & 0xf], 0x2, 0, 0);
-	for(i = 0; i < 0x40; ++i) { /* memory */
-		x = ((i % 8) * 3 + 1) * 8, y = (i / 8 + 1) * 8 + p->height - 0x50, b = memory[i];
+	for(i = 0; i < 0x20; ++i) { /* memory */
+		x = ((i % 8) * 3 + 1) * 8, y = 0x38 + (i / 8 + 1) * 8, b = memory[i];
 		puticn(p, &p->fg, x, y, font[(b >> 4) & 0xf], 3, 0, 0);
 		puticn(p, &p->fg, x + 8, y, font[b & 0xf], 3, 0, 0);
 	}

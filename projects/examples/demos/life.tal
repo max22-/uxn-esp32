@@ -114,12 +114,8 @@ BRK
 	#30 .Screen/color DEO
 
 	( record pointer positions )
-	.Mouse/x DEI2 .pointer/x STZ2 
-	.Mouse/y DEI2 .pointer/y STZ2
-
-	( draw new cursor )
-	.pointer/x LDZ2 .Screen/x DEO2 
-	.pointer/y LDZ2 .Screen/y DEO2 
+	.Mouse/x DEI2 DUP2 .pointer/x STZ2 .Screen/x DEO2
+	.Mouse/y DEI2 DUP2 .pointer/y STZ2 .Screen/y DEO2 
 
 	( colorize on state )
 	#32 [ .Mouse/state DEI #00 ! ] + .Screen/color DEO
