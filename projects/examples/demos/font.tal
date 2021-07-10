@@ -29,21 +29,21 @@
 	#0fa7 .System/b DEO2
 
 	( load font )
-	#6000 .File/length DEO2
+	#4900 .File/length DEO2
 	;font-path-large .File/name DEO2
 	;font-data .File/load DEO2
 		( draw label )
 		#0020 #0020 ;title #21 ;draw-uf3 JSR2
 
 	( load font )
-	#4000 .File/length DEO2
+	#2100 .File/length DEO2
 	;font-path-medium .File/name DEO2
 	;font-data .File/load DEO2
 		( draw label )
 		#0020 #0048 ;body #22 ;draw-uf2 JSR2
 
 	( load font )
-	#4000 .File/length DEO2
+	#0900 .File/length DEO2
 	;font-path-small .File/name DEO2
 	;font-data .File/load DEO2
 		( draw label )
