@@ -1,0 +1,166 @@
+( repl
+
+  implemented: hardly anything
+
+  yet to implement: practically everything
+)
+
+( devices )
+
+|00 @System  &vector $2 &pad     $6 &r      $2 &g     $2 &b      $2
+|20 @Screen  &vector $2 &width   $2 &height $2 &pad   $2 &x      $2 &y      $2 &addr $2 &color $1
+|a0 @File    &vector $2 &success $2 &offset $2 &pad   $2 &name   $2 &length $2 &load $2 &save  $2
+
+( variables )
+
+|0000
+	@font [ &height $1 &cells $1 ]
+
+( init )
+
+|0100 ( -> )
+
+	( theme )
+	#0fa7 .System/r DEO2
+	#0fa7 .System/g DEO2
+	#0fa7 .System/b DEO2
+
+	;font1 ;load-font JSR2
+	;body ;wrapped-write JSR2
+	;cr JSR2
+	;font2 ;load-font JSR2
+	;body ;wrapped-write JSR2
+	;cr JSR2
+	;font3 ;load-font JSR2
+	;body ;wrapped-write JSR2
+	;cr JSR2
+	BRK
+
+	;body ;write JSR2 POP2
+	#0000 .Screen/x DEO2
+	#00 .font/height LDZ .Screen/y DEO2
+	;body ;write JSR2 POP2
+	BRK
+
+@load-font ( filename* -- )
+	DUP2 .File/name DEO2
+	( find end of string for suffix )
+	&loop
+		#0001 ADD2
+		LDAk ,&loop JCN
+	( suffix is cell size )
+	#0001 SUB2 LDAk #0f AND .font/cells STZ
+	( search backwards for number )
+	&loop2
+		#0001 SUB2
+		LDAk DUP #2f GTH STH #3a LTH STHr #0101 NEQ2 ,&loop2 JCN
+	( parse number to find font height )
+	#0001 STH2
+	&loop3
+		LDAk DUPk #2f GTH STH #3a LTH STHr #0101 NEQ2 ,&end-loop3 JCN
+		#30 SUB STHr MULk STH ADDr #0a MUL STH POP
+		#0001 SUB2
+		,&loop3 JMP
+	&end-loop3
+	STH2r POP .font/height STZ
+	POP
+	POP2
+
+	.font/cells LDZ DUP MUL #08 MUL #01 ADD #00 .File/length DEO2
+	;font-data .File/load DEO2
+
+	JMP2r
+
+@get-word-width ( string* -- string* width* )
+	DUP2 LIT2r 0000
+	&loop
+	LDAk DUP #20 GTH ,&not-end JCN
+	POP
+	POP2 STH2r
+	JMP2r
+
+	&not-end
+	#00 SWP ;font-data ADD2 LDA
+	LITr 00 STH ADD2r
+	#0001 ADD2
+	,&loop JMP
+
+@wrapped-write ( string* -- )
+	LDAk ,&not-end JCN
+	POP2
+	JMP2r
+
+	&not-end
+	,get-word-width JSR .Screen/x DEI2 ADD2 .Screen/width DEI2 LTH2 ,&no-cr JCN
+	,cr JSR
+	&no-cr
+	,write JSR
+	,wrapped-write JMP
+
+@cr ( -- )
+	#0000 .Screen/x DEO2
+	.Screen/y DEI2 #00 .font/height LDZ ADD2 .Screen/y DEO2
+	JMP2r
+
+@write ( string* -- end-of-string* )
+	LDAk DUP ,&not-end JCN
+	POP
+	JMP2r
+
+	&not-end
+	#00 SWP #00 .font/cells LDZ MUL2k MUL2 #0008 MUL2 #0100 ADD2 ( string* char* tile* )
+	;font-data ADD2 .Screen/addr DEO2
+	.font/cells LDZ
+	&outer
+		DUP #00 EQU ,&end-outer JCN
+		.font/cells LDZ
+		&inner
+			DUP #00 EQU ,&end-inner JCN
+			#21 .Screen/color DEO
+			#0008 DUP2
+				.Screen/x DEI2 ADD2 .Screen/x DEO2
+				.Screen/addr DEI2 ADD2 .Screen/addr DEO2
+			#01 SUB
+			,&inner JMP
+		&end-inner
+		#00 .font/cells LDZ #fff8 MUL2 .Screen/x DEI2 ADD2 .Screen/x DEO2
+		#0008 .Screen/y DEI2 ADD2 .Screen/y DEO2
+		POP
+		#01 SUB
+		,&outer JMP
+	&end-outer
+	#00 .font/cells LDZ #fff8 MUL2 .Screen/y DEI2 ADD2 .Screen/y DEO2
+	POP
+	;font-data ADD2 LDA #00 SWP .Screen/x DEI2 ADD2 .Screen/x DEO2
+	LDAk STH
+	#0001 ADD2
+	STHr #20 GTH ;write JCN2
+	JMP2r
+
+@body 
+	4927 6c6c 206d 616b 6520 6120 736f 756e
+	6420 7468 6174 2773 2073 6f20 616c 6f6e
+	6520 74 6861 7420 6e6f 206f 6e65 2063
+	616e 206d 6973 7320 6974 2c20 7468 6174
+	2077 686f 6576 6572 20 6865 6172 7320
+	6974 2077 696c 6c20 7765 6570 2069 6e20
+	7468 6569 7220 736f 756c 732c 20 616e
+	6420 6865 6172 7468 7320 7769 6c6c 2073
+	6565 6d20 7761 726d 6572 2c20 61 6e64
+	2062 6569 6e67 2069 6e73 6964 6520 7769
+	6c6c 2073 6565 6d20 6265 7474 6572 20
+	746f 2061 6c6c 2077 686f 2068 6561 7220
+	6974 2069 6e20 7468 6520 6469 7374 616e
+	7420 746f 776e 732e 20 $1
+
+@font1
+	"projects/fonts/geneva24.uf3 $1
+@font2
+	"projects/fonts/venice14.uf2 $1
+@font3
+	"projects/fonts/orca8.uf1 $1
+	"projects/fonts/left8.uf1 $1
+	"projects/fonts/specter8.uf1 $1
+	"projects/fonts/atari8.uf1 $1
+
+@font-data
