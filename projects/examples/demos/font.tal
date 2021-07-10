@@ -186,6 +186,6 @@ RTN
 @font-path-medium 
 	"projects/fonts/venice14.uf2 $1
 @font-path-small  
-	"projects/fonts/atari.uf1 $1
+	"projects/fonts/atari8.uf1 $1
 
 @font-data
