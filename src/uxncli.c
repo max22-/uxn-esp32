@@ -45,8 +45,8 @@ printstack(Stack *s)
 static void
 console_talk(Device *d, Uint8 b0, Uint8 w)
 {
-	if(w && b0 == 0x8)
-		write(1, (char *)&d->dat[0x8], 1);
+	if(w && b0 > 0x7)
+		write(b0 - 0x7, (char *)&d->dat[b0], 1);
 }
 
 static void
