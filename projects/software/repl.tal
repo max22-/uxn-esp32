@@ -9,37 +9,83 @@
 
 |00 @System  &vector $2 &pad     $6 &r      $2 &g     $2 &b      $2
 |20 @Screen  &vector $2 &width   $2 &height $2 &pad   $2 &x      $2 &y      $2 &addr $2 &color $1
+|80 @Controller [ &vector $2 &button   $1 &key    $1 ]
 |a0 @File    &vector $2 &success $2 &offset $2 &pad   $2 &name   $2 &length $2 &load $2 &save  $2
-
-( variables )
-
-|0000
-	@font [ &height $1 &cells $1 ]
 
 ( init )
 
 |0100 ( -> )
+@user-program
+	;init ;repl/fn STA2
+	#2000 JMP2
+	&erase-end
 
+|2000 ( -> )
+	&end
+	,repl/fn LDR2 JSR2
+	BRK
+
+@repl [ &fn $2 &font-height $1 &font-cells $1 ]
+@buffer [ &cursor $2 &end $2 ]
+
+@init
 	( theme )
 	#0fa7 .System/r DEO2
 	#0fa7 .System/g DEO2
 	#0fa7 .System/b DEO2
 
-	;font1 ;load-font JSR2
-	;body ;wrapped-write JSR2
-	;cr JSR2
-	;font2 ;load-font JSR2
-	;body ;wrapped-write JSR2
-	;cr JSR2
-	;font3 ;load-font JSR2
-	;body ;wrapped-write JSR2
-	;cr JSR2
-	BRK
+	( vectors )
+	#2000 .Screen/vector DEO2
+	;on-key .Controller/vector DEO2
 
-	;body ;write JSR2 POP2
-	#0000 .Screen/x DEO2
-	#00 .font/height LDZ .Screen/y DEO2
-	;body ;write JSR2 POP2
+	( default function )
+	;main ,repl/fn STR2
+
+	( buffer )
+	;ring-buffer
+		DUP2 ,buffer/cursor STR2
+		,buffer/end STR2
+
+	( clear out user-program )
+	;user-program/erase-end ;user-program
+	&clear-loop
+	#0000 OVR2 STA2
+	#0002 ADD2
+	GTH2k ,&clear-loop JCN
+	POP2 POP2
+
+	( load font )
+	;font ;load-font JMP2 ( tail call )
+
+@main ( -- )
+	JMP2r
+
+@on-key ( -> )
+	.Controller/button DEI #01 AND ,&skip JCN
+	.Controller/key DEI
+		DUP #e0 AND ,&append JCN
+		DUP #08 EQU ,&backspace JCN
+		DUP #0d EQU ,&execute JCN
+	POP &skip BRK
+
+	&append
+	;buffer/cursor LDA2
+	STH2k STA
+	STH2r #0001 ADD2 ;ring-buffer ORA2 ;buffer/cursor STA2
+	,&draw JMP
+
+	&backspace
+	&execute
+	DUP EOR
+	;buffer/cursor LDA2
+	#0001 SUB2 ;ring-buffer ORA2 DUP2 ;buffer/cursor STA2
+	STA
+
+	&draw
+	#0000 DUP2 .Screen/x DEO2 .Screen/y DEO2
+	;ring-buffer ;wrapped-write JSR2
+
+	#20 ;draw-glyph JSR2
 	BRK
 
 @load-font ( filename* -- )
@@ -49,7 +95,7 @@
 		#0001 ADD2
 		LDAk ,&loop JCN
 	( suffix is cell size )
-	#0001 SUB2 LDAk #0f AND .font/cells STZ
+	#0001 SUB2 LDAk #0f AND ;repl/font-cells STA
 	( search backwards for number )
 	&loop2
 		#0001 SUB2
@@ -62,11 +108,11 @@
 		#0001 SUB2
 		,&loop3 JMP
 	&end-loop3
-	STH2r POP .font/height STZ
+	STH2r POP ;repl/font-height STA
 	POP
 	POP2
 
-	.font/cells LDZ DUP MUL #08 MUL #01 ADD #00 .File/length DEO2
+	;repl/font-cells LDA DUP MUL #08 MUL #01 ADD #00 .File/length DEO2
 	;font-data .File/load DEO2
 
 	JMP2r
@@ -99,7 +145,7 @@
 
 @cr ( -- )
 	#0000 .Screen/x DEO2
-	.Screen/y DEI2 #00 .font/height LDZ ADD2 .Screen/y DEO2
+	.Screen/y DEI2 #00 ;repl/font-height LDA ADD2 .Screen/y DEO2
 	JMP2r
 
 @write ( string* -- end-of-string* )
@@ -108,33 +154,39 @@
 	JMP2r
 
 	&not-end
-	#00 SWP #00 .font/cells LDZ MUL2k MUL2 #0008 MUL2 #0100 ADD2 ( string* char* tile* )
+	#00 SWP #00 ;repl/font-cells LDA MUL2k MUL2 #0008 MUL2 #0100 ADD2 ( string* char* tile* )
 	;font-data ADD2 .Screen/addr DEO2
-	.font/cells LDZ
+	#2d ,draw-glyph JSR
+	#00 ;repl/font-cells LDA #fff8 MUL2 .Screen/y DEI2 ADD2 .Screen/y DEO2
+	;font-data ADD2 LDA #00 SWP .Screen/x DEI2 ADD2 .Screen/x DEO2
+	LDAk STH
+	#0001 ADD2
+	STHr #20 GTH ;write JCN2
+	JMP2r
+
+@draw-glyph ( color -- )
+	STH
+	;repl/font-cells LDA
 	&outer
 		DUP #00 EQU ,&end-outer JCN
-		.font/cells LDZ
+		;repl/font-cells LDA
 		&inner
 			DUP #00 EQU ,&end-inner JCN
-			#21 .Screen/color DEO
+			STHkr .Screen/color DEO
 			#0008 DUP2
 				.Screen/x DEI2 ADD2 .Screen/x DEO2
 				.Screen/addr DEI2 ADD2 .Screen/addr DEO2
 			#01 SUB
 			,&inner JMP
 		&end-inner
-		#00 .font/cells LDZ #fff8 MUL2 .Screen/x DEI2 ADD2 .Screen/x DEO2
-		#0008 .Screen/y DEI2 ADD2 .Screen/y DEO2
 		POP
+		#00 ;repl/font-cells LDA #fff8 MUL2 .Screen/x DEI2 ADD2 .Screen/x DEO2
+		#0008 .Screen/y DEI2 ADD2 .Screen/y DEO2
 		#01 SUB
 		,&outer JMP
 	&end-outer
-	#00 .font/cells LDZ #fff8 MUL2 .Screen/y DEI2 ADD2 .Screen/y DEO2
 	POP
-	;font-data ADD2 LDA #00 SWP .Screen/x DEI2 ADD2 .Screen/x DEO2
-	LDAk STH
-	#0001 ADD2
-	STHr #20 GTH ;write JCN2
+	POPr
 	JMP2r
 
 @body 
@@ -153,14 +205,10 @@
 	6974 2069 6e20 7468 6520 6469 7374 616e
 	7420 746f 776e 732e 20 $1
 
-@font1
-	"projects/fonts/geneva24.uf3 $1
-@font2
+@font
 	"projects/fonts/venice14.uf2 $1
-@font3
-	"projects/fonts/orca8.uf1 $1
-	"projects/fonts/left8.uf1 $1
-	"projects/fonts/specter8.uf1 $1
-	"projects/fonts/atari8.uf1 $1
 
 @font-data
+
+|fe00 @ring-buffer
+
