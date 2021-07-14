@@ -22,7 +22,7 @@ static Device *devconsole;
 static int
 error(char *msg, const char *err)
 {
-	printf("Error %s: %s\n", msg, err);
+	fprintf(stderr, "Error %s: %s\n", msg, err);
 	return 0;
 }
 
@@ -30,13 +30,13 @@ static void
 printstack(Stack *s)
 {
 	Uint8 x, y;
-	printf("\n\n");
+	fprintf(stderr, "\n\n");
 	for(y = 0; y < 0x08; ++y) {
 		for(x = 0; x < 0x08; ++x) {
 			Uint8 p = y * 0x08 + x;
-			printf(p == s->ptr ? "[%02x]" : " %02x ", s->dat[p]);
+			fprintf(stderr, p == s->ptr ? "[%02x]" : " %02x ", s->dat[p]);
 		}
-		printf("\n");
+		fprintf(stderr, "\n");
 	}
 }
 
