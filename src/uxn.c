@@ -159,6 +159,7 @@ evaluxn(Uxn *u, Uint16 vec)
 	u->ram.ptr = vec;
 	u->wst.error = 0;
 	u->rst.error = 0;
+	if(u->wst.ptr > 0xf8) u->wst.ptr = 0xf8;
 	while(u->ram.ptr)
 		if(!stepuxn(u, u->ram.dat[u->ram.ptr++]))
 			return 0;

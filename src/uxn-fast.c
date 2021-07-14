@@ -56,6 +56,7 @@ evaluxn(Uxn *u, Uint16 vec)
 {
 	Uint8 instr;
 	u->ram.ptr = vec;
+	if(u->wst.ptr > 0xf8) u->wst.ptr = 0xf8;
 	while(u->ram.ptr) {
 		instr = u->ram.dat[u->ram.ptr++];
 		switch(instr) {
