@@ -164,7 +164,7 @@ for l in assert io.lines 'src/uxn.c'
 i = 0
 wanted = false
 for l in assert io.lines 'src/uxnasm.c'
-	if l == 'char ops[][4] = {'
+	if l == 'static char ops[][4] = {'
 		wanted = true
 	elseif l == '};'
 		wanted = false

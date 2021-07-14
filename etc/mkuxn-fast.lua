@@ -228,7 +228,7 @@ end
 i = 0
 wanted = false
 for l in assert(io.lines('src/uxnasm.c')) do
-  if l == 'char ops[][4] = {' then
+  if l == 'static char ops[][4] = {' then
     wanted = true
   elseif l == '};' then
     wanted = false
