@@ -37,11 +37,11 @@ envelope(Apu *c, Uint32 age)
 	return 0x0000;
 }
 
-void
+int
 apu_render(Apu *c, Sint16 *sample, Sint16 *end)
 {
 	Sint32 s;
-	if(!c->advance || !c->period) return;
+	if(!c->advance || !c->period) return 0;
 	while(sample < end) {
 		c->count += c->advance;
 		c->i += c->count / c->period;
@@ -49,7 +49,7 @@ apu_render(Apu *c, Sint16 *sample, Sint16 *end)
 		if(c->i >= c->len) {
 			if(!c->repeat) {
 				c->advance = 0;
-				return;
+				return 1;
 			}
 			c->i %= c->len;
 		}
@@ -57,6 +57,7 @@ apu_render(Apu *c, Sint16 *sample, Sint16 *end)
 		*sample++ += s * c->volume[0] / 0x180;
 		*sample++ += s * c->volume[1] / 0x180;
 	}
+	return 1;
 }
 
 void

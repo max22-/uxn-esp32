@@ -51,11 +51,13 @@ error(char *msg, const char *err)
 static void
 audio_callback(void *u, Uint8 *stream, int len)
 {
-	int i;
+	int i, running = 0;
 	Sint16 *samples = (Sint16 *)stream;
 	SDL_memset(stream, 0, len);
 	for(i = 0; i < POLYPHONY; ++i)
-		apu_render(&apu[i], samples, samples + len / 2);
+		running += apu_render(&apu[i], samples, samples + len / 2);
+	if(!running)
+		SDL_PauseAudioDevice(audio_id, 1);
 	(void)u;
 }
 
@@ -162,7 +164,6 @@ init(void)
 	audio_id = SDL_OpenAudioDevice(NULL, 0, &as, NULL, 0);
 	if(!audio_id)
 		return error("Audio", SDL_GetError());
-	SDL_PauseAudioDevice(audio_id, 0);
 	return 1;
 }
 
@@ -300,6 +301,7 @@ audio_talk(Device *d, Uint8 b0, Uint8 w)
 		c->repeat = !(d->dat[0xf] & 0x80);
 		apu_start(c, mempeek16(d->dat, 0x8), d->dat[0xf] & 0x7f);
 		SDL_UnlockAudioDevice(audio_id);
+		SDL_PauseAudioDevice(audio_id, 0);
 	}
 }
 
