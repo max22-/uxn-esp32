@@ -31,7 +31,7 @@ static Apu apu[POLYPHONY];
 static Device *devscreen, *devmouse, *devctrl, *devaudio0, *devconsole;
 static Uint32 stdin_event;
 
-#define PAD 16
+#define PAD 4
 
 static Uint8 zoom = 0, debug = 0, reqdraw = 0, bench = 0;
 
@@ -409,7 +409,7 @@ main(int argc, char **argv)
 	SDL_CreateThread(stdin_handler, "stdin", NULL);
 
 	if(argc < 2)
-		return error("Input", "Missing");
+		return error("Input", "usage: uxnemu file.rom");
 	if(!bootuxn(&u))
 		return error("Boot", "Failed");
 	if(!loaduxn(&u, argv[1]))
