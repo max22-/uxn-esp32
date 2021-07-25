@@ -4052,10 +4052,8 @@ int
 loaduxn(Uxn *u, char *filepath)
 {
 	FILE *f;
-	if(!(f = fopen(filepath, "rb"))) {
-		fprintf(stderr, "Halted: Missing input rom.\n");
+	if(!(f = fopen(filepath, "rb"))) 
 		return 0;
-	}
 	fread(u->ram.dat + PAGE_PROGRAM, sizeof(u->ram.dat) - PAGE_PROGRAM, 1, f);
 	fprintf(stderr, "Uxn loaded[%s].\n", filepath);
 	return 1;

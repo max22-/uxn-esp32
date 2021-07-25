@@ -44,7 +44,7 @@ clamp(int val, int min, int max)
 static int
 error(char *msg, const char *err)
 {
-	fprintf(stderr, "Error %s: %s\n", msg, err);
+	fprintf(stderr, "%s: %s\n", msg, err);
 	return 0;
 }
 
@@ -130,26 +130,26 @@ init(void)
 {
 	SDL_AudioSpec as;
 	if(!initppu(&ppu, 64, 40))
-		return error("PPU", "Init failure");
+		return error("ppu", "Init failure");
 	gRect.x = PAD;
 	gRect.y = PAD;
 	gRect.w = ppu.width;
 	gRect.h = ppu.height;
 	if(SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO) < 0)
-		return error("Init", SDL_GetError());
+		return error("sdl", SDL_GetError());
 	gWindow = SDL_CreateWindow("Uxn", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, (ppu.width + PAD * 2) * zoom, (ppu.height + PAD * 2) * zoom, SDL_WINDOW_SHOWN);
 	if(gWindow == NULL)
-		return error("Window", SDL_GetError());
+		return error("sdl_window", SDL_GetError());
 	gRenderer = SDL_CreateRenderer(gWindow, -1, 0);
 	if(gRenderer == NULL)
-		return error("Renderer", SDL_GetError());
+		return error("sdl_renderer", SDL_GetError());
 	SDL_RenderSetLogicalSize(gRenderer, ppu.width + PAD * 2, ppu.height + PAD * 2);
 	bgTexture = SDL_CreateTexture(gRenderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STATIC, ppu.width + PAD * 2, ppu.height + PAD * 2);
 	if(bgTexture == NULL || SDL_SetTextureBlendMode(bgTexture, SDL_BLENDMODE_NONE))
-		return error("Texture", SDL_GetError());
+		return error("sdl_texture", SDL_GetError());
 	fgTexture = SDL_CreateTexture(gRenderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STATIC, ppu.width + PAD * 2, ppu.height + PAD * 2);
 	if(fgTexture == NULL || SDL_SetTextureBlendMode(fgTexture, SDL_BLENDMODE_BLEND))
-		return error("Texture", SDL_GetError());
+		return error("sdl_texture", SDL_GetError());
 	SDL_UpdateTexture(bgTexture, NULL, ppu.bg.pixels, 4);
 	SDL_UpdateTexture(fgTexture, NULL, ppu.fg.pixels, 4);
 	SDL_StartTextInput();
@@ -163,7 +163,7 @@ init(void)
 	as.userdata = NULL;
 	audio_id = SDL_OpenAudioDevice(NULL, 0, &as, NULL, 0);
 	if(!audio_id)
-		return error("Audio", SDL_GetError());
+		return error("sdl_audio", SDL_GetError());
 	return 1;
 }
 
@@ -409,13 +409,11 @@ main(int argc, char **argv)
 	SDL_CreateThread(stdin_handler, "stdin", NULL);
 
 	if(argc < 2)
-		return error("Input", "usage: uxnemu file.rom");
-	if(!bootuxn(&u))
-		return error("Boot", "Failed");
+		return error("usage", "uxnemu file.rom");
 	if(!loaduxn(&u, argv[1]))
-		return error("Load", "Failed");
+		return error("Load", "Failed to open rom.");
 	if(!init())
-		return error("Init", "Failed");
+		return error("Init", "Failed to initialize emulator.");
 
 	portuxn(&u, 0x0, "system", system_talk);
 	devconsole = portuxn(&u, 0x1, "console", console_talk);

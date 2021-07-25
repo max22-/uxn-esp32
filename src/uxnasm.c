@@ -137,9 +137,9 @@ sublabel(char *src, char *scope, char *name)
 #pragma mark - Parser
 
 static int
-error(char *name, char *id)
+error(char *name, char *msg)
 {
-	fprintf(stderr, "Error: %s[%s]\n", name, id);
+	fprintf(stderr, "%s: %s\n", name, msg);
 	return 0;
 }
 
@@ -366,11 +366,11 @@ main(int argc, char *argv[])
 {
 	FILE *f;
 	if(argc < 3)
-		return !error("Usage", "input.tal output.rom");
+		return !error("usage", "input.tal output.rom");
 	if(!(f = fopen(argv[1], "r")))
-		return !error("Open", "Failed");
+		return !error("Load", "Failed to open source.");
 	if(!pass1(f) || !pass2(f))
-		return !error("Assembly", "Failed");
+		return !error("Assembly", "Failed to assemble rom.");
 	fwrite(p.data + TRIM, p.length - TRIM, 1, fopen(argv[2], "wb"));
 	fclose(f);
 	cleanup(argv[2]);
