@@ -24,7 +24,11 @@ fi
 
 mkdir -p bin
 CFLAGS="-std=c89 -Wall -Wno-unknown-pragmas"
-UXNEMU_LDFLAGS="-L/usr/local/lib $(sdl2-config --cflags --libs)"
+if [ -n "${MSYSTEM}" ]; then
+	UXNEMU_LDFLAGS="-static $(sdl2-config --cflags --static-libs)"
+else
+	UXNEMU_LDFLAGS="-L/usr/local/lib $(sdl2-config --cflags --libs)"
+fi
 
 if [ "${1}" = '--debug' ]; 
 then
