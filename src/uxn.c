@@ -156,6 +156,8 @@ stepuxn(Uxn *u, Uint8 instr)
 int
 evaluxn(Uxn *u, Uint16 vec)
 {
+	if(u->dev[0].dat[0xf])
+		return 0;
 	u->ram.ptr = vec;
 	u->wst.error = 0;
 	u->rst.error = 0;

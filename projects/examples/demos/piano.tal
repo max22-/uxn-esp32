@@ -16,6 +16,8 @@
 %8//  { #03 SFT2 }
 %8**  { #30 SFT2 }
 
+%BREAKPOINT { #0101 #0e DEO2 }
+
 ( devices )
 
 |00 @System     [ &vector $2 &pad      $6 &r      $2 &g     $2 &b      $2 ]
@@ -132,6 +134,9 @@ BRK
 		#3b .octave LDZ #0c * + ;play JSR2 &no-b
 	DUP #6b ! ,&no-c2 JCN
 		#3c .octave LDZ #0c * + ;play JSR2 &no-c2
+	DUP #1b ! ,&no-esc JCN
+		BREAKPOINT
+		&no-esc
 	POP
 
 	( release )

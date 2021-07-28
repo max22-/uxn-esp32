@@ -33,7 +33,7 @@ static Uint32 stdin_event;
 
 #define PAD 4
 
-static Uint8 zoom = 0, debug = 0, reqdraw = 0, bench = 0;
+static Uint8 zoom = 0, reqdraw = 0, bench = 0;
 
 static int
 clamp(int val, int min, int max)
@@ -64,7 +64,7 @@ audio_callback(void *u, Uint8 *stream, int len)
 static void
 redraw(Uxn *u)
 {
-	if(debug)
+	if(u->dev[0].dat[0xe])
 		inspect(&ppu, u->wst.dat, u->wst.ptr, u->rst.ptr, u->ram.dat);
 	SDL_UpdateTexture(bgTexture, &gRect, ppu.bg.pixels, ppu.width * sizeof(Uint32));
 	SDL_UpdateTexture(fgTexture, &gRect, ppu.fg.pixels, ppu.width * sizeof(Uint32));
@@ -78,7 +78,7 @@ redraw(Uxn *u)
 static void
 toggledebug(Uxn *u)
 {
-	debug = !debug;
+	u->dev[0].dat[0xe] = !u->dev[0].dat[0xe];
 	redraw(u);
 }
 
@@ -229,11 +229,11 @@ system_talk(Device *d, Uint8 b0, Uint8 w)
 	if(!w) {
 		d->dat[0x2] = d->u->wst.ptr;
 		d->dat[0x3] = d->u->rst.ptr;
-	} else {
+	} else if(b0 > 0x7 && b0 < 0xe) {
 		putcolors(&ppu, &d->dat[0x8]);
 		reqdraw = 1;
-	}
-	(void)b0;
+	} else if(b0 == 0xf)
+		d->u->ram.ptr = 0x0000;
 }
 
 static void
@@ -390,7 +390,7 @@ run(Uxn *u)
 			}
 		}
 		evaluxn(u, mempeek16(devscreen->dat, 0));
-		if(reqdraw)
+		if(reqdraw || u->dev[0].dat[0xe])
 			redraw(u);
 		if(!bench) {
 			elapsed = (SDL_GetPerformanceCounter() - start) / (double)SDL_GetPerformanceFrequency() * 1000.0f;
