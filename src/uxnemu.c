@@ -410,6 +410,8 @@ main(int argc, char **argv)
 
 	if(argc < 2)
 		return error("usage", "uxnemu file.rom");
+	if(!bootuxn(&u))
+		return error("Boot", "Failed to start uxn.");
 	if(!loaduxn(&u, argv[1]))
 		return error("Load", "Failed to open rom.");
 	if(!init())
