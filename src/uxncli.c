@@ -43,6 +43,18 @@ printstack(Stack *s)
 #pragma mark - Devices
 
 static void
+system_talk(Device *d, Uint8 b0, Uint8 w)
+{
+	if(!w) {
+		d->dat[0x2] = d->u->wst.ptr;
+		d->dat[0x3] = d->u->rst.ptr;
+	} else if(b0 == 0xe)
+		printstack(&d->u->wst);
+	else if(b0 == 0xf)
+		d->u->ram.ptr = 0x0000;
+}
+
+static void
 console_talk(Device *d, Uint8 b0, Uint8 w)
 {
 	if(w && b0 > 0x7)
@@ -121,7 +133,7 @@ main(int argc, char **argv)
 	if(!loaduxn(&u, argv[1]))
 		return error("Load", "Failed");
 
-	portuxn(&u, 0x0, "empty", nil_talk);
+	portuxn(&u, 0x0, "system", system_talk);
 	devconsole = portuxn(&u, 0x1, "console", console_talk);
 	portuxn(&u, 0x2, "empty", nil_talk);
 	portuxn(&u, 0x3, "empty", nil_talk);
@@ -140,7 +152,5 @@ main(int argc, char **argv)
 
 	run(&u);
 
-	if(argc > 2)
-		printstack(&u.wst);
 	return 0;
 }
