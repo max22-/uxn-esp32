@@ -17,7 +17,7 @@ WITH REGARD TO THIS SOFTWARE.
 
 #pragma mark - Core
 
-static Device *devconsole;
+static Device *devsystem, *devconsole;
 
 static int
 error(char *msg, const char *err)
@@ -133,7 +133,7 @@ main(int argc, char **argv)
 	if(!loaduxn(&u, argv[1]))
 		return error("Load", "Failed");
 
-	portuxn(&u, 0x0, "system", system_talk);
+	devsystem = portuxn(&u, 0x0, "system", system_talk);
 	devconsole = portuxn(&u, 0x1, "console", console_talk);
 	portuxn(&u, 0x2, "empty", nil_talk);
 	portuxn(&u, 0x3, "empty", nil_talk);

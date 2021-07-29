@@ -28,7 +28,7 @@ static SDL_Texture *fgTexture, *bgTexture;
 static SDL_Rect gRect;
 static Ppu ppu;
 static Apu apu[POLYPHONY];
-static Device *devscreen, *devmouse, *devctrl, *devaudio0, *devconsole;
+static Device *devsystem, *devscreen, *devmouse, *devctrl, *devaudio0, *devconsole;
 static Uint32 stdin_event;
 
 #define PAD 4
@@ -64,7 +64,7 @@ audio_callback(void *u, Uint8 *stream, int len)
 static void
 redraw(Uxn *u)
 {
-	if(u->dev[0].dat[0xe])
+	if(devsystem->dat[0xe])
 		inspect(&ppu, u->wst.dat, u->wst.ptr, u->rst.ptr, u->ram.dat);
 	SDL_UpdateTexture(bgTexture, &gRect, ppu.bg.pixels, ppu.width * sizeof(Uint32));
 	SDL_UpdateTexture(fgTexture, &gRect, ppu.fg.pixels, ppu.width * sizeof(Uint32));
@@ -78,7 +78,7 @@ redraw(Uxn *u)
 static void
 toggledebug(Uxn *u)
 {
-	u->dev[0].dat[0xe] = !u->dev[0].dat[0xe];
+	devsystem->dat[0xe] = !devsystem->dat[0xe];
 	redraw(u);
 }
 
@@ -390,7 +390,7 @@ run(Uxn *u)
 			}
 		}
 		evaluxn(u, mempeek16(devscreen->dat, 0));
-		if(reqdraw || u->dev[0].dat[0xe])
+		if(reqdraw || devsystem->dat[0xe])
 			redraw(u);
 		if(!bench) {
 			elapsed = (SDL_GetPerformanceCounter() - start) / (double)SDL_GetPerformanceFrequency() * 1000.0f;
@@ -417,7 +417,7 @@ main(int argc, char **argv)
 	if(!init())
 		return error("Init", "Failed to initialize emulator.");
 
-	portuxn(&u, 0x0, "system", system_talk);
+	devsystem = portuxn(&u, 0x0, "system", system_talk);
 	devconsole = portuxn(&u, 0x1, "console", console_talk);
 	devscreen = portuxn(&u, 0x2, "screen", screen_talk);
 	devaudio0 = portuxn(&u, 0x3, "audio0", audio_talk);
