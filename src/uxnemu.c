@@ -23,8 +23,7 @@ WITH REGARD TO THIS SOFTWARE.
 
 static SDL_AudioDeviceID audio_id;
 static SDL_Window *gWindow;
-static SDL_Renderer *gRenderer;
-static SDL_Texture *fgTexture, *bgTexture;
+static SDL_Surface *winSurface, *idxSurface, *rgbaSurface;
 static SDL_Rect gRect;
 static Ppu ppu;
 static Apu apu[POLYPHONY];
@@ -33,7 +32,7 @@ static Uint32 stdin_event;
 
 #define PAD 4
 
-static Uint8 zoom = 0, reqdraw = 0, bench = 0;
+static Uint8 zoom = 1, reqdraw = 0, bench = 0;
 
 static Uint8 font[][8] = {
 	{0x00, 0x7c, 0x82, 0x82, 0x82, 0x82, 0x82, 0x7c},
@@ -85,24 +84,24 @@ inspect(Ppu *p, Uint8 *stack, Uint8 wptr, Uint8 rptr, Uint8 *memory)
 	Uint8 i, x, y, b;
 	for(i = 0; i < 0x20; ++i) { /* stack */
 		x = ((i % 8) * 3 + 1) * 8, y = (i / 8 + 1) * 8, b = stack[i];
-		puticn(p, &p->fg, x, y, font[(b >> 4) & 0xf], 1 + (wptr == i) * 0x7, 0, 0);
-		puticn(p, &p->fg, x + 8, y, font[b & 0xf], 1 + (wptr == i) * 0x7, 0, 0);
+		puticn(p, 1, x, y, font[(b >> 4) & 0xf], 1 + (wptr == i) * 0x7, 0, 0);
+		puticn(p, 1, x + 8, y, font[b & 0xf], 1 + (wptr == i) * 0x7, 0, 0);
 	}
 	/* return pointer */
-	puticn(p, &p->fg, 0x8, y + 0x10, font[(rptr >> 4) & 0xf], 0x2, 0, 0);
-	puticn(p, &p->fg, 0x10, y + 0x10, font[rptr & 0xf], 0x2, 0, 0);
+	puticn(p, 1, 0x8, y + 0x10, font[(rptr >> 4) & 0xf], 0x2, 0, 0);
+	puticn(p, 1, 0x10, y + 0x10, font[rptr & 0xf], 0x2, 0, 0);
 	for(i = 0; i < 0x20; ++i) { /* memory */
 		x = ((i % 8) * 3 + 1) * 8, y = 0x38 + (i / 8 + 1) * 8, b = memory[i];
-		puticn(p, &p->fg, x, y, font[(b >> 4) & 0xf], 3, 0, 0);
-		puticn(p, &p->fg, x + 8, y, font[b & 0xf], 3, 0, 0);
+		puticn(p, 1, x, y, font[(b >> 4) & 0xf], 3, 0, 0);
+		puticn(p, 1, x + 8, y, font[b & 0xf], 3, 0, 0);
 	}
 	for(x = 0; x < 0x10; ++x) { /* guides */
-		putpixel(p, &p->fg, x, p->height / 2, 2);
-		putpixel(p, &p->fg, p->width - x, p->height / 2, 2);
-		putpixel(p, &p->fg, p->width / 2, p->height - x, 2);
-		putpixel(p, &p->fg, p->width / 2, x, 2);
-		putpixel(p, &p->fg, p->width / 2 - 0x10 / 2 + x, p->height / 2, 2);
-		putpixel(p, &p->fg, p->width / 2, p->height / 2 - 0x10 / 2 + x, 2);
+		putpixel(p, 1, x, p->height / 2, 2);
+		putpixel(p, 1, p->width - x, p->height / 2, 2);
+		putpixel(p, 1, p->width / 2, p->height - x, 2);
+		putpixel(p, 1, p->width / 2, x, 2);
+		putpixel(p, 1, p->width / 2 - 0x10 / 2 + x, p->height / 2, 2);
+		putpixel(p, 1, p->width / 2, p->height / 2 - 0x10 / 2 + x, 2);
 	}
 }
 
@@ -111,12 +110,15 @@ redraw(Uxn *u)
 {
 	if(devsystem->dat[0xe])
 		inspect(&ppu, u->wst.dat, u->wst.ptr, u->rst.ptr, u->ram.dat);
-	SDL_UpdateTexture(bgTexture, &gRect, ppu.bg.pixels, ppu.width * sizeof(Uint32));
-	SDL_UpdateTexture(fgTexture, &gRect, ppu.fg.pixels, ppu.width * sizeof(Uint32));
-	SDL_RenderClear(gRenderer);
-	SDL_RenderCopy(gRenderer, bgTexture, NULL, NULL);
-	SDL_RenderCopy(gRenderer, fgTexture, NULL, NULL);
-	SDL_RenderPresent(gRenderer);
+	if(rgbaSurface == NULL)
+		SDL_BlitScaled(idxSurface, NULL, winSurface, &gRect);
+	else if(zoom == 1)
+		SDL_BlitSurface(idxSurface, NULL, winSurface, &gRect);
+	else {
+		SDL_BlitSurface(idxSurface, NULL, rgbaSurface, NULL);
+		SDL_BlitScaled(rgbaSurface, NULL, winSurface, &gRect);
+	}
+	SDL_UpdateWindowSurface(gWindow);
 	reqdraw = 0;
 }
 
@@ -132,40 +134,32 @@ togglezoom(Uxn *u)
 {
 	zoom = zoom == 3 ? 1 : zoom + 1;
 	SDL_SetWindowSize(gWindow, (ppu.width + PAD * 2) * zoom, (ppu.height + PAD * 2) * zoom);
+	winSurface = SDL_GetWindowSurface(gWindow);
+	gRect.x = zoom * PAD;
+	gRect.y = zoom * PAD;
+	gRect.w = zoom * ppu.width;
+	gRect.h = zoom * ppu.height;
 	redraw(u);
 }
 
 static void
 screencapture(void)
 {
-	const Uint32 format = SDL_PIXELFORMAT_RGB24;
 	time_t t = time(NULL);
 	char fname[64];
-	int w, h;
-	SDL_Surface *surface;
-	SDL_GetRendererOutputSize(gRenderer, &w, &h);
-	surface = SDL_CreateRGBSurfaceWithFormat(0, w, h, 24, format);
-	SDL_RenderReadPixels(gRenderer, NULL, format, surface->pixels, surface->pitch);
 	strftime(fname, sizeof(fname), "screenshot-%Y%m%d-%H%M%S.bmp", localtime(&t));
-	SDL_SaveBMP(surface, fname);
-	SDL_FreeSurface(surface);
+	SDL_SaveBMP(winSurface, fname);
 	fprintf(stderr, "Saved %s\n", fname);
 }
 
 static void
 quit(void)
 {
-	free(ppu.fg.pixels);
-	free(ppu.bg.pixels);
 	SDL_UnlockAudioDevice(audio_id);
-	SDL_DestroyTexture(bgTexture);
-	bgTexture = NULL;
-	SDL_DestroyTexture(fgTexture);
-	fgTexture = NULL;
-	SDL_DestroyRenderer(gRenderer);
-	gRenderer = NULL;
+	SDL_FreeSurface(winSurface);
+	SDL_FreeSurface(idxSurface);
+	if(rgbaSurface) SDL_FreeSurface(rgbaSurface);
 	SDL_DestroyWindow(gWindow);
-	gWindow = NULL;
 	SDL_Quit();
 	exit(0);
 }
@@ -176,27 +170,30 @@ init(void)
 	SDL_AudioSpec as;
 	if(!initppu(&ppu, 64, 40))
 		return error("ppu", "Init failure");
-	gRect.x = PAD;
-	gRect.y = PAD;
-	gRect.w = ppu.width;
-	gRect.h = ppu.height;
 	if(SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO) < 0)
 		return error("sdl", SDL_GetError());
 	gWindow = SDL_CreateWindow("Uxn", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, (ppu.width + PAD * 2) * zoom, (ppu.height + PAD * 2) * zoom, SDL_WINDOW_SHOWN);
 	if(gWindow == NULL)
 		return error("sdl_window", SDL_GetError());
-	gRenderer = SDL_CreateRenderer(gWindow, -1, 0);
-	if(gRenderer == NULL)
-		return error("sdl_renderer", SDL_GetError());
-	SDL_RenderSetLogicalSize(gRenderer, ppu.width + PAD * 2, ppu.height + PAD * 2);
-	bgTexture = SDL_CreateTexture(gRenderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STATIC, ppu.width + PAD * 2, ppu.height + PAD * 2);
-	if(bgTexture == NULL || SDL_SetTextureBlendMode(bgTexture, SDL_BLENDMODE_NONE))
-		return error("sdl_texture", SDL_GetError());
-	fgTexture = SDL_CreateTexture(gRenderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STATIC, ppu.width + PAD * 2, ppu.height + PAD * 2);
-	if(fgTexture == NULL || SDL_SetTextureBlendMode(fgTexture, SDL_BLENDMODE_BLEND))
-		return error("sdl_texture", SDL_GetError());
-	SDL_UpdateTexture(bgTexture, NULL, ppu.bg.pixels, 4);
-	SDL_UpdateTexture(fgTexture, NULL, ppu.fg.pixels, 4);
+	winSurface = SDL_GetWindowSurface(gWindow);
+	if(winSurface == NULL)
+		return error("sdl_surface win", SDL_GetError());
+	idxSurface = SDL_CreateRGBSurfaceWithFormat(0, ppu.width, ppu.height, 8, SDL_PIXELFORMAT_INDEX8);
+	if(idxSurface == NULL || SDL_SetSurfaceBlendMode(idxSurface, SDL_BLENDMODE_NONE))
+		return error("sdl_surface idx", SDL_GetError());
+	if(SDL_MUSTLOCK(idxSurface) == SDL_TRUE)
+		return error("sdl_surface idx", "demands locking");
+	gRect.x = zoom * PAD;
+	gRect.y = zoom * PAD;
+	gRect.w = zoom * ppu.width;
+	gRect.h = 2 * ppu.height; /* force non-1:1 scaling for BlitScaled test */
+	if(SDL_BlitScaled(idxSurface, NULL, winSurface, &gRect) < 0) {
+		rgbaSurface = SDL_CreateRGBSurfaceWithFormat(0, ppu.width, ppu.height, 32, SDL_PIXELFORMAT_RGB24);
+		if(rgbaSurface == NULL || SDL_SetSurfaceBlendMode(rgbaSurface, SDL_BLENDMODE_NONE))
+			return error("sdl_surface rgba", SDL_GetError());
+	}
+	gRect.h = zoom * ppu.height;
+	ppu.pixels = idxSurface->pixels;
 	SDL_StartTextInput();
 	SDL_ShowCursor(SDL_DISABLE);
 	SDL_zero(as);
@@ -275,7 +272,19 @@ system_talk(Device *d, Uint8 b0, Uint8 w)
 		d->dat[0x2] = d->u->wst.ptr;
 		d->dat[0x3] = d->u->rst.ptr;
 	} else if(b0 > 0x7 && b0 < 0xe) {
-		putcolors(&ppu, &d->dat[0x8]);
+		SDL_Color pal[16];
+		int i;
+		for(i = 0; i < 4; ++i) {
+			pal[i].r = ((d->dat[0x8 + i / 2] >> (!(i % 2) << 2)) & 0x0f) * 0x11;
+			pal[i].g = ((d->dat[0xa + i / 2] >> (!(i % 2) << 2)) & 0x0f) * 0x11;
+			pal[i].b = ((d->dat[0xc + i / 2] >> (!(i % 2) << 2)) & 0x0f) * 0x11;
+		}
+		for(i = 4; i < 16; ++i) {
+			pal[i].r = pal[i / 4].r;
+			pal[i].g = pal[i / 4].g;
+			pal[i].b = pal[i / 4].b;
+		}
+		SDL_SetPaletteColors(idxSurface->format->palette, pal, 0, 16);
 		reqdraw = 1;
 	} else if(b0 == 0xf)
 		d->u->ram.ptr = 0x0000;
@@ -294,7 +303,7 @@ screen_talk(Device *d, Uint8 b0, Uint8 w)
 	if(w && b0 == 0xe) {
 		Uint16 x = mempeek16(d->dat, 0x8);
 		Uint16 y = mempeek16(d->dat, 0xa);
-		Layer *layer = d->dat[0xe] >> 4 & 0x1 ? &ppu.fg : &ppu.bg;
+		Uint8 layer = d->dat[0xe] >> 4 & 0x1;
 		Uint8 mode = d->dat[0xe] >> 5;
 		if(!mode)
 			putpixel(&ppu, layer, x, y, d->dat[0xe] & 0x3);
@@ -309,7 +318,7 @@ screen_talk(Device *d, Uint8 b0, Uint8 w)
 	} else if(w && b0 == 0xf) {
 		Uint16 x = mempeek16(d->dat, 0x8);
 		Uint16 y = mempeek16(d->dat, 0xa);
-		Layer *layer = d->dat[0xf] >> 0x6 & 0x1 ? &ppu.fg : &ppu.bg;
+		Uint8 layer = d->dat[0xf] >> 0x6 & 0x1;
 		Uint8 *addr = &d->mem[mempeek16(d->dat, 0xc)];
 		if(d->dat[0xf] >> 0x7 & 0x1)
 			putchr(&ppu, layer, x, y, addr, d->dat[0xf] & 0xf, d->dat[0xf] >> 0x4 & 0x1, d->dat[0xf] >> 0x5 & 0x1);
@@ -460,7 +469,6 @@ int
 main(int argc, char **argv)
 {
 	Uxn u;
-	zoom = 1;
 
 	stdin_event = SDL_RegisterEvents(1);
 	SDL_CreateThread(stdin_handler, "stdin", NULL);

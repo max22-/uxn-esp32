@@ -17,36 +17,20 @@ clear(Ppu *p)
 {
 	int i, sz = p->height * p->width;
 	for(i = 0; i < sz; ++i) {
-		p->fg.pixels[i] = p->fg.colors[0];
-		p->bg.pixels[i] = p->bg.colors[0];
+		p->pixels[i] = 0;
 	}
 }
 
 void
-putcolors(Ppu *p, Uint8 *addr)
+putpixel(Ppu *p, Uint8 layer, Uint16 x, Uint16 y, Uint8 color)
 {
-	int i;
-	for(i = 0; i < 4; ++i) {
-		Uint8
-			r = (*(addr + i / 2) >> (!(i % 2) << 2)) & 0x0f,
-			g = (*(addr + 2 + i / 2) >> (!(i % 2) << 2)) & 0x0f,
-			b = (*(addr + 4 + i / 2) >> (!(i % 2) << 2)) & 0x0f;
-		p->bg.colors[i] = 0xff000000 | (r << 20) | (r << 16) | (g << 12) | (g << 8) | (b << 4) | b;
-		p->fg.colors[i] = 0xff000000 | (r << 20) | (r << 16) | (g << 12) | (g << 8) | (b << 4) | b;
-	}
-	p->fg.colors[0] = 0;
-	clear(p);
-}
-
-void
-putpixel(Ppu *p, Layer *layer, Uint16 x, Uint16 y, Uint8 color)
-{
+	Uint8 mask = layer ? 0x3 : 0xc, shift = layer * 2;
 	if(x < p->width && y < p->height)
-		layer->pixels[y * p->width + x] = layer->colors[color];
+		p->pixels[y * p->width + x] = (p->pixels[y * p->width + x] & mask) | (color << shift);
 }
 
 void
-puticn(Ppu *p, Layer *layer, Uint16 x, Uint16 y, Uint8 *sprite, Uint8 color, Uint8 flipx, Uint8 flipy)
+puticn(Ppu *p, Uint8 layer, Uint16 x, Uint16 y, Uint8 *sprite, Uint8 color, Uint8 flipx, Uint8 flipy)
 {
 	Uint16 v, h;
 	for(v = 0; v < 8; v++)
@@ -62,7 +46,7 @@ puticn(Ppu *p, Layer *layer, Uint16 x, Uint16 y, Uint8 *sprite, Uint8 color, Uin
 }
 
 void
-putchr(Ppu *p, Layer *layer, Uint16 x, Uint16 y, Uint8 *sprite, Uint8 color, Uint8 flipx, Uint8 flipy)
+putchr(Ppu *p, Uint8 layer, Uint16 x, Uint16 y, Uint8 *sprite, Uint8 color, Uint8 flipx, Uint8 flipy)
 {
 	Uint16 v, h;
 	for(v = 0; v < 8; v++)
@@ -86,10 +70,5 @@ initppu(Ppu *p, Uint8 hor, Uint8 ver)
 	p->ver = ver;
 	p->width = 8 * p->hor;
 	p->height = 8 * p->ver;
-	if(!(p->bg.pixels = malloc(p->width * p->height * sizeof(Uint32))))
-		return 0;
-	if(!(p->fg.pixels = malloc(p->width * p->height * sizeof(Uint32))))
-		return 0;
-	clear(p);
 	return 1;
 }
