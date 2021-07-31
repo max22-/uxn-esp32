@@ -1,7 +1,7 @@
 ( devices )
 
 |00 @System [ &vector $2 &pad $6 &r $2 &g $2 &b $2 ]
-|20 @Screen [ &vector $2 &width $2 &height $2 &pad $2 &x $2 &y $2 &addr $2 &color $1 ]
+|20 @Screen [ &vector $2 &width $2 &height $2 &pad $2 &x $2 &y $2 &addr $2 &pixel $1 &sprite $1 ]
 
 ( variables )
 
@@ -48,15 +48,15 @@
 	POP2 POP2
 	JMP2r
 
-	#15 .Screen/color DEO
+	#15 .Screen/pixel DEO
 	JMP2r
 
 	&draw
 	OVR2 .Screen/x DEO2
-	#05 ADD .Screen/color DEO
+	#05 ADD .Screen/pixel DEO
 	.Screen/y DEI2
 	DUP2 #0001 ADD2 .Screen/y DEO2
-	#00 .Screen/color DEO
+	#00 .Screen/pixel DEO
 	.Screen/y DEO2
 	POP
 	,&rest JMP

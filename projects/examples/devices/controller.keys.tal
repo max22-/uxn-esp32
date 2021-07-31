@@ -15,7 +15,7 @@
 
 |00 @System     [ &vector $2 &pad    $6 &r      $2 &g     $2 &b      $2 ]
 |10 @Console    [ &vector $2 &read     $1 &pad    $5 &write $1 ]
-|20 @Screen     [ &vector $2 &width  $2 &height $2 &pad   $2 &x      $2 &y $2 &addr $2 &color $1 ]
+|20 @Screen     [ &vector $2 &width  $2 &height $2 &pad   $2 &x      $2 &y $2 &addr $2 &pixel $1 &sprite $1 ]
 |80 @Controller [ &vector $2 &button $1 &key    $1 ]
 |a0 @File       [ &vector $2 &success $2 &offset $2 &pad $2 &name $2 &length $2 &load $2 &save $2 ]
 
@@ -55,14 +55,14 @@ BRK
 	( print button-key code )
 	#0000 .Screen/x DEO2
 	.Screen/height DEI2 #0008 -- .Screen/y DEO2
-	.Controller/button DEI2 #21 ;draw-short JSR2
+	.Controller/button DEI2 #01 ;draw-short JSR2
 
 	.position/x LDZ2 .Screen/x DEO2
 	.position/y LDZ2 .Screen/y DEO2
 
 	( linebreak )
 	.Controller/key DEI #0d NEQ ,&no-return JCN 
-		( draw ) #20 .Screen/color DEO
+		( draw ) #00 .Screen/sprite DEO
 		( reset ) #0000 .position/x STZ2
 		( incr ) .position/y LDZ2 #0010 ++ .position/y STZ2
 		;draw-cursor JSR2
@@ -72,10 +72,10 @@ BRK
 	.Controller/key DEI TOS #0020 ** DEBUG2
 
 	;font-data .Controller/key DEI TOS #0010 ** ++ .Screen/addr DEO2
-	.Controller/button DEI ;mod-color JSR2 .Screen/color DEO
+	.Controller/button DEI ;mod-color JSR2 .Screen/sprite DEO
 	.Screen/y DEI2 #0008 ++ .Screen/y DEO2
 	.Screen/addr DEI2 #0008 ++ .Screen/addr DEO2
-	.Controller/button DEI ;mod-color JSR2 .Screen/color DEO
+	.Controller/button DEI ;mod-color JSR2 .Screen/sprite DEO
 	( incr ) .position/x LDZ2 #0008 ++ .position/x STZ2
 	,draw-cursor JSR
 
@@ -86,7 +86,7 @@ BRK
 	( ctrl )  DUP #01 = #01 * STH
 	( alt )   DUP #02 = #03 * STH
 	( shift ) #04 = #05 * STH2r + +
-	#21 + 
+	#01 + 
 
 RTN
 
@@ -95,10 +95,10 @@ RTN
 	.position/x LDZ2 .Screen/x DEO2
 	.position/y LDZ2 .Screen/y DEO2
 	;cursor .Screen/addr DEO2 
-	#22 .Screen/color DEO
+	#02 .Screen/sprite DEO
 
 	.position/y LDZ2 #0008 ++ .Screen/y DEO2
-	#22 .Screen/color DEO
+	#02 .Screen/sprite DEO
 
 RTN
 
@@ -106,16 +106,16 @@ RTN
 
 	STH SWP 
 	DUP #04 SFT TOS #0008 ** ;font-hex ++ .Screen/addr DEO2
-	( draw ) STHkr .Screen/color DEO
+	( draw ) STHkr .Screen/sprite DEO
 	#0f AND TOS #0008 ** ;font-hex ++ .Screen/addr DEO2
 	.Screen/x DEI2 #0008 ++ .Screen/x DEO2
-	( draw ) STHkr .Screen/color DEO
+	( draw ) STHkr .Screen/sprite DEO
 	DUP #04 SFT TOS #0008 ** ;font-hex ++ .Screen/addr DEO2
 	.Screen/x DEI2 #0008 ++ .Screen/x DEO2
-	( draw ) STHkr .Screen/color DEO
+	( draw ) STHkr .Screen/sprite DEO
 	#0f AND TOS #0008 ** ;font-hex ++ .Screen/addr DEO2
 	.Screen/x DEI2 #0008 ++ .Screen/x DEO2
-	( draw ) STHr .Screen/color DEO
+	( draw ) STHr .Screen/sprite DEO
 
 RTN
 

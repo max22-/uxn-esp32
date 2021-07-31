@@ -6,7 +6,7 @@
 ( devices )
 
 |00 @System [ &vector $2 &pad $6 &r $2 &g $2 &b $2 ]
-|20 @Screen [ &vector $2 &width $2 &height $2 &pad $2 &x $2 &y $2 &addr $2 &color $1 ]
+|20 @Screen [ &vector $2 &width $2 &height $2 &pad $2 &x $2 &y $2 &addr $2 &pixel $1 &sprite $1 ]
 |a0 @File [ &vector $2 &success $2 &offset $2 &pad $2 &name $2 &length $2 &load $2 &save $2 ]
 
 ( variables )
@@ -23,19 +23,19 @@
 
 	( theme ) #037a .System/r DEO2 #032a .System/g DEO2 #052a .System/b DEO2
 
-	( background ) ;checker_icn #22 ;cover-pattern JSR2
+	( background ) ;checker_icn #02 ;cover-pattern JSR2
 
 	( load ) ;icn1_path .File/name DEO2 #1800 .File/length DEO2 ;image .File/load DEO2
-	( draw ) #0008 #0008 #0100 #00c0 #27 ;image ;draw-icn JSR2
+	( draw ) #0008 #0008 #0100 #00c0 #07 ;image ;draw-icn JSR2
 
 	( load ) ;icn2_path .File/name DEO2 #0800 .File/length DEO2 ;image .File/load DEO2
-	( draw ) #0010 #0078 #0080 #0080 #27 ;image ;draw-icn JSR2
+	( draw ) #0010 #0078 #0080 #0080 #07 ;image ;draw-icn JSR2
 
 	( load ) ;chr1_path .File/name DEO2 #4000 .File/length DEO2 ;image .File/load DEO2
-	( draw ) #00a8 #0010 #0100 #0100 #4f ;image ;draw-chr JSR2
+	( draw ) #00a8 #0010 #0100 #0100 #8f ;image ;draw-chr JSR2
 
 	( load ) ;chr2_path .File/name DEO2 #0900 .File/length DEO2 ;image .File/load DEO2
-	( draw ) #0088 #0088 #0060 #0060 #41 ;image ;draw-chr JSR2
+	( draw ) #0088 #0088 #0060 #0060 #81 ;image ;draw-chr JSR2
 
 BRK
 
@@ -48,7 +48,7 @@ BRK
 		#0000 .size/width LDZ2
 		&hor
 			( save ) OVR2 .position/x LDZ2 ADD2 .Screen/x DEO2
-			( draw ) .color LDZ .Screen/color DEO
+			( draw ) .color LDZ .Screen/sprite DEO
 			( incr ) .Screen/addr DEI2 8+ .Screen/addr DEO2
 			( incr ) SWP2 8+ SWP2
 			LTH2k ,&hor JCN
@@ -68,7 +68,7 @@ RTN
 		#0000 .size/width LDZ2
 		&hor
 			( save ) OVR2 .position/x LDZ2 ADD2 .Screen/x DEO2
-			( draw ) .color LDZ .Screen/color DEO
+			( draw ) .color LDZ .Screen/sprite DEO
 			( incr ) .Screen/addr DEI2 #0010 ADD2 .Screen/addr DEO2
 			( incr ) SWP2 8+ SWP2
 			LTH2k ,&hor JCN
@@ -88,7 +88,7 @@ RTN
 		#0000 .Screen/width DEI2
 		&hor
 			( save ) OVR2 .Screen/x DEO2
-			( draw ) .color LDZ .Screen/color DEO
+			( draw ) .color LDZ .Screen/sprite DEO
 			( incr ) SWP2 8+ SWP2
 			LTH2k ,&hor JCN
 		POP2 POP2

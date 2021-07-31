@@ -8,7 +8,7 @@
 ( devices )
 
 |00 @System  &vector $2 &pad     $6 &r      $2 &g     $2 &b      $2
-|20 @Screen  &vector $2 &width   $2 &height $2 &pad   $2 &x      $2 &y      $2 &addr $2 &color $1
+|20 @Screen  &vector $2 &width   $2 &height $2 &pad   $2 &x      $2 &y      $2 &addr $2 &pixel $1 &sprite $1
 |80 @Controller [ &vector $2 &button   $1 &key    $1 ]
 |a0 @File    &vector $2 &success $2 &offset $2 &pad   $2 &name   $2 &length $2 &load $2 &save  $2
 
@@ -85,7 +85,7 @@
 	#0000 DUP2 .Screen/x DEO2 .Screen/y DEO2
 	;ring-buffer ;wrapped-write JSR2
 
-	#20 ;draw-glyph JSR2
+	#00 ;draw-glyph JSR2
 	BRK
 
 @load-font ( filename* -- )
@@ -156,7 +156,7 @@
 	&not-end
 	#00 SWP #00 ;repl/font-cells LDA MUL2k MUL2 #0008 MUL2 #0100 ADD2 ( string* char* tile* )
 	;font-data ADD2 .Screen/addr DEO2
-	#2d ,draw-glyph JSR
+	#0d ,draw-glyph JSR
 	#00 ;repl/font-cells LDA #fff8 MUL2 .Screen/y DEI2 ADD2 .Screen/y DEO2
 	;font-data ADD2 LDA #00 SWP .Screen/x DEI2 ADD2 .Screen/x DEO2
 	LDAk STH
@@ -172,7 +172,7 @@
 		;repl/font-cells LDA
 		&inner
 			DUP #00 EQU ,&end-inner JCN
-			STHkr .Screen/color DEO
+			STHkr .Screen/sprite DEO
 			#0008 DUP2
 				.Screen/x DEI2 ADD2 .Screen/x DEO2
 				.Screen/addr DEI2 ADD2 .Screen/addr DEO2

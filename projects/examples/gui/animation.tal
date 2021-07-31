@@ -5,7 +5,7 @@
 ( devices )
 
 |00 @System     [ &vector $2 &pad    $6 &r      $2 &g     $2 &b      $2 ]
-|20 @Screen     [ &vector $2 &width  $2 &height $2 &pad   $2 &x      $2 &y $2 &addr $2 &color $1 ]
+|20 @Screen     [ &vector $2 &width  $2 &height $2 &pad   $2 &x      $2 &y $2 &addr $2 &pixel $1 &sprite $1 ]
 
 |0000
 
@@ -27,13 +27,13 @@
 	.Screen/width DEI2 2// .dvd/x STZ2
 	.Screen/height DEI2 2// .dvd/y STZ2
 	
-	#21 ;draw-dvd JSR2
+	#01 ;draw-dvd JSR2
 	
 BRK
 
 @on-frame ( -> )
 
-	( clear ) #20 ;draw-dvd JSR2
+	( clear ) #00 ;draw-dvd JSR2
 	( case: hit-right ) .dvd/x LDZ2 .Screen/width DEI2 #0020 SUB2 EQU2
 	( case: hit-left ) .dvd/x LDZ2 #0000 EQU2 
 	#0000 EQU2 ,&no-flipx JCN 
@@ -44,7 +44,7 @@ BRK
 		.dvd/dy LDZ #00 EQU .dvd/dy STZ &no-flipy
 	( incr ) .dvd/x LDZ2 #0001 #00 .dvd/dx LDZ #00 EQU #fffe MUL2 ADD2 ADD2 .dvd/x STZ2
 	( incr ) .dvd/y LDZ2 #0001 #00 .dvd/dy LDZ #00 EQU #fffe MUL2 ADD2 ADD2 .dvd/y STZ2
-	( draw ) #21 ;draw-dvd JSR2
+	( draw ) #01 ;draw-dvd JSR2
 
 BRK
 
@@ -58,7 +58,7 @@ BRK
 		.dvd/x LDZ2 [ .dvd/x LDZ2 #0020 ADD2 ]
 		&hor
 			OVR2 .Screen/x DEO2
-			( draw ) STHkr .Screen/color DEO
+			( draw ) STHkr .Screen/sprite DEO
 			( next ) .Screen/addr DEI2 #0008 ADD2 .Screen/addr DEO2
 			( incr ) SWP2 #0008 ADD2 SWP2
 			LTH2k ,&hor JCN

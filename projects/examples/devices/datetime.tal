@@ -16,7 +16,7 @@
 ( devices )
 
 |00 @System     [ &vector $2 &pad      $6 &r      $2 &g     $2 &b      $2 ]
-|20 @Screen     [ &vector $2 &width    $2 &height $2 &pad   $2 &x      $2 &y      $2 &addr $2 &color $1 ]
+|20 @Screen     [ &vector $2 &width    $2 &height $2 &pad   $2 &x      $2 &y      $2 &addr $2 &pixel $1 &sprite $1 ]
 |b0 @DateTime   [ &year   $2 &month    $1 &day    $1 &hour  $1 &minute $1 &second $1 &dotw $1 &doty $2 &isdst $1 ]
 
 ( variables )
@@ -76,7 +76,7 @@ BRK
 		( load ) OVR #00 SWP 2** ;table ADD2 LDA2
 		#00 SWP SCALEY .Screen/y DEO2
 		#00 SWP SCALEX .Screen/x DEO2
-		OVR #0f MOD #00 EQU #01 ADD .Screen/color DEO
+		OVR #0f MOD #00 EQU #01 ADD .Screen/pixel DEO
 		( incr ) SWP #01 ADD SWP
 		LTHk ,&loop JCN
 	POP2
@@ -91,22 +91,22 @@ BRK
 	.Screen/width DEI2 2//
 	DUP2 #0020 SUB2 .Screen/x DEO2
 		;font-hex #00 .DateTime/hour DEI #0a DIV #08 MUL ADD2 .Screen/addr DEO2
-		#22 .Screen/color DEO
+		#02 .Screen/sprite DEO
 	DUP2 #0018 SUB2 .Screen/x DEO2
 		;font-hex #00 .DateTime/hour DEI #0a MOD #08 MUL ADD2 .Screen/addr DEO2
-		#22 .Screen/color DEO
+		#02 .Screen/sprite DEO
 	DUP2 #0008 SUB2 .Screen/x DEO2
 		;font-hex #00 .DateTime/minute DEI #0a DIV #08 MUL ADD2 .Screen/addr DEO2
-		#22 .Screen/color DEO
+		#02 .Screen/sprite DEO
 	DUP2 .Screen/x DEO2
 		;font-hex #00 .DateTime/minute DEI #0a MOD #08 MUL ADD2 .Screen/addr DEO2
-		#22 .Screen/color DEO
+		#02 .Screen/sprite DEO
 	DUP2 #0010 ADD2 .Screen/x DEO2
 		;font-hex #00 .DateTime/second DEI #0a DIV #08 MUL ADD2 .Screen/addr DEO2
-		#22 .Screen/color DEO
+		#02 .Screen/sprite DEO
 	DUP2 #0018 ADD2 .Screen/x DEO2
 		;font-hex #00 .DateTime/second DEI #0a MOD #08 MUL ADD2 .Screen/addr DEO2
-		#22 .Screen/color DEO
+		#02 .Screen/sprite DEO
 	POP2
 
 RTN
@@ -122,7 +122,7 @@ RTN
 	&loop
 		.line/x LDZ2 .Screen/x DEO2 
 		.line/y LDZ2 .Screen/y DEO2 
-		.color LDZ .Screen/color DEO
+		.color LDZ .Screen/pixel DEO
 		[ .line/x LDZ2 .line/x0 LDZ2 EQU2 ] 
 		[ .line/y LDZ2 .line/y0 LDZ2 EQU2 ] #0101 EQU2 ,&end JCN
 		.line/e1 LDZ2 2** .line/e2 STZ2

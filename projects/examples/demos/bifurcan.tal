@@ -12,7 +12,7 @@
 ( devices )
 
 |00 @System     [ &vector $2 &pad      $6 &r      $2 &g     $2 &b      $2 ]
-|20 @Screen     [ &vector $2 &width    $2 &height $2 &pad   $2 &x      $2 &y      $2 &addr $2 &color $1 ]
+|20 @Screen     [ &vector $2 &width    $2 &height $2 &pad   $2 &x      $2 &y      $2 &addr $2 &pixel $1 &sprite $1 ]
 |90 @Mouse      [ &vector $2 &x        $2 &y      $2 &state $1 &wheel  $1 ]
 |b0 @DateTime   [ &year   $2 &month    $1 &day    $1 &hour  $1 &minute $1 &second $1 &dotw $1 &doty $2 &isdst $1 ]
 
@@ -113,7 +113,7 @@ RTN
 		( set tile ) 8** ;tiles ADD2 
 		( set style ) .style LDZ #10 MUL TOS ADD2
 		.Screen/addr DEO2
-		( draw ) #21 .Screen/color DEO
+		( draw ) #01 .Screen/sprite DEO
 		( incr ) SWP #01 ADD SWP 
 		LTHk ,&loop JCN
 	POP2
@@ -130,7 +130,7 @@ RTN
 		#0000 .Screen/width DEI2
 		&hor
 			( save ) OVR2 .Screen/x DEO2
-			( draw ) #21 .Screen/color DEO
+			( draw ) #01 .Screen/sprite DEO
 			( incr ) SWP2 #0008 ADD2 SWP2
 			LTH2k ,&hor JCN
 		POP2 POP2
@@ -146,12 +146,12 @@ RTN
 	;cursor .Screen/addr DEO2 
 	.pointer/x LDZ2 .Screen/x DEO2 
 	.pointer/y LDZ2 .Screen/y DEO2 
-	#30 .Screen/color DEO
+	#40 .Screen/sprite DEO
 	( record pointer positions )
 	.Mouse/x DEI2 DUP2 .pointer/x STZ2 .Screen/x DEO2 
 	.Mouse/y DEI2 DUP2 .pointer/y STZ2 .Screen/y DEO2 
 	( colorize on state )
-	#31 [ .Mouse/state DEI #00 NEQ ] ADD .Screen/color DEO
+	#41 [ .Mouse/state DEI #00 NEQ ] ADD .Screen/sprite DEO
 
 RTN
 

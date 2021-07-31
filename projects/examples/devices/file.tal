@@ -7,7 +7,7 @@
 
 |00 @System     [ &vector $2 &pad    $6 &r      $2 &g     $2 &b      $2 ]
 |10 @Console    [ &pad    $8 &write  $1 ]
-|20 @Screen     [ &vector $2 &width  $2 &height $2 &pad   $2 &x      $2 &y $2 &addr $2 &color $1 ]
+|20 @Screen     [ &vector $2 &width  $2 &height $2 &pad   $2 &x      $2 &y $2 &addr $2 &pixel $1 &sprite $1 ]
 |a0 @File       [ &vector $2 &success $2 &offset $2 &pad $2 &name $2 &length $2 &load $2 &save $2 ]
 
 ( variables )
@@ -46,7 +46,7 @@ BRK
 		#0000 #0080
 		&hor
 			( save ) OVR2 .Screen/x DEO2
-			( draw ) #41 .Screen/color DEO
+			( draw ) #81 .Screen/sprite DEO
 			( incr ) .Screen/addr DEI2 #0010 ADD2 .Screen/addr DEO2
 			( incr ) SWP2 8+ SWP2
 			LTH2k ,&hor JCN

@@ -12,7 +12,7 @@
 ( devices )
 
 |00 @System  &vector $2 &pad     $6 &r      $2 &g     $2 &b      $2
-|20 @Screen  &vector $2 &width   $2 &height $2 &pad   $2 &x      $2 &y      $2 &addr $2 &color $1
+|20 @Screen  &vector $2 &width   $2 &height $2 &pad   $2 &x      $2 &y      $2 &addr $2 &pixel $1 &sprite $1
 |a0 @File    &vector $2 &success $2 &offset $2 &pad   $2 &name   $2 &length $2 &load $2 &save  $2
 
 ( variables )
@@ -33,21 +33,21 @@
 	;font-path-large .File/name DEO2
 	;font-data .File/load DEO2
 		( draw label )
-		#0020 #0020 ;title #21 ;draw-uf3 JSR2
+		#0020 #0020 ;title #01 ;draw-uf3 JSR2
 
 	( load font )
 	#2100 .File/length DEO2
 	;font-path-medium .File/name DEO2
 	;font-data .File/load DEO2
 		( draw label )
-		#0020 #0048 ;body #22 ;draw-uf2 JSR2
+		#0020 #0048 ;body #02 ;draw-uf2 JSR2
 
 	( load font )
 	#0900 .File/length DEO2
 	;font-path-small .File/name DEO2
 	;font-data .File/load DEO2
 		( draw label )
-		#0030 #00b8 ;footer #23 ;draw-uf1 JSR2
+		#0030 #00b8 ;footer #03 ;draw-uf1 JSR2
 	
 BRK
 
@@ -64,7 +64,7 @@ BRK
 			POP ,&continue JMP &no-linebreak
 		( get addr ) STHk TOS #0008 ** ;font-data #0100 ++ ++ .Screen/addr DEO2
 		( get width ) STHr TOS ;font-data ++ LDA TOS
-		( draw ) STHkr .Screen/color DEO
+		( draw ) STHkr .Screen/sprite DEO
 		( use width ) .Screen/x DEI2 ++ .Screen/x DEO2
 		&continue
 		( incr addr ) #0001 ++
@@ -96,18 +96,18 @@ RTN
 		( get addr ) STHk TOS #0020 ** ;font-data #0100 ++ ++ .Screen/addr DEO2
 		( get width ) STHkr TOS ;font-data ++ LDA TOS
 		SWPr
-			( left-top ) STHkr .Screen/color DEO
+			( left-top ) STHkr .Screen/sprite DEO
 			.Screen/y DEI2 #0008 ++ .Screen/y DEO2
 			.Screen/addr DEI2 #0010 ++ .Screen/addr DEO2
-			( left-bottom ) STHkr .Screen/color DEO
+			( left-bottom ) STHkr .Screen/sprite DEO
 			.Screen/x DEI2 #0008 ++ .Screen/x DEO2
 			.Screen/y DEI2 #0008 -- .Screen/y DEO2
 			DUP #0a < ,&thin JCN
 			.Screen/addr DEI2 #0008 -- .Screen/addr DEO2
-			( right-top )  STHkr .Screen/color DEO
+			( right-top )  STHkr .Screen/sprite DEO
 			.Screen/addr DEI2 #0010 ++ .Screen/addr DEO2
 			.Screen/y DEI2 #0008 ++ .Screen/y DEO2
-			( right-bottom ) STHkr .Screen/color DEO
+			( right-bottom ) STHkr .Screen/sprite DEO
 			.Screen/y DEI2 #0008 -- .Screen/y DEO2 &thin
 		SWPr
 		( use width ) .Screen/x DEI2 ++ #0008 -- .Screen/x DEO2
@@ -142,7 +142,7 @@ RTN
 		&ver
 			#00 #03
 			&hor
-				STHkr .Screen/color DEO
+				STHkr .Screen/sprite DEO
 				.Screen/x DEI2 #0008 ++ .Screen/x DEO2 
 				.Screen/addr DEI2 #0008 ++ .Screen/addr DEO2
 				INCR LTHk ,&hor JCN

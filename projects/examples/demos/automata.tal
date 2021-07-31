@@ -8,7 +8,7 @@
 ( devices )
 
 |00 @System     [ &vector $2 &pad      $6 &r      $2 &g     $2 &b      $2 ]
-|20 @Screen     [ &vector $2 &width    $2 &height $2 &pad   $2 &x      $2 &y      $2 &addr $2 &color $1 ]
+|20 @Screen     [ &vector $2 &width    $2 &height $2 &pad   $2 &x      $2 &y      $2 &addr $2 &pixel $1 &sprite $1 ]
 |b0 @DateTime   [ &year   $2 &month    $1 &day    $1 &hour  $1 &minute $1 &second $1 &dotw $1 &doty $2 &isdst $1 ]
 
 |0000
@@ -47,7 +47,7 @@ BRK
 		( copy ) OVR #00 SWP DUP2
 		( pos  ) .Screen/x DEO2
 		( addr ) CELL ADD2
-		( draw ) LDA .Screen/color DEO
+		( draw ) LDA .Screen/pixel DEO
 		( incr ) INCR
 		( loop ) LTHk ,&loop JCN
 	POP2

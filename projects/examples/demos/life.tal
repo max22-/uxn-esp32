@@ -27,7 +27,7 @@
 ( devices )
 
 |00 @System     [ &vector $2 &wst      $1 &rst    $1 &pad   $4 &r      $2 &g     $2 &b      $2 ]
-|20 @Screen     [ &vector $2 &width    $2 &height $2 &pad   $2 &x      $2 &y      $2 &addr  $2 &color $1 ]
+|20 @Screen     [ &vector $2 &width    $2 &height $2 &pad   $2 &x      $2 &y      $2 &addr  $2 &pixel $1 &sprite $1 ]
 |80 @Controller [ &vector $2 &button   $1 &key    $1 ]
 |90 @Mouse      [ &vector $2 &x        $2 &y      $2 &state $1 &wheel $1 ]
 
@@ -101,7 +101,7 @@ BRK
 	( draw cell count )
 	.anchor/x LDZ2 .Screen/x DEO2
 	.anchor/y LDZ2 HEIGHT #02 * TOS ++ .Screen/y DEO2
-	.world/count LDZ2 #22 ;draw-short JSR2
+	.world/count LDZ2 #02 ;draw-short JSR2
 
 BRK
 
@@ -111,14 +111,14 @@ BRK
 	;cursor .Screen/addr DEO2 
 	.pointer/x LDZ2 .Screen/x DEO2 
 	.pointer/y LDZ2 .Screen/y DEO2 
-	#30 .Screen/color DEO
+	#40 .Screen/sprite DEO
 
 	( record pointer positions )
 	.Mouse/x DEI2 DUP2 .pointer/x STZ2 .Screen/x DEO2
 	.Mouse/y DEI2 DUP2 .pointer/y STZ2 .Screen/y DEO2 
 
 	( colorize on state )
-	#32 [ .Mouse/state DEI #00 ! ] + .Screen/color DEO
+	#42 [ .Mouse/state DEI #00 ! ] + .Screen/sprite DEO
 
 	.Mouse/state DEI #00 ! #01 JCN [ BRK ]
 
@@ -152,7 +152,7 @@ BRK
 		#00 WIDTH
 		&hor
 			OVR TOS 2** .anchor/x LDZ2 ++ .Screen/x DEO2
-			GET-ITERATORS ,get-cell JSR #01 + .Screen/color DEO
+			GET-ITERATORS ,get-cell JSR #01 + .Screen/pixel DEO
 			INCR
 			NEQk ,&hor JCN
 		POP2
@@ -254,16 +254,16 @@ RTN
 
 	STH SWP 
 	DUP #04 SFT TOS 8** ;font-hex ++ .Screen/addr DEO2
-	( draw ) STHkr .Screen/color DEO
+	( draw ) STHkr .Screen/sprite DEO
 	#0f AND TOS 8** ;font-hex ++ .Screen/addr DEO2
 	.Screen/x DEI2 #0008 ++ .Screen/x DEO2
-	( draw ) STHkr .Screen/color DEO
+	( draw ) STHkr .Screen/sprite DEO
 	DUP #04 SFT TOS 8** ;font-hex ++ .Screen/addr DEO2
 	.Screen/x DEI2 #0008 ++ .Screen/x DEO2
-	( draw ) STHkr .Screen/color DEO
+	( draw ) STHkr .Screen/sprite DEO
 	#0f AND TOS 8** ;font-hex ++ .Screen/addr DEO2
 	.Screen/x DEI2 #0008 ++ .Screen/x DEO2
-	( draw ) STHr .Screen/color DEO
+	( draw ) STHr .Screen/sprite DEO
 
 RTN
 
