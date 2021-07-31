@@ -41,9 +41,8 @@ putcolors(Ppu *p, Uint8 *addr)
 void
 putpixel(Ppu *p, Layer *layer, Uint16 x, Uint16 y, Uint8 color)
 {
-	if(x >= p->width || y >= p->height)
-		return;
-	layer->pixels[y * p->width + x] = layer->colors[color];
+	if(x < p->width && y < p->height)
+		layer->pixels[y * p->width + x] = layer->colors[color];
 }
 
 void
@@ -52,15 +51,13 @@ puticn(Ppu *p, Layer *layer, Uint16 x, Uint16 y, Uint8 *sprite, Uint8 color, Uin
 	Uint16 v, h;
 	for(v = 0; v < 8; v++)
 		for(h = 0; h < 8; h++) {
-			Uint8 ch1 = ((sprite[v] >> (7 - h)) & 0x1);
-			Uint16 px = x + (flipx ? 7 - h : h);
-			Uint16 py = y + (flipy ? 7 - v : v);
-			if(!(ch1 || color % 0x5))
-				continue;
-			if(px < p->width && py < p->height) {
-				Uint8 pc = ch1 ? (color & 0x3) : (color >> 0x2);
-				layer->pixels[py * p->width + px] = layer->colors[pc];
-			}
+			Uint8 ch1 = (sprite[v] >> (7 - h)) & 0x1;
+			if(ch1 == 1 || (color != 0x05 && color != 0x0a && color != 0x0f))
+				putpixel(p,
+					layer,
+					x + (flipx ? 7 - h : h),
+					y + (flipy ? 7 - v : v),
+					ch1 ? color % 4 : color / 4);
 		}
 }
 
@@ -72,12 +69,11 @@ putchr(Ppu *p, Layer *layer, Uint16 x, Uint16 y, Uint8 *sprite, Uint8 color, Uin
 		for(h = 0; h < 8; h++) {
 			Uint8 ch1 = ((sprite[v] >> (7 - h)) & 0x1) * color;
 			Uint8 ch2 = ((sprite[v + 8] >> (7 - h)) & 0x1) * color;
-			Uint16 px = x + (flipx ? 7 - h : h);
-			Uint16 py = y + (flipy ? 7 - v : v);
-			if(px < p->width && py < p->height) {
-				Uint8 pc = ((ch1 + ch2 * 2) + color / 4) & 0x3;
-				layer->pixels[py * p->width + px] = layer->colors[pc];
-			}
+			putpixel(p,
+				layer,
+				x + (flipx ? 7 - h : h),
+				y + (flipy ? 7 - v : v),
+				((ch1 + ch2 * 2) + color / 4) & 0x3);
 		}
 }
 
@@ -89,6 +85,15 @@ initppu(Ppu *p, Uint8 hor, Uint8 ver)
 	p->hor = hor;
 	p->ver = ver;
 	p->width = 8 * p->hor;
+	p->height = 8 * p->ver;
+	if(!(p->bg.pixels = malloc(p->width * p->height * sizeof(Uint32))))
+		return 0;
+	if(!(p->fg.pixels = malloc(p->width * p->height * sizeof(Uint32))))
+		return 0;
+	clear(p);
+	return 1;
+}
+;
 	p->height = 8 * p->ver;
 	if(!(p->bg.pixels = malloc(p->width * p->height * sizeof(Uint32))))
 		return 0;
