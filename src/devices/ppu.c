@@ -93,12 +93,3 @@ initppu(Ppu *p, Uint8 hor, Uint8 ver)
 	clear(p);
 	return 1;
 }
-;
-	p->height = 8 * p->ver;
-	if(!(p->bg.pixels = malloc(p->width * p->height * sizeof(Uint32))))
-		return 0;
-	if(!(p->fg.pixels = malloc(p->width * p->height * sizeof(Uint32))))
-		return 0;
-	clear(p);
-	return 1;
-}
