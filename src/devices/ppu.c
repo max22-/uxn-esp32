@@ -48,7 +48,12 @@ puticn(Ppu *p, Uint8 layer, Uint16 x, Uint16 y, Uint8 *sprite, Uint8 color, Uint
 void
 putchr(Ppu *p, Uint8 layer, Uint16 x, Uint16 y, Uint8 *sprite, Uint8 color, Uint8 flipx, Uint8 flipy)
 {
+	Uint8 k1 = 1, k2 = 2;
 	Uint16 v, h;
+	if(!(color & 1)) {
+		++color;
+		k1 = 2, k2 = 1;
+	}
 	for(v = 0; v < 8; v++)
 		for(h = 0; h < 8; h++) {
 			Uint8 ch1 = ((sprite[v] >> (7 - h)) & 0x1) * color;
@@ -57,7 +62,7 @@ putchr(Ppu *p, Uint8 layer, Uint16 x, Uint16 y, Uint8 *sprite, Uint8 color, Uint
 				layer,
 				x + (flipx ? 7 - h : h),
 				y + (flipy ? 7 - v : v),
-				((ch1 + ch2 * 2) + color / 4) & 0x3);
+				((ch1 * k1 + ch2 * k2) + color / 4) & 0x3);
 		}
 }
 
