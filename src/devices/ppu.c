@@ -24,9 +24,9 @@ clear(Ppu *p)
 void
 putpixel(Ppu *p, Uint8 layer, Uint16 x, Uint16 y, Uint8 color)
 {
-	Uint8 mask = layer ? 0x3 : 0xc, shift = layer * 2;
+	Uint8 *pixel = &p->pixels[y * p->width + x], shift = layer * 2;
 	if(x < p->width && y < p->height)
-		p->pixels[y * p->width + x] = (p->pixels[y * p->width + x] & mask) | (color << shift);
+		*pixel = (*pixel & ~(0x3 << shift)) | (color << shift);
 }
 
 void
