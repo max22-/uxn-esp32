@@ -1,13 +1,12 @@
 ( dev/screen )
 
 %RTN { JMP2r }
-%MOD { DUP2 DIV MUL SUB }
 %2// { #01 SFT2 }
 
 ( devices )
 
 |00 @System     [ &vector $2 &pad      $6 &r      $2 &g     $2 &b      $2 ]
-|20 @Screen     [ &vector $2 &width    $2 &height $2 &pad   $2 &x      $2 &y     $2 &addr $2 &color $1 &sprite $1 ]
+|20 @Screen     [ &vector $2 &width    $2 &height $2 &pad   $2 &x      $2 &y     $2 &addr $2 &pixel $1 &sprite $1 ]
 
 ( variables )
 
@@ -20,9 +19,9 @@
 |0100 ( -> )
 	
 	( theme ) 
-	#025f .System/r DEO2
-	#0c2f .System/g DEO2 
-	#0da4 .System/b DEO2 
+	#f07f .System/r DEO2
+	#f0e0 .System/g DEO2 
+	#f0c0 .System/b DEO2 
 
 	( find screen center )
 	.Screen/width DEI2 2// .center/x STZ2
@@ -32,24 +31,9 @@
 	;draw-table JSR2
 	;draw-sprites JSR2
 	;draw-circle JSR2
+	;draw-pixels JSR2
 	
 BRK
-
-@draw-sprites ( -- )
-	
-	;preview_icn .Screen/addr DEO2
-	#00 #00
-	&loop
-		( move ) OVR #0f AND #40 SFT #02 DIV #00 SWP 
-			.center/x LDZ2 #0040 SUB2 ADD2 .Screen/x DEO2
-		( move ) OVR #f0 AND #02 DIV #00 SWP 
-			.center/y LDZ2 #0040 SUB2 ADD2 .Screen/y DEO2
-		( draw ) OVR .Screen/sprite DEO
-		( incr ) SWP #01 ADD SWP
-		NEQk ,&loop JCN
-	POP2
-	
-RTN
 
 @draw-table ( -- )
 	
@@ -72,19 +56,49 @@ RTN
 
 RTN
 
+@draw-sprites ( -- )
+	
+	;preview_icn .Screen/addr DEO2
+	#00 #00
+	&loop
+		( move ) OVR #0f AND #40 SFT #02 DIV #00 SWP 
+			.center/x LDZ2 #0040 SUB2 ADD2 .Screen/x DEO2
+		( move ) OVR #f0 AND #02 DIV #00 SWP 
+			.center/y LDZ2 #0040 SUB2 ADD2 .Screen/y DEO2
+		( draw ) OVR .Screen/sprite DEO
+		( incr ) SWP #01 ADD SWP
+		NEQk ,&loop JCN
+	POP2
+	
+RTN
+
 @draw-circle ( -- )
 	
 	;preview_icn .Screen/addr DEO2
 	.center/x LDZ2 #0048 ADD2 .Screen/x DEO2
 	.center/y LDZ2 #0030 ADD2 .Screen/y DEO2
-	#01 .Screen/sprite DEO
+	#81 .Screen/sprite DEO
 	.center/x LDZ2 #0050 ADD2 .Screen/x DEO2
-	#11 .Screen/sprite DEO
+	#91 .Screen/sprite DEO
 	.center/x LDZ2 #0048 ADD2 .Screen/x DEO2
 	.center/y LDZ2 #0038 ADD2 .Screen/y DEO2
-	#21 .Screen/sprite DEO
+	#a1 .Screen/sprite DEO
 	.center/x LDZ2 #0050 ADD2 .Screen/x DEO2
-	#31 .Screen/sprite DEO
+	#b1 .Screen/sprite DEO
+
+RTN
+
+@draw-pixels ( -- )
+	
+	.center/y LDZ2 #0040 SUB2 .Screen/y DEO2
+	.center/x LDZ2 #0048 ADD2 .Screen/x DEO2
+	#00 .Screen/pixel DEO
+	.center/x LDZ2 #0049 ADD2 .Screen/x DEO2
+	#01 .Screen/pixel DEO
+	.center/x LDZ2 #004a ADD2 .Screen/x DEO2
+	#02 .Screen/pixel DEO
+	.center/x LDZ2 #004b ADD2 .Screen/x DEO2
+	#03 .Screen/pixel DEO
 
 RTN
 
