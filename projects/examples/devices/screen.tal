@@ -7,7 +7,7 @@
 ( devices )
 
 |00 @System     [ &vector $2 &pad      $6 &r      $2 &g     $2 &b      $2 ]
-|20 @Screen     [ &vector $2 &width    $2 &height $2 &pad   $2 &x      $2 &y     $2 &addr $2 &color $1 ]
+|20 @Screen     [ &vector $2 &width    $2 &height $2 &pad   $2 &x      $2 &y     $2 &addr $2 &color $1 &sprite $1 ]
 
 ( variables )
 
@@ -44,7 +44,7 @@ BRK
 			.center/x LDZ2 #0040 SUB2 ADD2 .Screen/x DEO2
 		( move ) OVR #f0 AND #02 DIV #00 SWP 
 			.center/y LDZ2 #0040 SUB2 ADD2 .Screen/y DEO2
-		( draw ) OVR .Screen/color DEO
+		( draw ) OVR .Screen/sprite DEO
 		( incr ) SWP #01 ADD SWP
 		NEQk ,&loop JCN
 	POP2
@@ -60,12 +60,12 @@ RTN
 		OVR #08 MUL #00 SWP 
 		.center/x LDZ2 #0040 SUB2 ADD2 .Screen/x DEO2
 		.center/y LDZ2 #0050 SUB2 .Screen/y DEO2
-		( draw ) #21 .Screen/color DEO
+		( draw ) #01 .Screen/sprite DEO
 		( y-axis )
 		OVR #08 MUL #00 SWP 
 		.center/y LDZ2 #0040 SUB2 ADD2 .Screen/y DEO2
 		.center/x LDZ2 #0050 SUB2 .Screen/x DEO2
-		( draw ) #21 .Screen/color DEO
+		( draw ) #01 .Screen/sprite DEO
 		( incr ) SWP #01 ADD SWP
 		LTHk ,&loop JCN
 	POP2
@@ -77,14 +77,14 @@ RTN
 	;preview_icn .Screen/addr DEO2
 	.center/x LDZ2 #0048 ADD2 .Screen/x DEO2
 	.center/y LDZ2 #0030 ADD2 .Screen/y DEO2
-	#21 .Screen/color DEO
+	#01 .Screen/sprite DEO
 	.center/x LDZ2 #0050 ADD2 .Screen/x DEO2
-	#61 .Screen/color DEO
+	#11 .Screen/sprite DEO
 	.center/x LDZ2 #0048 ADD2 .Screen/x DEO2
 	.center/y LDZ2 #0038 ADD2 .Screen/y DEO2
-	#a1 .Screen/color DEO
+	#21 .Screen/sprite DEO
 	.center/x LDZ2 #0050 ADD2 .Screen/x DEO2
-	#f1 .Screen/color DEO
+	#31 .Screen/sprite DEO
 
 RTN
 
@@ -99,4 +99,4 @@ RTN
 	007c 8282 7c82 827c 007c 8282 7e02 827c
 	007c 8202 7e82 827e 00fc 8282 fc82 82fc
 	007c 8280 8080 827c 00fc 8282 8282 82fc
-	007c 8280 f080 827c 007c 8280 f080 8080 
+	007c 8280 f080 827c 007c 8280 f080 8080

@@ -306,6 +306,16 @@ screen_talk(Device *d, Uint8 b0, Uint8 w)
 				putchr(&ppu, layer, x, y, addr, d->dat[0xe] & 0xf, mode & 0x2, mode & 0x4);
 		}
 		reqdraw = 1;
+	} else if(w && b0 == 0xf) {
+		Uint16 x = mempeek16(d->dat, 0x8);
+		Uint16 y = mempeek16(d->dat, 0xa);
+		Layer *layer = d->dat[0xf] >> 0x6 & 0x1 ? &ppu.fg : &ppu.bg;
+		Uint8 *addr = &d->mem[mempeek16(d->dat, 0xc)];
+		if(d->dat[0xf] >> 0x7 & 0x1)
+			putchr(&ppu, layer, x, y, addr, d->dat[0xf] & 0xf, d->dat[0xf] >> 0x4 & 0x1, d->dat[0xf] >> 0x5 & 0x1);
+		else
+			puticn(&ppu, layer, x, y, addr, d->dat[0xf] & 0xf, d->dat[0xf] >> 0x4 & 0x1, d->dat[0xf] >> 0x5 & 0x1);
+		reqdraw = 1;
 	}
 }
 

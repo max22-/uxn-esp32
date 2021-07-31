@@ -53,12 +53,14 @@ puticn(Ppu *p, Layer *layer, Uint16 x, Uint16 y, Uint8 *sprite, Uint8 color, Uin
 	for(v = 0; v < 8; v++)
 		for(h = 0; h < 8; h++) {
 			Uint8 ch1 = ((sprite[v] >> (7 - h)) & 0x1);
-			if(ch1 == 1 || (color != 0x05 && color != 0x0a && color != 0x0f))
-				putpixel(p,
-					layer,
-					x + (flipx ? 7 - h : h),
-					y + (flipy ? 7 - v : v),
-					ch1 ? color % 4 : color / 4);
+			if(!(ch1 || color % 0x5))
+				continue;
+			if(x < p->width && y < p->height) {
+				Uint16 px = x + (flipx ? 7 - h : h);
+				Uint16 py = y + (flipy ? 7 - v : v);
+				Uint8 pc = ch1 ? (color & 0x3) : (color >> 0x2);
+				layer->pixels[py * p->width + px] = layer->colors[pc];
+			}
 		}
 }
 
