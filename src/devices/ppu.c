@@ -12,11 +12,12 @@ THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
 WITH REGARD TO THIS SOFTWARE.
 */
 
-static Uint8 blending[4][16] = {
+static Uint8 blending[5][16] = {
 	{0, 0, 0, 0, 1, 0, 1, 1, 2, 2, 0, 2, 3, 3, 3, 0},
 	{0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3},
 	{1, 2, 3, 1, 1, 2, 3, 1, 1, 2, 3, 1, 1, 2, 3, 1},
-	{2, 3, 1, 2, 2, 3, 1, 2, 2, 3, 1, 2, 2, 3, 1, 2}};
+	{2, 3, 1, 2, 2, 3, 1, 2, 2, 3, 1, 2, 2, 3, 1, 2},
+	{1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 0, 1, 1, 1, 1, 0}};
 
 void
 clear(Ppu *p)
@@ -41,7 +42,7 @@ puticn(Ppu *p, Uint8 layer, Uint16 x, Uint16 y, Uint8 *sprite, Uint8 color, Uint
 	for(v = 0; v < 8; v++)
 		for(h = 0; h < 8; h++) {
 			Uint8 ch1 = (sprite[v] >> (7 - h)) & 0x1;
-			if(ch1 || (color != 0x05 && color != 0x0a && color != 0x0f))
+			if(ch1 || blending[4][color])
 				putpixel(p,
 					layer,
 					x + (flipx ? 7 - h : h),
@@ -59,7 +60,7 @@ putchr(Ppu *p, Uint8 layer, Uint16 x, Uint16 y, Uint8 *sprite, Uint8 color, Uint
 			Uint8 ch1 = ((sprite[v] >> (7 - h)) & 0x1);
 			Uint8 ch2 = ((sprite[v + 8] >> (7 - h)) & 0x1);
 			Uint8 ch = ch1 + ch2 * 2;
-			if(ch || (color != 0x05 && color != 0x0a && color != 0x0f))
+			if(ch || blending[4][color])
 				putpixel(p,
 					layer,
 					x + (flipx ? 7 - h : h),
