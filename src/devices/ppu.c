@@ -12,6 +12,16 @@ THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
 WITH REGARD TO THIS SOFTWARE.
 */
 
+static Uint8 blending1bpp[2][16] = {
+	{0, 0, 0, 0, 1, 1, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3},
+	{0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3}};
+
+static Uint8 blending2bpp[4][16] = {
+	{0, 0, 0, 0, 1, 0, 1, 1, 2, 2, 0, 2, 3, 3, 3, 0},
+	{0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3},
+	{1, 2, 3, 1, 1, 2, 3, 1, 1, 2, 3, 1, 1, 2, 3, 1},
+	{2, 3, 1, 2, 2, 3, 1, 2, 2, 3, 1, 2, 2, 3, 1, 2}};
+
 void
 clear(Ppu *p)
 {
@@ -40,7 +50,7 @@ puticn(Ppu *p, Uint8 layer, Uint16 x, Uint16 y, Uint8 *sprite, Uint8 color, Uint
 					layer,
 					x + (flipx ? 7 - h : h),
 					y + (flipy ? 7 - v : v),
-					ch1 ? (color & 0x3) : (color >> 0x2));
+					blending1bpp[ch1][color]);
 		}
 }
 
@@ -52,13 +62,13 @@ putchr(Ppu *p, Uint8 layer, Uint16 x, Uint16 y, Uint8 *sprite, Uint8 color, Uint
 		for(h = 0; h < 8; h++) {
 			Uint8 ch1 = ((sprite[v] >> (7 - h)) & 0x1);
 			Uint8 ch2 = ((sprite[v + 8] >> (7 - h)) & 0x1);
-			Uint8 id = ch1 + ch2 * 2;
-			if(id || color > 0x7)
+			Uint8 ch = ch1 + ch2 * 2;
+			if(ch || (color != 0x05 && color != 0x0a && color != 0x0f))
 				putpixel(p,
 					layer,
 					x + (flipx ? 7 - h : h),
 					y + (flipy ? 7 - v : v),
-					(id < 2 ? id : color / 2 + id * (color % 8)) & 0x3);
+					blending2bpp[ch][color]);
 		}
 }
 
