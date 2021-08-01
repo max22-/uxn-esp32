@@ -114,7 +114,7 @@ nil_talk(Device *d, Uint8 b0, Uint8 w)
 static const char *errors[] = {"underflow", "overflow", "division by zero"};
 
 int
-haltuxn(Uxn *u, Uint8 error, char *name, int id)
+uxn_halt(Uxn *u, Uint8 error, char *name, int id)
 {
 	fprintf(stderr, "Halted: %s %s#%04x, at 0x%04x\n", name, errors[error - 1], id, u->ram.ptr);
 	u->ram.ptr = 0;
@@ -124,11 +124,11 @@ haltuxn(Uxn *u, Uint8 error, char *name, int id)
 static void
 run(Uxn *u)
 {
-	if(!evaluxn(u, PAGE_PROGRAM))
+	if(!uxn_eval(u, PAGE_PROGRAM))
 		error("Reset", "Failed");
 	else if(mempeek16(devconsole->dat, 0))
 		while(read(0, &devconsole->dat[0x2], 1) > 0)
-			evaluxn(u, mempeek16(devconsole->dat, 0));
+			uxn_eval(u, mempeek16(devconsole->dat, 0));
 }
 
 static int
@@ -149,27 +149,27 @@ main(int argc, char **argv)
 
 	if(argc < 2)
 		return error("Input", "Missing");
-	if(!bootuxn(&u))
+	if(!uxn_boot(&u))
 		return error("Boot", "Failed");
 	if(!loaduxn(&u, argv[1]))
 		return error("Load", "Failed");
 
-	devsystem = portuxn(&u, 0x0, "system", system_talk);
-	devconsole = portuxn(&u, 0x1, "console", console_talk);
-	portuxn(&u, 0x2, "empty", nil_talk);
-	portuxn(&u, 0x3, "empty", nil_talk);
-	portuxn(&u, 0x4, "empty", nil_talk);
-	portuxn(&u, 0x5, "empty", nil_talk);
-	portuxn(&u, 0x6, "empty", nil_talk);
-	portuxn(&u, 0x7, "empty", nil_talk);
-	portuxn(&u, 0x8, "empty", nil_talk);
-	portuxn(&u, 0x9, "empty", nil_talk);
-	portuxn(&u, 0xa, "file", file_talk);
-	portuxn(&u, 0xb, "datetime", datetime_talk);
-	portuxn(&u, 0xc, "empty", nil_talk);
-	portuxn(&u, 0xd, "empty", nil_talk);
-	portuxn(&u, 0xe, "empty", nil_talk);
-	portuxn(&u, 0xf, "empty", nil_talk);
+	devsystem = uxn_port(&u, 0x0, "system", system_talk);
+	devconsole = uxn_port(&u, 0x1, "console", console_talk);
+	uxn_port(&u, 0x2, "empty", nil_talk);
+	uxn_port(&u, 0x3, "empty", nil_talk);
+	uxn_port(&u, 0x4, "empty", nil_talk);
+	uxn_port(&u, 0x5, "empty", nil_talk);
+	uxn_port(&u, 0x6, "empty", nil_talk);
+	uxn_port(&u, 0x7, "empty", nil_talk);
+	uxn_port(&u, 0x8, "empty", nil_talk);
+	uxn_port(&u, 0x9, "empty", nil_talk);
+	uxn_port(&u, 0xa, "file", file_talk);
+	uxn_port(&u, 0xb, "datetime", datetime_talk);
+	uxn_port(&u, 0xc, "empty", nil_talk);
+	uxn_port(&u, 0xd, "empty", nil_talk);
+	uxn_port(&u, 0xe, "empty", nil_talk);
+	uxn_port(&u, 0xf, "empty", nil_talk);
 
 	run(&u);
 

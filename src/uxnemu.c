@@ -414,7 +414,7 @@ stdin_handler(void *p)
 static const char *errors[] = {"underflow", "overflow", "division by zero"};
 
 int
-haltuxn(Uxn *u, Uint8 error, char *name, int id)
+uxn_halt(Uxn *u, Uint8 error, char *name, int id)
 {
 	fprintf(stderr, "Halted: %s %s#%04x, at 0x%04x\n", name, errors[error - 1], id, u->ram.ptr);
 	u->ram.ptr = 0;
@@ -424,7 +424,7 @@ haltuxn(Uxn *u, Uint8 error, char *name, int id)
 static void
 run(Uxn *u)
 {
-	evaluxn(u, 0x0100);
+	uxn_eval(u, 0x0100);
 	redraw(u);
 	while(1) {
 		SDL_Event event;
@@ -440,19 +440,19 @@ run(Uxn *u)
 			case SDL_KEYDOWN:
 			case SDL_KEYUP:
 				doctrl(u, &event, event.type == SDL_KEYDOWN);
-				evaluxn(u, mempeek16(devctrl->dat, 0));
+				uxn_eval(u, mempeek16(devctrl->dat, 0));
 				devctrl->dat[3] = 0;
 				break;
 			case SDL_MOUSEWHEEL:
 				devmouse->dat[7] = event.wheel.y;
-				evaluxn(u, mempeek16(devmouse->dat, 0));
+				uxn_eval(u, mempeek16(devmouse->dat, 0));
 				devmouse->dat[7] = 0;
 				break;
 			case SDL_MOUSEBUTTONUP:
 			case SDL_MOUSEBUTTONDOWN:
 			case SDL_MOUSEMOTION:
 				domouse(&event);
-				evaluxn(u, mempeek16(devmouse->dat, 0));
+				uxn_eval(u, mempeek16(devmouse->dat, 0));
 				break;
 			case SDL_WINDOWEVENT:
 				if(event.window.event == SDL_WINDOWEVENT_EXPOSED)
@@ -461,11 +461,11 @@ run(Uxn *u)
 			default:
 				if(event.type == stdin_event) {
 					devconsole->dat[0x2] = event.cbutton.button;
-					evaluxn(u, mempeek16(devconsole->dat, 0));
+					uxn_eval(u, mempeek16(devconsole->dat, 0));
 				}
 			}
 		}
-		evaluxn(u, mempeek16(devscreen->dat, 0));
+		uxn_eval(u, mempeek16(devscreen->dat, 0));
 		if(reqdraw || devsystem->dat[0xe])
 			redraw(u);
 		if(!bench) {
@@ -496,29 +496,29 @@ main(int argc, char **argv)
 
 	if(argc < 2)
 		return error("usage", "uxnemu file.rom");
-	if(!bootuxn(&u))
+	if(!uxn_boot(&u))
 		return error("Boot", "Failed to start uxn.");
 	if(!loaduxn(&u, argv[1]))
 		return error("Load", "Failed to open rom.");
 	if(!init())
 		return error("Init", "Failed to initialize emulator.");
 
-	devsystem = portuxn(&u, 0x0, "system", system_talk);
-	devconsole = portuxn(&u, 0x1, "console", console_talk);
-	devscreen = portuxn(&u, 0x2, "screen", screen_talk);
-	devaudio0 = portuxn(&u, 0x3, "audio0", audio_talk);
-	portuxn(&u, 0x4, "audio1", audio_talk);
-	portuxn(&u, 0x5, "audio2", audio_talk);
-	portuxn(&u, 0x6, "audio3", audio_talk);
-	portuxn(&u, 0x7, "---", nil_talk);
-	devctrl = portuxn(&u, 0x8, "controller", nil_talk);
-	devmouse = portuxn(&u, 0x9, "mouse", nil_talk);
-	portuxn(&u, 0xa, "file", file_talk);
-	portuxn(&u, 0xb, "datetime", datetime_talk);
-	portuxn(&u, 0xc, "---", nil_talk);
-	portuxn(&u, 0xd, "---", nil_talk);
-	portuxn(&u, 0xe, "---", nil_talk);
-	portuxn(&u, 0xf, "---", nil_talk);
+	devsystem = uxn_port(&u, 0x0, "system", system_talk);
+	devconsole = uxn_port(&u, 0x1, "console", console_talk);
+	devscreen = uxn_port(&u, 0x2, "screen", screen_talk);
+	devaudio0 = uxn_port(&u, 0x3, "audio0", audio_talk);
+	uxn_port(&u, 0x4, "audio1", audio_talk);
+	uxn_port(&u, 0x5, "audio2", audio_talk);
+	uxn_port(&u, 0x6, "audio3", audio_talk);
+	uxn_port(&u, 0x7, "---", nil_talk);
+	devctrl = uxn_port(&u, 0x8, "controller", nil_talk);
+	devmouse = uxn_port(&u, 0x9, "mouse", nil_talk);
+	uxn_port(&u, 0xa, "file", file_talk);
+	uxn_port(&u, 0xb, "datetime", datetime_talk);
+	uxn_port(&u, 0xc, "---", nil_talk);
+	uxn_port(&u, 0xd, "---", nil_talk);
+	uxn_port(&u, 0xe, "---", nil_talk);
+	uxn_port(&u, 0xf, "---", nil_talk);
 
 	/* Write screen size to dev/screen */
 	mempoke16(devscreen->dat, 2, ppu.width);

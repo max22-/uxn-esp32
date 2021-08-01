@@ -116,8 +116,8 @@ void (*ops[])(Uxn *u) = {
 
 #pragma mark - Core
 
-void
-opcuxn(Uxn *u, Uint8 instr)
+int
+uxn_step(Uxn *u, Uint8 instr)
 {
 	Uint8 op = instr & 0x3f, freturn = instr & 0x40, fkeep = instr & 0x80;
 	u->src = freturn ? &u->rst : &u->wst;
@@ -129,21 +129,15 @@ opcuxn(Uxn *u, Uint8 instr)
 		pop8 = pop8_nokeep;
 	}
 	(*ops[op])(u);
-}
-
-int
-stepuxn(Uxn *u, Uint8 instr)
-{
-	opcuxn(u, instr);
 	if(u->wst.error)
-		return haltuxn(u, u->wst.error, "Working-stack", instr);
+		return uxn_halt(u, u->wst.error, "Working-stack", instr);
 	if(u->rst.error)
-		return haltuxn(u, u->rst.error, "Return-stack", instr);
+		return uxn_halt(u, u->rst.error, "Return-stack", instr);
 	return 1;
 }
 
 int
-evaluxn(Uxn *u, Uint16 vec)
+uxn_eval(Uxn *u, Uint16 vec)
 {
 	if(u->dev[0].dat[0xf])
 		return 0;
@@ -152,13 +146,13 @@ evaluxn(Uxn *u, Uint16 vec)
 	u->rst.error = 0;
 	if(u->wst.ptr > 0xf8) u->wst.ptr = 0xf8;
 	while(u->ram.ptr)
-		if(!stepuxn(u, u->ram.dat[u->ram.ptr++]))
+		if(!uxn_step(u, u->ram.dat[u->ram.ptr++]))
 			return 0;
 	return 1;
 }
 
 int
-bootuxn(Uxn *u)
+uxn_boot(Uxn *u)
 {
 	unsigned int i;
 	char *cptr = (char *)u;
@@ -168,7 +162,7 @@ bootuxn(Uxn *u)
 }
 
 Device *
-portuxn(Uxn *u, Uint8 id, char *name, void (*talkfn)(Device *d, Uint8 b0, Uint8 w))
+uxn_port(Uxn *u, Uint8 id, char *name, void (*talkfn)(Device *d, Uint8 b0, Uint8 w))
 {
 	Device *d = &u->dev[id];
 	d->addr = id * 0x10;

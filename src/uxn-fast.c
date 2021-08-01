@@ -39,7 +39,7 @@ Uint16 devpeek16(Device *d, Uint16 a) { return (devpeek8(d, a) << 8) + devpeek8(
 #pragma mark - Core
 
 int
-evaluxn(Uxn *u, Uint16 vec)
+uxn_eval(Uxn *u, Uint16 vec)
 {
 	Uint8 instr;
 	if(u->dev[0].dat[0xf]) 
@@ -4021,14 +4021,14 @@ evaluxn(Uxn *u, Uint16 vec)
 #ifndef NO_STACK_CHECKS
 error:
 	if(u->wst.error)
-		return haltuxn(u, u->wst.error, "Working-stack", instr);
+		return uxn_halt(u, u->wst.error, "Working-stack", instr);
 	else
-		return haltuxn(u, u->rst.error, "Return-stack", instr);
+		return uxn_halt(u, u->rst.error, "Return-stack", instr);
 #endif
 }
 
 int
-bootuxn(Uxn *u)
+uxn_boot(Uxn *u)
 {
 	unsigned int i;
 	char *cptr = (char *)u;
@@ -4038,7 +4038,7 @@ bootuxn(Uxn *u)
 }
 
 Device *
-portuxn(Uxn *u, Uint8 id, char *name, void (*talkfn)(Device *d, Uint8 b0, Uint8 w))
+uxn_port(Uxn *u, Uint8 id, char *name, void (*talkfn)(Device *d, Uint8 b0, Uint8 w))
 {
 	Device *d = &u->dev[id];
 	d->addr = id * 0x10;

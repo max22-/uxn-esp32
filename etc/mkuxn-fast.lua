@@ -320,7 +320,7 @@ See etc/mkuxn-fast.moon for instructions.
 #pragma mark - Core
 
 int
-evaluxn(Uxn *u, Uint16 vec)
+uxn_eval(Uxn *u, Uint16 vec)
 {
 	Uint8 instr;
   if(u->dev[0].dat[0xf]) 
@@ -361,9 +361,9 @@ evaluxn(Uxn *u, Uint16 vec)
 #ifndef NO_STACK_CHECKS
 error:
 	if(u->wst.error)
-		return haltuxn(u, u->wst.error, "Working-stack", instr);
+		return uxn_halt(u, u->wst.error, "Working-stack", instr);
 	else
-		return haltuxn(u, u->rst.error, "Return-stack", instr);
+		return uxn_halt(u, u->rst.error, "Return-stack", instr);
 #endif
 }
 
