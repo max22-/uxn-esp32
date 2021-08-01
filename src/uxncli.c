@@ -111,6 +111,16 @@ nil_talk(Device *d, Uint8 b0, Uint8 w)
 
 #pragma mark - Generics
 
+static const char *errors[] = {"underflow", "overflow", "division by zero"};
+
+int
+haltuxn(Uxn *u, Uint8 error, char *name, int id)
+{
+	fprintf(stderr, "Halted: %s %s#%04x, at 0x%04x\n", name, errors[error - 1], id, u->ram.ptr);
+	u->ram.ptr = 0;
+	return 0;
+}
+
 static void
 run(Uxn *u)
 {
@@ -119,6 +129,17 @@ run(Uxn *u)
 	else if(mempeek16(devconsole->dat, 0))
 		while(read(0, &devconsole->dat[0x2], 1) > 0)
 			evaluxn(u, mempeek16(devconsole->dat, 0));
+}
+
+static int
+loaduxn(Uxn *u, char *filepath)
+{
+	FILE *f;
+	if(!(f = fopen(filepath, "rb")))
+		return 0;
+	fread(u->ram.dat + PAGE_PROGRAM, sizeof(u->ram.dat) - PAGE_PROGRAM, 1, f);
+	fprintf(stderr, "Uxn loaded[%s].\n", filepath);
+	return 1;
 }
 
 int

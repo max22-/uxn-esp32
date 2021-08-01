@@ -411,6 +411,16 @@ stdin_handler(void *p)
 	(void)p;
 }
 
+static const char *errors[] = {"underflow", "overflow", "division by zero"};
+
+int
+haltuxn(Uxn *u, Uint8 error, char *name, int id)
+{
+	fprintf(stderr, "Halted: %s %s#%04x, at 0x%04x\n", name, errors[error - 1], id, u->ram.ptr);
+	u->ram.ptr = 0;
+	return 0;
+}
+
 static void
 run(Uxn *u)
 {
@@ -463,6 +473,17 @@ run(Uxn *u)
 			SDL_Delay(clamp(16.666f - elapsed, 0, 1000));
 		}
 	}
+}
+
+static int
+loaduxn(Uxn *u, char *filepath)
+{
+	FILE *f;
+	if(!(f = fopen(filepath, "rb")))
+		return 0;
+	fread(u->ram.dat + PAGE_PROGRAM, sizeof(u->ram.dat) - PAGE_PROGRAM, 1, f);
+	fprintf(stderr, "Uxn loaded[%s].\n", filepath);
+	return 1;
 }
 
 int

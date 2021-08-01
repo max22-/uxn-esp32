@@ -1,4 +1,3 @@
-#include <stdio.h>
 #include "uxn.h"
 
 /*
@@ -34,18 +33,6 @@ void   mempoke16(Uint8 *m, Uint16 a, Uint16 b) { mempoke8(m, a, b >> 8); mempoke
 Uint16 mempeek16(Uint8 *m, Uint16 a) { return (mempeek8(m, a) << 8) + mempeek8(m, a + 1); }
 void   devpoke16(Device *d, Uint8 a, Uint16 b) { devpoke8(d, a, b >> 8); devpoke8(d, a + 1, b); }
 Uint16 devpeek16(Device *d, Uint16 a) { return (devpeek8(d, a) << 8) + devpeek8(d, a + 1); }
-
-#ifndef NO_STACK_CHECKS
-static const char *errors[] = {"underflow", "overflow", "division by zero"};
-
-int
-haltuxn(Uxn *u, Uint8 error, char *name, int id)
-{
-	fprintf(stderr, "Halted: %s %s#%04x, at 0x%04x\n", name, errors[error - 1], id, u->ram.ptr);
-	u->ram.ptr = 0;
-	return 0;
-}
-#endif
 
 /* clang-format on */
 
