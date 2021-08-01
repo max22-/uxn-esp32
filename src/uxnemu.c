@@ -482,7 +482,7 @@ load(Uxn *u, char *filepath)
 	if(!(f = fopen(filepath, "rb")))
 		return 0;
 	fread(u->ram.dat + PAGE_PROGRAM, sizeof(u->ram.dat) - PAGE_PROGRAM, 1, f);
-	fprintf(stderr, "Uxn loaded[%s].\n", filepath);
+	fprintf(stderr, "Loaded %s\n", filepath);
 	return 1;
 }
 

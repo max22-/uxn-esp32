@@ -26,20 +26,6 @@ error(char *msg, const char *err)
 	return 0;
 }
 
-static void
-printstack(Stack *s)
-{
-	Uint8 x, y;
-	fprintf(stderr, "\n\n");
-	for(y = 0; y < 0x08; ++y) {
-		for(x = 0; x < 0x08; ++x) {
-			Uint8 p = y * 0x08 + x;
-			fprintf(stderr, p == s->ptr ? "[%02x]" : " %02x ", s->dat[p]);
-		}
-		fprintf(stderr, "\n");
-	}
-}
-
 #pragma mark - Devices
 
 static void
@@ -48,9 +34,19 @@ system_talk(Device *d, Uint8 b0, Uint8 w)
 	if(!w) {
 		d->dat[0x2] = d->u->wst.ptr;
 		d->dat[0x3] = d->u->rst.ptr;
-	} else if(b0 == 0xe)
-		printstack(&d->u->wst);
-	else if(b0 == 0xf)
+	} else if(b0 == 0xe) {
+		Uint8 x, y;
+		fprintf(stderr, "\n\n");
+		for(y = 0; y < 0x08; ++y) {
+			for(x = 0; x < 0x08; ++x) {
+				Uint8 p = y * 0x08 + x;
+				fprintf(stderr,
+					p == d->u->wst.ptr ? "[%02x]" : " %02x ",
+					d->u->wst.dat[p]);
+			}
+			fprintf(stderr, "\n");
+		}
+	} else if(b0 == 0xf)
 		d->u->ram.ptr = 0x0000;
 }
 
@@ -138,7 +134,7 @@ load(Uxn *u, char *filepath)
 	if(!(f = fopen(filepath, "rb")))
 		return 0;
 	fread(u->ram.dat + PAGE_PROGRAM, sizeof(u->ram.dat) - PAGE_PROGRAM, 1, f);
-	fprintf(stderr, "Uxn loaded[%s].\n", filepath);
+	fprintf(stderr, "Loaded %s\n", filepath);
 	return 1;
 }
 
