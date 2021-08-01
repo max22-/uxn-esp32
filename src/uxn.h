@@ -1,5 +1,3 @@
-#include <stdio.h>
-
 /*
 Copyright (c) 2021 Devine Lu Linvega
 

@@ -84,7 +84,7 @@ apu_start(Apu *c, Uint16 adsr, Uint8 pitch)
 Uint8
 apu_get_vu(Apu *c)
 {
-	size_t i;
+	int i;
 	Sint32 sum[2];
 	if(!c->advance || !c->period) return 0;
 	for(i = 0; i < 2; ++i) {
