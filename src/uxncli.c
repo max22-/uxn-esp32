@@ -132,7 +132,7 @@ run(Uxn *u)
 }
 
 static int
-loaduxn(Uxn *u, char *filepath)
+load(Uxn *u, char *filepath)
 {
 	FILE *f;
 	if(!(f = fopen(filepath, "rb")))
@@ -151,7 +151,7 @@ main(int argc, char **argv)
 		return error("Input", "Missing");
 	if(!uxn_boot(&u))
 		return error("Boot", "Failed");
-	if(!loaduxn(&u, argv[1]))
+	if(!load(&u, argv[1]))
 		return error("Load", "Failed");
 
 	devsystem = uxn_port(&u, 0x0, "system", system_talk);

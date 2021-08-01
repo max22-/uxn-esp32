@@ -125,9 +125,9 @@ uxn_step(Uxn *u, Uint8 instr)
 	if(fkeep) {
 		pop8 = pop8_keep;
 		u->src->kptr = u->src->ptr;
-	} else {
+	} else
 		pop8 = pop8_nokeep;
-	}
+	/* run */
 	(*ops[op])(u);
 	if(u->wst.error)
 		return uxn_halt(u, u->wst.error, "Working-stack", instr);

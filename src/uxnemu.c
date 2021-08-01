@@ -476,7 +476,7 @@ run(Uxn *u)
 }
 
 static int
-loaduxn(Uxn *u, char *filepath)
+load(Uxn *u, char *filepath)
 {
 	FILE *f;
 	if(!(f = fopen(filepath, "rb")))
@@ -498,7 +498,7 @@ main(int argc, char **argv)
 		return error("usage", "uxnemu file.rom");
 	if(!uxn_boot(&u))
 		return error("Boot", "Failed to start uxn.");
-	if(!loaduxn(&u, argv[1]))
+	if(!load(&u, argv[1]))
 		return error("Load", "Failed to open rom.");
 	if(!init())
 		return error("Init", "Failed to initialize emulator.");
