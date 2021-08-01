@@ -35,7 +35,7 @@ puticn(Ppu *p, Uint8 layer, Uint16 x, Uint16 y, Uint8 *sprite, Uint8 color, Uint
 	for(v = 0; v < 8; v++)
 		for(h = 0; h < 8; h++) {
 			Uint8 ch1 = (sprite[v] >> (7 - h)) & 0x1;
-			if(ch1 == 1 || (color != 0x05 && color != 0x0a && color != 0x0f))
+			if(ch1 || (color != 0x05 && color != 0x0a && color != 0x0f))
 				putpixel(p,
 					layer,
 					x + (flipx ? 7 - h : h),
@@ -50,14 +50,15 @@ putchr(Ppu *p, Uint8 layer, Uint16 x, Uint16 y, Uint8 *sprite, Uint8 color, Uint
 	Uint16 v, h;
 	for(v = 0; v < 8; v++)
 		for(h = 0; h < 8; h++) {
-			Uint8 ch1 = ((sprite[v] >> (7 - h)) & 0x1) * color;
-			Uint8 ch2 = ((sprite[v + 8] >> (7 - h)) & 0x1) * color;
-			if(ch1 + ch2 || (color != 0x05 && color != 0x0a && color != 0x0f))
+			Uint8 ch1 = ((sprite[v] >> (7 - h)) & 0x1);
+			Uint8 ch2 = ((sprite[v + 8] >> (7 - h)) & 0x1);
+			Uint8 id = ch1 + ch2 * 2;
+			if(id || color > 0x7)
 				putpixel(p,
 					layer,
 					x + (flipx ? 7 - h : h),
 					y + (flipy ? 7 - v : v),
-					((ch1 ? (color & 0x3) : (color >> 0x2)) + (ch2 ? (color & 0x3) : (color >> 0x2)) * 2) & 0x3);
+					(id < 2 ? id : color / 2 + id * (color % 8)) & 0x3);
 		}
 }
 
