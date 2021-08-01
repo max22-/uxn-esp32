@@ -84,24 +84,24 @@ inspect(Ppu *p, Uint8 *stack, Uint8 wptr, Uint8 rptr, Uint8 *memory)
 	Uint8 i, x, y, b;
 	for(i = 0; i < 0x20; ++i) { /* stack */
 		x = ((i % 8) * 3 + 1) * 8, y = (i / 8 + 1) * 8, b = stack[i];
-		puticn(p, 1, x, y, font[(b >> 4) & 0xf], 1 + (wptr == i) * 0x7, 0, 0);
-		puticn(p, 1, x + 8, y, font[b & 0xf], 1 + (wptr == i) * 0x7, 0, 0);
+		ppu_1bpp(p, 1, x, y, font[(b >> 4) & 0xf], 1 + (wptr == i) * 0x7, 0, 0);
+		ppu_1bpp(p, 1, x + 8, y, font[b & 0xf], 1 + (wptr == i) * 0x7, 0, 0);
 	}
 	/* return pointer */
-	puticn(p, 1, 0x8, y + 0x10, font[(rptr >> 4) & 0xf], 0x2, 0, 0);
-	puticn(p, 1, 0x10, y + 0x10, font[rptr & 0xf], 0x2, 0, 0);
+	ppu_1bpp(p, 1, 0x8, y + 0x10, font[(rptr >> 4) & 0xf], 0x2, 0, 0);
+	ppu_1bpp(p, 1, 0x10, y + 0x10, font[rptr & 0xf], 0x2, 0, 0);
 	for(i = 0; i < 0x20; ++i) { /* memory */
 		x = ((i % 8) * 3 + 1) * 8, y = 0x38 + (i / 8 + 1) * 8, b = memory[i];
-		puticn(p, 1, x, y, font[(b >> 4) & 0xf], 3, 0, 0);
-		puticn(p, 1, x + 8, y, font[b & 0xf], 3, 0, 0);
+		ppu_1bpp(p, 1, x, y, font[(b >> 4) & 0xf], 3, 0, 0);
+		ppu_1bpp(p, 1, x + 8, y, font[b & 0xf], 3, 0, 0);
 	}
 	for(x = 0; x < 0x10; ++x) { /* guides */
-		putpixel(p, 1, x, p->height / 2, 2);
-		putpixel(p, 1, p->width - x, p->height / 2, 2);
-		putpixel(p, 1, p->width / 2, p->height - x, 2);
-		putpixel(p, 1, p->width / 2, x, 2);
-		putpixel(p, 1, p->width / 2 - 0x10 / 2 + x, p->height / 2, 2);
-		putpixel(p, 1, p->width / 2, p->height / 2 - 0x10 / 2 + x, 2);
+		ppu_pixel(p, 1, x, p->height / 2, 2);
+		ppu_pixel(p, 1, p->width - x, p->height / 2, 2);
+		ppu_pixel(p, 1, p->width / 2, p->height - x, 2);
+		ppu_pixel(p, 1, p->width / 2, x, 2);
+		ppu_pixel(p, 1, p->width / 2 - 0x10 / 2 + x, p->height / 2, 2);
+		ppu_pixel(p, 1, p->width / 2, p->height / 2 - 0x10 / 2 + x, 2);
 	}
 }
 
@@ -168,7 +168,7 @@ static int
 init(void)
 {
 	SDL_AudioSpec as;
-	if(!initppu(&ppu, 64, 40))
+	if(!ppu_init(&ppu, 64, 40))
 		return error("ppu", "Init failure");
 	if(SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO) < 0)
 		return error("sdl", SDL_GetError());
@@ -306,13 +306,13 @@ screen_talk(Device *d, Uint8 b0, Uint8 w)
 		Uint8 layer = d->dat[0xe] >> 4 & 0x1;
 		Uint8 mode = d->dat[0xe] >> 5;
 		if(!mode)
-			putpixel(&ppu, layer, x, y, d->dat[0xe] & 0x3);
+			ppu_pixel(&ppu, layer, x, y, d->dat[0xe] & 0x3);
 		else {
 			Uint8 *addr = &d->mem[mempeek16(d->dat, 0xc)];
 			if(mode-- & 0x1)
-				puticn(&ppu, layer, x, y, addr, d->dat[0xe] & 0xf, mode & 0x2, mode & 0x4);
+				ppu_1bpp(&ppu, layer, x, y, addr, d->dat[0xe] & 0xf, mode & 0x2, mode & 0x4);
 			else
-				putchr(&ppu, layer, x, y, addr, d->dat[0xe] & 0xf, mode & 0x2, mode & 0x4);
+				ppu_2bpp(&ppu, layer, x, y, addr, d->dat[0xe] & 0xf, mode & 0x2, mode & 0x4);
 		}
 		reqdraw = 1;
 	} else if(w && b0 == 0xf) {
@@ -321,9 +321,9 @@ screen_talk(Device *d, Uint8 b0, Uint8 w)
 		Uint8 layer = d->dat[0xf] >> 0x6 & 0x1;
 		Uint8 *addr = &d->mem[mempeek16(d->dat, 0xc)];
 		if(d->dat[0xf] >> 0x7 & 0x1)
-			putchr(&ppu, layer, x, y, addr, d->dat[0xf] & 0xf, d->dat[0xf] >> 0x4 & 0x1, d->dat[0xf] >> 0x5 & 0x1);
+			ppu_2bpp(&ppu, layer, x, y, addr, d->dat[0xf] & 0xf, d->dat[0xf] >> 0x4 & 0x1, d->dat[0xf] >> 0x5 & 0x1);
 		else
-			puticn(&ppu, layer, x, y, addr, d->dat[0xf] & 0xf, d->dat[0xf] >> 0x4 & 0x1, d->dat[0xf] >> 0x5 & 0x1);
+			ppu_1bpp(&ppu, layer, x, y, addr, d->dat[0xf] & 0xf, d->dat[0xf] >> 0x4 & 0x1, d->dat[0xf] >> 0x5 & 0x1);
 		reqdraw = 1;
 	}
 }

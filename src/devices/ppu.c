@@ -20,15 +20,7 @@ static Uint8 blending[5][16] = {
 	{1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 0, 1, 1, 1, 1, 0}};
 
 void
-clear(Ppu *p)
-{
-	int i, sz = p->height * p->width;
-	for(i = 0; i < sz; ++i)
-		p->pixels[i] = 0x00;
-}
-
-void
-putpixel(Ppu *p, Uint8 layer, Uint16 x, Uint16 y, Uint8 color)
+ppu_pixel(Ppu *p, Uint8 layer, Uint16 x, Uint16 y, Uint8 color)
 {
 	Uint8 *pixel = &p->pixels[y * p->width + x], shift = layer * 2;
 	if(x < p->width && y < p->height)
@@ -36,14 +28,14 @@ putpixel(Ppu *p, Uint8 layer, Uint16 x, Uint16 y, Uint8 color)
 }
 
 void
-puticn(Ppu *p, Uint8 layer, Uint16 x, Uint16 y, Uint8 *sprite, Uint8 color, Uint8 flipx, Uint8 flipy)
+ppu_1bpp(Ppu *p, Uint8 layer, Uint16 x, Uint16 y, Uint8 *sprite, Uint8 color, Uint8 flipx, Uint8 flipy)
 {
 	Uint16 v, h;
 	for(v = 0; v < 8; v++)
 		for(h = 0; h < 8; h++) {
 			Uint8 ch1 = (sprite[v] >> (7 - h)) & 0x1;
 			if(ch1 || blending[4][color])
-				putpixel(p,
+				ppu_pixel(p,
 					layer,
 					x + (flipx ? 7 - h : h),
 					y + (flipy ? 7 - v : v),
@@ -52,7 +44,7 @@ puticn(Ppu *p, Uint8 layer, Uint16 x, Uint16 y, Uint8 *sprite, Uint8 color, Uint
 }
 
 void
-putchr(Ppu *p, Uint8 layer, Uint16 x, Uint16 y, Uint8 *sprite, Uint8 color, Uint8 flipx, Uint8 flipy)
+ppu_2bpp(Ppu *p, Uint8 layer, Uint16 x, Uint16 y, Uint8 *sprite, Uint8 color, Uint8 flipx, Uint8 flipy)
 {
 	Uint16 v, h;
 	for(v = 0; v < 8; v++)
@@ -61,7 +53,7 @@ putchr(Ppu *p, Uint8 layer, Uint16 x, Uint16 y, Uint8 *sprite, Uint8 color, Uint
 			Uint8 ch2 = ((sprite[v + 8] >> (7 - h)) & 0x1);
 			Uint8 ch = ch1 + ch2 * 2;
 			if(ch || blending[4][color])
-				putpixel(p,
+				ppu_pixel(p,
 					layer,
 					x + (flipx ? 7 - h : h),
 					y + (flipy ? 7 - v : v),
@@ -72,7 +64,7 @@ putchr(Ppu *p, Uint8 layer, Uint16 x, Uint16 y, Uint8 *sprite, Uint8 color, Uint
 /* output */
 
 int
-initppu(Ppu *p, Uint8 hor, Uint8 ver)
+ppu_init(Ppu *p, Uint8 hor, Uint8 ver)
 {
 	p->hor = hor;
 	p->ver = ver;
