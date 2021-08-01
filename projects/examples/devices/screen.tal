@@ -6,7 +6,6 @@
 
 |00 @System     [ &vector $2 &pad      $6 &r      $2 &g     $2 &b      $2 ]
 |20 @Screen     [ &vector $2 &width    $2 &height $2 &pad   $2 &x      $2 &y     $2 &addr $2 &pixel $1 &sprite $1 ]
-|b0 @DateTime   [ &year   $2 &month    $1 &day    $1 &hour  $1 &minute $1 &second $1 &dotw $1 &doty   $2 &isdst $1 ]
 
 ( variables )
 
@@ -29,20 +28,12 @@
 
 	( draw )
 	;draw-table JSR2
-	;on-frame .Screen/vector DEO2
-
+	;draw-sprites JSR2
 	;draw-1bpp JSR2
 	;draw-2bpp JSR2
-
 	;draw-pixels JSR2
-
 	
 BRK
-
-@on-frame ( -> )
-	;draw-background JSR2
-	;draw-sprites JSR2
-	BRK
 
 @draw-table ( -- )
 	
@@ -110,19 +101,7 @@ RTN
 		SWP #01 ADD SWP
 		LTHk ,&loop JCN
 	POP2
-
-@draw-background ( -- )
-	;solid .Screen/addr DEO2
-	#00 #00
-	&loop
-		( move ) OVR #0f AND #40 SFT #02 DIV #00 SWP 
-			.center/x LDZ2 #0040 SUB2 ADD2 .Screen/x DEO2
-		( move ) OVR #f0 AND #02 DIV #00 SWP 
-			.center/y LDZ2 #0040 SUB2 ADD2 .Screen/y DEO2
-		( draw ) OVR #40 AND .DateTime/second DEI #03 DIV #03 AND ORA .Screen/sprite DEO
-		( incr ) SWP #01 ADD SWP
-		NEQk ,&loop JCN
-	POP2
+	
 RTN
 
 @draw-circle ( x* y* color depth -- )
@@ -159,9 +138,6 @@ RTN
 
 @preview_icn  [
 	0f38 675f dfbf bfbf 0007 1820 2344 4848 
-
-@solid
-	ffff ffff ffff ffff
 
 @font-hex 
 	007c 8282 8282 827c 0030 1010 1010 1010
