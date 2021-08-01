@@ -4030,21 +4030,10 @@ error:
 int
 bootuxn(Uxn *u)
 {
-	size_t i;
+	unsigned int i;
 	char *cptr = (char *)u;
 	for(i = 0; i < sizeof(*u); i++)
 		cptr[i] = 0;
-	return 1;
-}
-
-int
-loaduxn(Uxn *u, char *filepath)
-{
-	FILE *f;
-	if(!(f = fopen(filepath, "rb"))) 
-		return 0;
-	fread(u->ram.dat + PAGE_PROGRAM, sizeof(u->ram.dat) - PAGE_PROGRAM, 1, f);
-	fprintf(stderr, "Uxn loaded[%s].\n", filepath);
 	return 1;
 }
 
@@ -4056,6 +4045,5 @@ portuxn(Uxn *u, Uint8 id, char *name, void (*talkfn)(Device *d, Uint8 b0, Uint8 
 	d->u = u;
 	d->mem = u->ram.dat;
 	d->talk = talkfn;
-	fprintf(stderr, "Device added #%02x: %s, at 0x%04x \n", id, name, d->addr);
 	return d;
 }
