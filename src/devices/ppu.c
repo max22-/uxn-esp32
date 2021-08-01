@@ -16,9 +16,8 @@ void
 clear(Ppu *p)
 {
 	int i, sz = p->height * p->width;
-	for(i = 0; i < sz; ++i) {
-		p->pixels[i] = 0;
-	}
+	for(i = 0; i < sz; ++i)
+		p->pixels[i] = 0x00;
 }
 
 void
@@ -41,28 +40,24 @@ puticn(Ppu *p, Uint8 layer, Uint16 x, Uint16 y, Uint8 *sprite, Uint8 color, Uint
 					layer,
 					x + (flipx ? 7 - h : h),
 					y + (flipy ? 7 - v : v),
-					ch1 ? color % 4 : color / 4);
+					ch1 ? (color & 0x3) : (color >> 0x2));
 		}
 }
 
 void
 putchr(Ppu *p, Uint8 layer, Uint16 x, Uint16 y, Uint8 *sprite, Uint8 color, Uint8 flipx, Uint8 flipy)
 {
-	Uint8 k1 = 1, k2 = 2;
 	Uint16 v, h;
-	if(!(color & 1)) {
-		++color;
-		k1 = 2, k2 = 1;
-	}
 	for(v = 0; v < 8; v++)
 		for(h = 0; h < 8; h++) {
 			Uint8 ch1 = ((sprite[v] >> (7 - h)) & 0x1) * color;
 			Uint8 ch2 = ((sprite[v + 8] >> (7 - h)) & 0x1) * color;
-			putpixel(p,
-				layer,
-				x + (flipx ? 7 - h : h),
-				y + (flipy ? 7 - v : v),
-				((ch1 * k1 + ch2 * k2) + color / 4) & 0x3);
+			if(ch1 + ch2 || (color != 0x05 && color != 0x0a && color != 0x0f))
+				putpixel(p,
+					layer,
+					x + (flipx ? 7 - h : h),
+					y + (flipy ? 7 - v : v),
+					((ch1 ? (color & 0x3) : (color >> 0x2)) + (ch2 ? (color & 0x3) : (color >> 0x2)) * 2) & 0x3);
 		}
 }
 
