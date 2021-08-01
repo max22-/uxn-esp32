@@ -213,8 +213,8 @@ static void
 domouse(SDL_Event *event)
 {
 	Uint8 flag = 0x00;
-	Uint16 x = clamp(event->motion.x - PAD, 0, ppu.hor * 8 - 1);
-	Uint16 y = clamp(event->motion.y - PAD, 0, ppu.ver * 8 - 1);
+	Uint16 x = clamp(event->motion.x - PAD, 0, ppu.width - 1);
+	Uint16 y = clamp(event->motion.y - PAD, 0, ppu.height - 1);
 	mempoke16(devmouse->dat, 0x2, x);
 	mempoke16(devmouse->dat, 0x4, y);
 	switch(event->button.button) {
@@ -500,8 +500,8 @@ main(int argc, char **argv)
 	portuxn(&u, 0xf, "---", nil_talk);
 
 	/* Write screen size to dev/screen */
-	mempoke16(devscreen->dat, 2, ppu.hor * 8);
-	mempoke16(devscreen->dat, 4, ppu.ver * 8);
+	mempoke16(devscreen->dat, 2, ppu.width);
+	mempoke16(devscreen->dat, 4, ppu.height);
 
 	run(&u);
 	quit();

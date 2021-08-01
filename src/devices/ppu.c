@@ -66,9 +66,7 @@ ppu_2bpp(Ppu *p, Uint8 layer, Uint16 x, Uint16 y, Uint8 *sprite, Uint8 color, Ui
 int
 ppu_init(Ppu *p, Uint8 hor, Uint8 ver)
 {
-	p->hor = hor;
-	p->ver = ver;
-	p->width = 8 * p->hor;
-	p->height = 8 * p->ver;
+	p->width = 8 * hor;
+	p->height = 8 * ver;
 	return 1;
 }
