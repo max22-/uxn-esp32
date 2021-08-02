@@ -214,13 +214,10 @@ See etc/mkuxn-fast.moon for instructions.
 			continue
 		if l == '/* Stack */'
 			wanted = false
-		if l\match 'errors%[%]'
-			\write '\n#ifndef NO_STACK_CHECKS\n'
-			wanted = true
 		if wanted
 			\write '%s\n'\format l
 		if l == '}'
-			\write '#endif\n\n'
+			\write '\n'
 			break
 	\write [[
 /* clang-format on */
@@ -270,7 +267,7 @@ int
 		l = f\read '*l'
 		if not l
 			break
-		if l\match '^bootuxn'
+		if l\match '^uxn_boot'
 			wanted = true
 		if wanted
 			\write '%s\n'\format l

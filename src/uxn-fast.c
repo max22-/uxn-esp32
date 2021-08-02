@@ -4045,5 +4045,6 @@ uxn_port(Uxn *u, Uint8 id, char *name, void (*talkfn)(Device *d, Uint8 b0, Uint8
 	d->u = u;
 	d->mem = u->ram.dat;
 	d->talk = talkfn;
+	(void)name;
 	return d;
 }

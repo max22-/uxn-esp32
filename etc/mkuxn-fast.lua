@@ -298,15 +298,11 @@ See etc/mkuxn-fast.moon for instructions.
       if l == '/* Stack */' then
         wanted = false
       end
-      if l:match('errors%[%]') then
-        _with_0:write('\n#ifndef NO_STACK_CHECKS\n')
-        wanted = true
-      end
       if wanted then
         _with_0:write(('%s\n'):format(l))
       end
       if l == '}' then
-        _with_0:write('#endif\n\n')
+        _with_0:write('\n')
         break
       end
       _continue_0 = true
@@ -323,8 +319,8 @@ int
 uxn_eval(Uxn *u, Uint16 vec)
 {
 	Uint8 instr;
-  if(u->dev[0].dat[0xf]) 
-    return 0;
+	if(u->dev[0].dat[0xf]) 
+		return 0;
 	u->ram.ptr = vec;
 	if(u->wst.ptr > 0xf8) u->wst.ptr = 0xf8;
 	while(u->ram.ptr) {
@@ -375,7 +371,7 @@ int
     if not l then
       break
     end
-    if l:match('^bootuxn') then
+    if l:match('^uxn_boot') then
       wanted = true
     end
     if wanted then
