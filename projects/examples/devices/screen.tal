@@ -37,21 +37,20 @@ BRK
 
 @draw-table ( -- )
 	
-	#00 #10
+	#10 #00
 	&loop
-		OVR #08 MUL #00 SWP ;font-hex ADD2 .Screen/addr DEO2
+		DUP #08 MUL #00 SWP ;font-hex ADD2 .Screen/addr DEO2
 		( x-axis ) 
-		OVR #08 MUL #00 SWP 
+		DUP #08 MUL #00 SWP 
 		.center/x LDZ2 #0040 SUB2 ADD2 .Screen/x DEO2
 		.center/y LDZ2 #0050 SUB2 .Screen/y DEO2
 		( draw ) #01 .Screen/sprite DEO
 		( y-axis )
-		OVR #08 MUL #00 SWP 
+		DUP #08 MUL #00 SWP 
 		.center/y LDZ2 #0040 SUB2 ADD2 .Screen/y DEO2
 		.center/x LDZ2 #0050 SUB2 .Screen/x DEO2
 		( draw ) #01 .Screen/sprite DEO
-		( incr ) SWP #01 ADD SWP
-		LTHk ,&loop JCN
+		#01 ADD GTHk ,&loop JCN
 	POP2
 
 RTN
@@ -61,12 +60,12 @@ RTN
 	;preview_icn .Screen/addr DEO2
 	#00 #00
 	&loop
-		( move ) OVR #0f AND #40 SFT #02 DIV #00 SWP 
+		( move ) DUP #0f AND #40 SFT #02 DIV #00 SWP 
 			.center/x LDZ2 #0040 SUB2 ADD2 .Screen/x DEO2
-		( move ) OVR #f0 AND #02 DIV #00 SWP 
+		( move ) DUP #f0 AND #02 DIV #00 SWP 
 			.center/y LDZ2 #0040 SUB2 ADD2 .Screen/y DEO2
-		( draw ) OVR .Screen/sprite DEO
-		( incr ) SWP #01 ADD SWP
+		( draw ) DUP .Screen/sprite DEO
+		( incr ) #01 ADD
 		NEQk ,&loop JCN
 	POP2
 	
@@ -74,32 +73,30 @@ RTN
 
 @draw-1bpp ( -- )
 
-	#00 #10
+	#10 #00
 	&loop
-		( color ) OVR STH
-		( y ) OVR #04 DIV [ #00 SWP ] #0010 MUL2 
+		( color ) STHk
+		( y ) DUP #04 DIV [ #00 SWP ] #0010 MUL2 
 			[ .center/y LDZ2 #0040 SUB2 ADD2 ] STH2
-		( x ) OVR #03 AND [ #00 SWP ] #0010 MUL2 #0040 ADD2 
+		( x ) DUP #03 AND [ #00 SWP ] #0010 MUL2 #0040 ADD2 
 			[ .center/x LDZ2 #0008 ADD2 ADD2 ]
 		STH2r STHr #00 ;draw-circle JSR2
-		SWP #01 ADD SWP
-		LTHk ,&loop JCN
+		#01 ADD GTHk ,&loop JCN
 	POP2
 	
 RTN
 
 @draw-2bpp ( -- )
 
-	#00 #10
+	#10 #00
 	&loop
-		( color ) OVR STH
-		( y ) OVR #04 DIV [ #00 SWP ] #0010 MUL2 
+		( color ) STHk
+		( y ) DUP #04 DIV [ #00 SWP ] #0010 MUL2 
 			[ .center/y LDZ2 ADD2 ] STH2
-		( x ) OVR #03 AND [ #00 SWP ] #0010 MUL2 #0040 ADD2 
+		( x ) DUP #03 AND [ #00 SWP ] #0010 MUL2 #0040 ADD2 
 			[ .center/x LDZ2 #0008 ADD2 ADD2 ]
 		STH2r STHr #80 ;draw-circle JSR2
-		SWP #01 ADD SWP
-		LTHk ,&loop JCN
+		#01 ADD GTHk ,&loop JCN
 	POP2
 	
 RTN
