@@ -7,15 +7,11 @@
 
 %RTN { JMP2r }
 %TOS { #00 SWP }
-%LTS2  { #8000 ++ SWP2 #8000 ++ >> } %GTS2  { #8000 ++ SWP2 #8000 ++ << }
-
-%DEBUG  { ;print-hex JSR2 #0a .Console/write DEO }
-%DEBUG2 { SWP ;print-hex JSR2 ;print-hex JSR2 #0a .Console/write DEO }
+%LTS2  { #8000 ++ SWP2 #8000 ++ >> } 
 
 ( devices )
 
 |00 @System     [ &vector $2 &pad    $6 &r      $2 &g     $2 &b      $2 ]
-|10 @Console    [ &vector $2 &read     $1 &pad    $5 &write $1 ]
 |20 @Screen     [ &vector $2 &width  $2 &height $2 &pad   $2 &x      $2 &y $2 &addr $2 &pixel $1 &sprite $1 ]
 |80 @Controller [ &vector $2 &button $1 &key    $1 ]
 
@@ -26,17 +22,14 @@
 @center
 	&x $2
 	&y $2
-
-@position
-	&x $2
-	&y $2
 @frame
 	&w $2 &h $2
 	&x0 $2 &y0 $2
 	&x1 $2 &y1 $2
-
 @color $1
-@rect        [ &x1 $2 &y1 $2 &x2 $2 &y2 $2 ]
+@rect
+	&x1 $2 &y1 $2 
+	&x2 $2 &y2 $2
 
 ( init )
 
@@ -169,16 +162,6 @@ RTN
 		( incr ) SWP2 #0001 ++ SWP2
 		OVR2 OVR2 #0001 ++ LTS2 ,&hor JCN
 	POP2 POP2
-
-RTN
-
-@print-hex ( value -- )
-	
-	STHk #04 SFT ,&parse JSR .Console/write DEO
-	STHr #0f AND ,&parse JSR .Console/write DEO
-	RTN
-	&parse ( value -- char )
-		DUP #09 GTH ,&above JCN #30 ADD RTN &above #09 SUB #60 ADD RTN
 
 RTN
 
