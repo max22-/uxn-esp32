@@ -54,9 +54,9 @@ then
 fi
 
 echo "Assembling.."
-./bin/uxnasm projects/examples/devices/screen.tal bin/screen.rom
+./bin/uxnasm projects/examples/demos/theme.tal bin/theme.rom
 
 echo "Running.."
-./bin/uxnemu bin/screen.rom
+./bin/uxnemu bin/theme.rom
 
 echo "Done."

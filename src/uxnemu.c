@@ -213,8 +213,8 @@ static void
 domouse(SDL_Event *event)
 {
 	Uint8 flag = 0x00;
-	Uint16 x = clamp(event->motion.x - PAD, 0, ppu.width - 1);
-	Uint16 y = clamp(event->motion.y - PAD, 0, ppu.height - 1);
+	Uint16 x = clamp(event->motion.x / zoom - PAD, 0, ppu.width - 1);
+	Uint16 y = clamp(event->motion.y / zoom - PAD, 0, ppu.height - 1);
 	mempoke16(devmouse->dat, 0x2, x);
 	mempoke16(devmouse->dat, 0x4, y);
 	switch(event->button.button) {
