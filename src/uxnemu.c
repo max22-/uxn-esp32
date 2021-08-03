@@ -168,10 +168,24 @@ static int
 init(void)
 {
 	SDL_AudioSpec as;
+	SDL_zero(as);
+	as.freq = SAMPLE_FREQUENCY;
+	as.format = AUDIO_S16;
+	as.channels = 2;
+	as.callback = audio_callback;
+	as.samples = 512;
+	as.userdata = NULL;
 	if(!ppu_init(&ppu, 64, 40))
 		return error("ppu", "Init failure");
-	if(SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO) < 0)
-		return error("sdl", SDL_GetError());
+	if(SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO) < 0) {
+		error("sdl", SDL_GetError());
+		if(SDL_Init(SDL_INIT_VIDEO) < 0)
+			return error("sdl", SDL_GetError());
+	} else {
+		audio_id = SDL_OpenAudioDevice(NULL, 0, &as, NULL, 0);
+		if(!audio_id)
+			error("sdl_audio", SDL_GetError());
+	}
 	gWindow = SDL_CreateWindow("Uxn", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, (ppu.width + PAD * 2) * zoom, (ppu.height + PAD * 2) * zoom, SDL_WINDOW_SHOWN);
 	if(gWindow == NULL)
 		return error("sdl_window", SDL_GetError());
@@ -196,16 +210,6 @@ init(void)
 	ppu.pixels = idxSurface->pixels;
 	SDL_StartTextInput();
 	SDL_ShowCursor(SDL_DISABLE);
-	SDL_zero(as);
-	as.freq = SAMPLE_FREQUENCY;
-	as.format = AUDIO_S16;
-	as.channels = 2;
-	as.callback = audio_callback;
-	as.samples = 512;
-	as.userdata = NULL;
-	audio_id = SDL_OpenAudioDevice(NULL, 0, &as, NULL, 0);
-	if(!audio_id)
-		error("sdl_audio", SDL_GetError());
 	return 1;
 }
 
