@@ -205,7 +205,7 @@ init(void)
 	as.userdata = NULL;
 	audio_id = SDL_OpenAudioDevice(NULL, 0, &as, NULL, 0);
 	if(!audio_id)
-		return error("sdl_audio", SDL_GetError());
+		error("sdl_audio", SDL_GetError());
 	return 1;
 }
 
@@ -353,6 +353,7 @@ static void
 audio_talk(Device *d, Uint8 b0, Uint8 w)
 {
 	Apu *c = &apu[d - devaudio0];
+	if(!audio_id) return;
 	if(!w) {
 		if(b0 == 0x2)
 			mempoke16(d->dat, 0x2, c->i);
