@@ -45,6 +45,7 @@ uxn_eval(Uxn *u, Uint16 vec)
 	if(u->dev[0].dat[0xf]) 
 		return 0;
 	u->ram.ptr = vec;
+	if(u->wst.ptr > 0xf8) u->wst.ptr = 0xf8;
 	while(u->ram.ptr) {
 		instr = u->ram.dat[u->ram.ptr++];
 		switch(instr) {
