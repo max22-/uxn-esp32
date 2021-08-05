@@ -146,7 +146,7 @@ i = 0
 allops = {}
 wanted = false
 for l in assert io.lines 'src/uxn.c'
-	if l == 'void (*ops[])(Uxn *u) = {'
+	if l == 'static void (*ops[])(Uxn *u) = {'
 		wanted = true
 	elseif l == '};'
 		wanted = false
@@ -210,7 +210,7 @@ See etc/mkuxn-fast.moon for instructions.
 	wanted = true
 	while true
 		l = f\read '*l'
-		if l\match' push' or l\match'[ *]pop'
+		if l\match' push' or l\match'[ *]pop' or l\match'devpeek16'
 			continue
 		if l == '/* Stack */'
 			wanted = false

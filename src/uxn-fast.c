@@ -22,17 +22,19 @@ See etc/mkuxn-fast.moon for instructions.
 
 */
 
+#define MODE_RETURN 0x40
+#define MODE_KEEP 0x80
+
 #pragma mark - Operations
 
 /* clang-format off */
-void   mempoke8(Uint8 *m, Uint16 a, Uint8 b) { m[a] = b; }
-Uint8  mempeek8(Uint8 *m, Uint16 a) { return m[a]; }
-void   devpoke8(Device *d, Uint8 a, Uint8 b) { d->dat[a & 0xf] = b; d->talk(d, a & 0x0f, 1); }
-Uint8  devpeek8(Device *d, Uint8 a) { d->talk(d, a & 0x0f, 0); return d->dat[a & 0xf];  }
+static void   mempoke8(Uint8 *m, Uint16 a, Uint8 b) { m[a] = b; }
+static Uint8  mempeek8(Uint8 *m, Uint16 a) { return m[a]; }
+static void   devpoke8(Device *d, Uint8 a, Uint8 b) { d->dat[a & 0xf] = b; d->talk(d, a & 0x0f, 1); }
+static Uint8  devpeek8(Device *d, Uint8 a) { d->talk(d, a & 0x0f, 0); return d->dat[a & 0xf];  }
 void   mempoke16(Uint8 *m, Uint16 a, Uint16 b) { mempoke8(m, a, b >> 8); mempoke8(m, a + 1, b); }
 Uint16 mempeek16(Uint8 *m, Uint16 a) { return (mempeek8(m, a) << 8) + mempeek8(m, a + 1); }
-void   devpoke16(Device *d, Uint8 a, Uint16 b) { devpoke8(d, a, b >> 8); devpoke8(d, a + 1, b); }
-Uint16 devpeek16(Device *d, Uint16 a) { return (devpeek8(d, a) << 8) + devpeek8(d, a + 1); }
+static void   devpoke16(Device *d, Uint8 a, Uint16 b) { devpoke8(d, a, b >> 8); devpoke8(d, a + 1, b); }
 
 /* clang-format on */
 

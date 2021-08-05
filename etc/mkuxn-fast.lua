@@ -187,7 +187,7 @@ local i = 0
 local allops = { }
 local wanted = false
 for l in assert(io.lines('src/uxn.c')) do
-  if l == 'void (*ops[])(Uxn *u) = {' then
+  if l == 'static void (*ops[])(Uxn *u) = {' then
     wanted = true
   elseif l == '};' then
     wanted = false
@@ -291,7 +291,7 @@ See etc/mkuxn-fast.moon for instructions.
     local _continue_0 = false
     repeat
       local l = f:read('*l')
-      if l:match(' push') or l:match('[ *]pop') then
+      if l:match(' push') or l:match('[ *]pop') or l:match('devpeek16') then
         _continue_0 = true
         break
       end
@@ -322,7 +322,7 @@ uxn_eval(Uxn *u, Uint16 vec)
 	if(u->dev[0].dat[0xf]) 
 		return 0;
 	u->ram.ptr = vec;
-  if(u->wst.ptr > 0xf8) u->wst.ptr = 0xf8;
+	if(u->wst.ptr > 0xf8) u->wst.ptr = 0xf8;
 	while(u->ram.ptr) {
 		instr = u->ram.dat[u->ram.ptr++];
 		switch(instr) {
