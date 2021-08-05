@@ -14,7 +14,6 @@ typedef unsigned int Uint32;
 typedef signed int Sint32;
 
 #define SAMPLE_FREQUENCY 44100
-#define POLYPHONY 4
 
 typedef struct {
 	Uint8 *addr;

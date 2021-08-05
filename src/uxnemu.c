@@ -21,6 +21,10 @@ THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
 WITH REGARD TO THIS SOFTWARE.
 */
 
+#define PAD 4
+#define POLYPHONY 4
+#define BENCH 0
+
 static SDL_AudioDeviceID audio_id;
 static SDL_Window *gWindow;
 static SDL_Surface *winSurface, *idxSurface, *rgbaSurface;
@@ -30,9 +34,7 @@ static Apu apu[POLYPHONY];
 static Device *devsystem, *devscreen, *devmouse, *devctrl, *devaudio0, *devconsole;
 static Uint32 stdin_event;
 
-#define PAD 4
-
-static Uint8 zoom = 1, reqdraw = 0, bench = 0;
+static Uint8 zoom = 1, reqdraw = 0;
 
 static Uint8 font[][8] = {
 	{0x00, 0x7c, 0x82, 0x82, 0x82, 0x82, 0x82, 0x7c},
@@ -434,7 +436,7 @@ run(Uxn *u)
 	while(1) {
 		SDL_Event event;
 		double elapsed, start = 0;
-		if(!bench)
+		if(!BENCH)
 			start = SDL_GetPerformanceCounter();
 		while(SDL_PollEvent(&event) != 0) {
 			switch(event.type) {
@@ -473,7 +475,7 @@ run(Uxn *u)
 		uxn_eval(u, mempeek16(devscreen->dat, 0));
 		if(reqdraw || devsystem->dat[0xe])
 			redraw(u);
-		if(!bench) {
+		if(!BENCH) {
 			elapsed = (SDL_GetPerformanceCounter() - start) / (double)SDL_GetPerformanceFrequency() * 1000.0f;
 			SDL_Delay(clamp(16.666f - elapsed, 0, 1000));
 		}
