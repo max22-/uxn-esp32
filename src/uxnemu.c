@@ -310,16 +310,7 @@ screen_talk(Device *d, Uint8 b0, Uint8 w)
 		Uint16 x = mempeek16(d->dat, 0x8);
 		Uint16 y = mempeek16(d->dat, 0xa);
 		Uint8 layer = d->dat[0xe] >> 4 & 0x1;
-		Uint8 mode = d->dat[0xe] >> 5;
-		if(!mode)
-			ppu_pixel(&ppu, layer, x, y, d->dat[0xe] & 0x3);
-		else {
-			Uint8 *addr = &d->mem[mempeek16(d->dat, 0xc)];
-			if(mode-- & 0x1)
-				ppu_1bpp(&ppu, layer, x, y, addr, d->dat[0xe] & 0xf, mode & 0x2, mode & 0x4);
-			else
-				ppu_2bpp(&ppu, layer, x, y, addr, d->dat[0xe] & 0xf, mode & 0x2, mode & 0x4);
-		}
+		ppu_pixel(&ppu, layer, x, y, d->dat[0xe] & 0x3);
 		reqdraw = 1;
 	} else if(w && b0 == 0xf) {
 		Uint16 x = mempeek16(d->dat, 0x8);
