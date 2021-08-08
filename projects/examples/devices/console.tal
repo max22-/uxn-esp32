@@ -8,12 +8,12 @@
 |0100 ( -> )
 
 	;hello-word 
-	&loop
+	&while
 		( send ) LDAk .Console/write DEO
 		( incr ) #0001 ADD2
-		( loop ) LDAk ,&loop JCN
+		( loop ) LDAk ,&while JCN
 	POP2
-	#01 .System/debug DEO
+	( show debugger ) #01 .System/debug DEO
 
 BRK
 
