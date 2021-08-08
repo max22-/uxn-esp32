@@ -455,6 +455,8 @@ run(Uxn *u)
 			case SDL_WINDOWEVENT:
 				if(event.window.event == SDL_WINDOWEVENT_EXPOSED)
 					redraw(u);
+				else if(event.window.event == SDL_WINDOWEVENT_RESIZED)
+					winSurface = SDL_GetWindowSurface(gWindow);
 				break;
 			default:
 				if(event.type == stdin_event) {
