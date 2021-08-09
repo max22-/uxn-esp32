@@ -1,7 +1,6 @@
-#if defined(ARDUINO_M5STACK_Core2)
+#if defined(ESP32)
 
 #include <Arduino.h>
-#include <M5Core2.h>
 #include <driver/i2s.h>
 #include "audio.h"
 
@@ -20,8 +19,6 @@ bool
 initaudio(audio_callback_t callback)
 {
 	esp_err_t err = ESP_OK;
-
-	M5.Axp.SetSpkEnable(true);
 
 	i2s_driver_uninstall(Speak_I2S_NUMBER);
 	i2s_config_t i2s_config = {
