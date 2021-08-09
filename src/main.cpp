@@ -122,7 +122,8 @@ uxn_init(void)
 {
 	if(!ppu_init(ppu, hor, ver))
 		error("PPU", "Init failure");
-	initaudio(audio_callback);
+	#warning uncomment this when audio will be implemented
+	//initaudio(audio_callback);
 	ppu->pixels = (Uint8*)spr.getPointer();
 	return 1;
 }
@@ -295,7 +296,7 @@ run(Uxn* u)
 
 		if(reqdraw)
 			redraw(u);
-		Serial.printf("ptr = %x\n", u->ram.ptr);
+
 		elapsed = micros() - start;
 		delayMicroseconds(clamp(16666 - elapsed, 0, 1000000));
 	}
@@ -316,15 +317,12 @@ void
 setup()
 {
 	Serial.begin(115200);
-	Serial.println("Hello, world!");
-	delay(1000);
 	tft.init();
 	tft.setRotation(3);
 	tft.fillScreen(TFT_BLACK);
 	tft.setCursor(0, 0);
+	tft.setTextColor(TFT_GREEN);
 	spr.setColorDepth(4);
-	Serial.println("Screen black ?");
-	delay(5000);
 	if(spr.createSprite(8 * hor, 8 * ver) == nullptr) {
 		error("tTFT_eSPI", "Cannot create sprite");
 		quit();
@@ -341,12 +339,9 @@ setup()
 	for(int i = 0; i < POLYPHONY; i++) {
 		if((apu[i] = (Apu *)malloc(sizeof(Apu))) == nullptr)
 			error("Memory", "Cannot allocate enough memory for the apu");
-	}
-	for(int i = 0; i < POLYPHONY; i++) {
-		if((apu[i] = (Apu *)malloc(sizeof(Apu))) == nullptr)
-			error("Memory", "Cannot allocate enough memory for the apu");
 		memset(apu[i], 0, sizeof(apu));
 	}
+
 	if(!uxn_boot(u))
 		error("Boot", "Failed to start uxn.");
 	if(!load(u, rom))
@@ -374,6 +369,8 @@ setup()
 	/* Write screen size to dev/screen */
 	mempoke16(devscreen->dat, 2, ppu->width);
 	mempoke16(devscreen->dat, 4, ppu->height);
+	tft.println("Starting Uxn in 2 seconds");
+	delay(2000);
 }
 
 void
