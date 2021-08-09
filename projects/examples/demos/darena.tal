@@ -13,8 +13,8 @@
 %anispeedmask_normal { #03 }
 %anispeedmask_slow { #07 }
 
-%c_color_normal { #33 }
-%c_color_flipx { #73 }
+%c_color_normal { #43 }
+%c_color_flipx { #53 }
 %index_norock { #ff }
 
 ( output macros )
@@ -34,7 +34,7 @@
 ( devices )
 
 |00 @System     [ &vector $2 &wst      $1 &rst    $1 &pad   $4 &r      $2 &g     $2 &b      $2 ]
-|20 @Screen     [ &vector $2 &width    $2 &height $2 &pad   $2 &x      $2 &y      $2 &addr  $2 &color $1 ]
+|20 @Screen     [ &vector $2 &width    $2 &height $2 &pad   $2 &x      $2 &y      $2 &addr  $2 &pixel $1 &sprite $1 ]
 |80 @Controller [ &vector $2 &button   $1 &key    $1 ]
 
 ( variables )
@@ -125,7 +125,7 @@ BRK
 		DUP ( get rocks_y[i] )
 		;rocks_y ROT #00 SWP ADD2 out_screen_y
 
-		#30 .Screen/color DEO
+		#40 .Screen/sprite DEO
 
 		#01 ADD
 		DUP2
@@ -142,7 +142,7 @@ JMP2r
 	;tog/x out_screen_x
 	;tog/x out_screen_y
 	;s_stand .Screen/addr DEO2
-	#23 .Screen/color DEO
+	#03 .Screen/sprite DEO
 
 	( draw rocks )
 	;s_bola .Screen/addr DEO2
@@ -157,10 +157,10 @@ JMP2r
 		;rocks_y ROT #00 SWP ADD2 out_screen_y
 
 		( DUP ( get color bitwise ) )
-		( ;r_color LDA SWP get_bit_n #31 ADD .Screen/color DEO )
+		( ;r_color LDA SWP get_bit_n #41 ADD .Screen/sprite DEO )
 
 		DUP
-		;r_color ROT #00 SWP ADD2 LDA #31 ADD .Screen/color DEO
+		;r_color ROT #00 SWP ADD2 LDA #41 ADD .Screen/sprite DEO
 
 		#01 ADD
 
@@ -440,14 +440,14 @@ JMP2r
 	;c_sprite LDA2 ADD2 .Screen/addr DEO2
 	;c_pos/x out_screen_x
 	;c_pos/y out_screen_y
-	;c_color LDA .Screen/color DEO
+	;c_color LDA .Screen/sprite DEO
 JMP2r
 
 @clear_c ( clear character )
 	;s_clear .Screen/addr DEO2
 	;c_pos/x out_screen_x
 	;c_pos/y out_screen_y
-	#30 .Screen/color DEO
+	#40 .Screen/sprite DEO
 JMP2r
 
 @init_bg
@@ -467,7 +467,7 @@ JMP2r
 			STH2r
 			DUP2 .Screen/x DEO2
 
-			#23 .Screen/color DEO
+			#03 .Screen/sprite DEO
 
 			#0008 ADD2 DUP2 STH2
 			GTH2 ,&horizontal0loop JCN
@@ -497,7 +497,7 @@ JMP2r
 			STH2r
 			DUP2 .Screen/x DEO2
 
-			#20 .Screen/color DEO
+			#00 .Screen/sprite DEO
 
 			#0008 ADD2 DUP2 STH2
 			GTH2 ,&horizontal0loop_clear JCN

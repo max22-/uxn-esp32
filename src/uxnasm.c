@@ -139,9 +139,9 @@ sublabel(char *src, char *scope, char *name)
 #pragma mark - Parser
 
 static int
-error(char *name, char *id)
+error(char *name, char *msg)
 {
-	fprintf(stderr, "Error: %s[%s]\n", name, id);
+	fprintf(stderr, "%s: %s\n", name, msg);
 	return 0;
 }
 
@@ -223,7 +223,7 @@ walktoken(char *w)
 			res += walktoken(m->items[i]);
 		return res;
 	}
-	return error("Unknown label in first pass", w);
+	return error("Invalid token", w);
 }
 
 static int
@@ -330,7 +330,7 @@ pass2(FILE *f)
 		if(skipblock(w, &cmacr, '{', '}')) continue;
 		if(w[0] == '|') {
 			if(p.length && shex(w + 1) < p.ptr)
-				return error("Pass 2 - Memory Overwrite", w);
+				return error("Pass 2 - Memory overwrite", w);
 			p.ptr = shex(w + 1);
 			continue;
 		} else if(w[0] == '$') {
@@ -368,11 +368,11 @@ main(int argc, char *argv[])
 {
 	FILE *f;
 	if(argc < 3)
-		return !error("Input", "Missing");
+		return !error("usage", "input.tal output.rom");
 	if(!(f = fopen(argv[1], "r")))
-		return !error("Open", "Failed");
+		return !error("Load", "Failed to open source.");
 	if(!pass1(f) || !pass2(f))
-		return !error("Assembly", "Failed");
+		return !error("Assembly", "Failed to assemble rom.");
 	fwrite(p.data + TRIM, p.length - TRIM, 1, fopen(argv[2], "wb"));
 	fclose(f);
 	cleanup(argv[2]);

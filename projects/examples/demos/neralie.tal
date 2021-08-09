@@ -13,7 +13,7 @@
 ( devices )
 
 |00 @System [ &vector $2 &pad $6 &r $2 &g $2 &b $2 ]
-|20 @Screen [ &vector $2 &width $2 &height $2 &pad $2 &x $2 &y $2 &addr $2 &color $1 ]
+|20 @Screen [ &vector $2 &width $2 &height $2 &pad $2 &x $2 &y $2 &addr $2 &pixel $1 &sprite $1 ]
 |b0 @DateTime [ &year $2 &month $1 &day $1 &hour $1 &minute $1 &second $1 &dotw $1 &doty $2 &isdst $1 ]
 
 ( variables )
@@ -59,7 +59,7 @@
 	;neralie-lines JSR2
 	BRK
 
-	#22 .Screen/color DEO
+	#02 .Screen/sprite DEO
 	#0000 #00 .number/count LDZ DUP2 ;h JSR2
 	.number/count LDZ #01 ADD .number/count STZ
 
@@ -115,7 +115,7 @@
 @digit ( index* -- )
 	8** ;font-numbers ADD2 .Screen/addr DEO2
 	&middle
-	.neralie/color LDZ #20 ADD .Screen/color DEO
+	.neralie/color LDZ .Screen/sprite DEO
 	.Screen/x DEI2 #0008 ADD2 .Screen/x DEO2
 	JMP2r
 
@@ -190,7 +190,7 @@
 
 	&keep-going
 	DUP2 .lines/addr LDZ DEO2
-	.neralie/color LDZ .Screen/color DEO
+	.neralie/color LDZ .Screen/pixel DEO
 	,&loop JMP
 
 @update-fps ( -- )

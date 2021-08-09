@@ -1,0 +1,185 @@
+( dev/controller/keys )
+
+%+  { ADD } %-   { SUB }  %*  { MUL }  %/  { DIV }
+%<  { LTH } %>   { GTH }  %=  { EQU }  %!  { NEQ }
+%++ { ADD2 } %-- { SUB2 } %** { MUL2 } %// { DIV2 }
+%<< { LTH2 } %>> { GTH2 } %== { EQU2 } %!! { NEQ2 }
+
+%RTN { JMP2r }
+%TOS { #00 SWP }
+%LTS2  { #8000 ++ SWP2 #8000 ++ >> } 
+
+( devices )
+
+|00 @System     [ &vector $2 &pad    $6 &r      $2 &g     $2 &b      $2 ]
+|20 @Screen     [ &vector $2 &width  $2 &height $2 &pad   $2 &x      $2 &y $2 &addr $2 &pixel $1 &sprite $1 ]
+|80 @Controller [ &vector $2 &button $1 &key    $1 ]
+
+( variables )
+
+|0000
+
+@center
+	&x $2
+	&y $2
+@frame
+	&w $2 &h $2
+	&x0 $2 &y0 $2
+	&x1 $2 &y1 $2
+@color $1
+@rect
+	&x1 $2 &y1 $2 
+	&x2 $2 &y2 $2
+
+( init )
+
+|0100 ( -> )
+
+	( theme ) 
+	#0ff7 .System/r DEO2 
+	#0f07 .System/g DEO2 
+	#0f07 .System/b DEO2
+
+	( find center )
+	.Screen/width DEI2 #01 SFT2 .center/x STZ2
+	.Screen/height DEI2 #01 SFT2 .center/y STZ2
+
+	( place controller )
+	#0068 .frame/w STZ2
+	#0030 .frame/h STZ2
+	.center/x LDZ2 .frame/w LDZ2 #0002 // -- .frame/x0 STZ2
+	.center/y LDZ2 .frame/h LDZ2 #0002 // -- .frame/y0 STZ2
+	.frame/x0 LDZ2 .frame/w LDZ2 ++ .frame/x1 STZ2
+	.frame/y0 LDZ2 .frame/h LDZ2 ++ .frame/y1 STZ2
+
+	( vectors ) 
+	;on-button .Controller/vector DEO2
+
+	;draw-controller JSR2
+
+BRK
+
+@on-button ( -> )
+
+	;draw-controller JSR2
+
+BRK
+
+@draw-controller ( -- )
+
+	.Controller/button DEI STH
+
+	( frame )
+	.frame/x0 LDZ2 .frame/y0 LDZ2
+	.frame/x1 LDZ2 .frame/y1 LDZ2
+		#01 ;line-rect JSR2
+	( d-pad )
+	.frame/x0 LDZ2 #0010 ++ .Screen/x DEO2
+	.frame/y0 LDZ2 #0010 ++ .Screen/y DEO2
+	;controller-icn/dpad-up .Screen/addr DEO2
+	#03 [ STHkr #04 SFT #01 AND #02 * - ] .Screen/sprite DEO
+	.Screen/y DEI2 #0010 ++ .Screen/y DEO2
+	;controller-icn/dpad-down .Screen/addr DEO2
+	#03 [ STHkr #05 SFT #01 AND #02 * - ] .Screen/sprite DEO
+	.Screen/y DEI2 #0008 -- .Screen/y DEO2
+	.Screen/x DEI2 #0008 -- .Screen/x DEO2
+	;controller-icn/dpad-left .Screen/addr DEO2
+	#03 [ STHkr #06 SFT #01 AND #02 * - ] .Screen/sprite DEO
+	.Screen/x DEI2 #0010 ++ .Screen/x DEO2
+	;controller-icn/dpad-right .Screen/addr DEO2
+	#03 [ STHkr #07 SFT #01 AND #02 * - ] .Screen/sprite DEO
+	.Screen/x DEI2 #0008 -- .Screen/x DEO2
+	;controller-icn/dpad .Screen/addr DEO2
+	#03 .Screen/sprite DEO
+
+	( options )
+	.center/y LDZ2 #0009 ++ .Screen/y DEO2
+	.center/x LDZ2 #0009 -- .Screen/x DEO2
+	;controller-icn/option .Screen/addr DEO2
+	#03 [ STHkr #02 SFT #01 AND  #02 * - ] .Screen/sprite DEO
+	.center/x LDZ2 #0004 ++ .Screen/x DEO2
+	;controller-icn/option .Screen/addr DEO2
+	#03 [ STHkr #03 SFT #01 AND  #02 * - ] .Screen/sprite DEO
+
+	( buttons )
+	.center/y LDZ2 #0000 ++ .Screen/y DEO2
+	.center/x LDZ2 #0018 ++ .Screen/x DEO2
+	;controller-icn/button .Screen/addr DEO2
+	#03 [ STHkr #01 SFT #01 AND - ] .Screen/sprite DEO
+		.Screen/y DEI2 #000a ++ .Screen/y DEO2
+		;font-hex #000b #0008 ** ++ .Screen/addr DEO2
+		#03 .Screen/sprite DEO
+
+	.center/y LDZ2 #0000 ++ .Screen/y DEO2
+	.center/x LDZ2 #0024 ++ .Screen/x DEO2
+	;controller-icn/button .Screen/addr DEO2
+	#03 [ STHr #01 AND - ] .Screen/sprite DEO
+		.Screen/y DEI2 #000a ++ .Screen/y DEO2
+		;font-hex #000a #0008 ** ++ .Screen/addr DEO2
+		#03 .Screen/sprite DEO
+
+	.center/x LDZ2 #0010 -- .Screen/x DEO2
+	.center/y LDZ2 #0010 -- .Screen/y DEO2
+	.Controller/button DEI2 #03 ;draw-short JSR2
+
+RTN
+
+( generics )
+
+@draw-short ( short* color -- )
+
+	STH SWP 
+	DUP #04 SFT TOS #0008 ** ;font-hex ++ .Screen/addr DEO2
+	( draw ) STHkr .Screen/sprite DEO
+	#0f AND TOS #0008 ** ;font-hex ++ .Screen/addr DEO2
+	.Screen/x DEI2 #0008 ++ .Screen/x DEO2
+	( draw ) STHkr .Screen/sprite DEO
+	DUP #04 SFT TOS #0008 ** ;font-hex ++ .Screen/addr DEO2
+	.Screen/x DEI2 #0008 ++ .Screen/x DEO2
+	( draw ) STHkr .Screen/sprite DEO
+	#0f AND TOS #0008 ** ;font-hex ++ .Screen/addr DEO2
+	.Screen/x DEI2 #0008 ++ .Screen/x DEO2
+	( draw ) STHr .Screen/sprite DEO
+
+RTN
+
+@line-rect ( x1* y1* x2* y2* color -- )
+
+	( load ) .color STZ DUP2 STH2 .rect/y2 STZ2 .rect/x2 STZ2 DUP2 STH2 .rect/y1 STZ2 .rect/x1 STZ2
+	STH2r #0001 ++ STH2r
+	&ver
+		( save ) OVR2 .Screen/y DEO2
+		( draw ) .rect/x1 LDZ2 .Screen/x DEO2 .color LDZ DUP .Screen/pixel DEO
+		( draw ) .rect/x2 LDZ2 .Screen/x DEO2 .Screen/pixel DEO
+		( incr ) SWP2 #0001 ++ SWP2
+		OVR2 OVR2 LTS2 ,&ver JCN
+	POP2 POP2
+	.rect/x1 LDZ2 #0001 ++ .rect/x2 LDZ2 #0001 --
+	&hor
+		( save ) OVR2 .Screen/x DEO2
+		( draw ) .rect/y1 LDZ2 .Screen/y DEO2 .color LDZ DUP .Screen/pixel DEO
+		( draw ) .rect/y2 LDZ2 .Screen/y DEO2 .Screen/pixel DEO
+		( incr ) SWP2 #0001 ++ SWP2
+		OVR2 OVR2 #0001 ++ LTS2 ,&hor JCN
+	POP2 POP2
+
+RTN
+
+@controller-icn
+	&dpad       ffff ffff ffff ffff
+	&dpad-up    7eff e7c3 ffff ffff
+	&dpad-down  ffff ffff c3e7 ff7e
+	&dpad-left  7fff efcf cfef ff7f
+	&dpad-right feff f7f3 f3f7 fffe
+	&option     0000 7eff ff7e 0000
+	&button     3c7e ffff ffff 7e3c
+
+@font-hex 
+	003c 4242 4242 3c00 0018 0808 0808 1c00
+	003c 4202 3c40 7e00 003c 421c 0242 3c00
+	000c 1424 447e 0400 007e 407c 0242 3c00
+	003c 407c 4242 3c00 007e 0204 0810 1000
+	003c 423c 4242 3c00 003c 4242 3e02 3c00
+	003c 4242 7e42 4200 007c 427c 4242 7c00
+	003c 4240 4042 3c00 007c 4242 4242 7c00
+	007e 4078 4040 7e00 007e 4078 4040 4000

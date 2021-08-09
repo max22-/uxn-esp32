@@ -1,8 +1,12 @@
 ( dev/console )
 
+(
+	Copies data from stdin to both stdout and stderr.
+)
+
 %RTN { JMP2r }
 
-|10 @Console [ &vector $2 &read $1 &pad $5 &write $1 ]
+|10 @Console [ &vector $2 &read $1 &pad $5 &write $1 &error $1 ]
 
 ( init )
 
@@ -14,7 +18,9 @@ BRK
 
 @on-stdin ( -> )
 
-	.Console/read DEI .Console/write DEO
+	.Console/read DEI
+	DUP .Console/write DEO
+	.Console/error DEO
 
 BRK
 

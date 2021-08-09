@@ -1,0 +1,191 @@
+( font )
+
+%+  { ADD } %-   { SUB }  %*  { MUL }  %/  { DIV }
+%<  { LTH } %>   { GTH }  %=  { EQU }  %!  { NEQ }
+%++ { ADD2 } %-- { SUB2 } %** { MUL2 } %// { DIV2 }
+%<< { LTH2 } %>> { GTH2 } %== { EQU2 } %!! { NEQ2 }
+
+%RTN { JMP2r }
+%TOS { #00 SWP }
+%INCR { SWP #01 ADD SWP }
+
+( devices )
+
+|00 @System  &vector $2 &pad     $6 &r      $2 &g     $2 &b      $2
+|20 @Screen  &vector $2 &width   $2 &height $2 &pad   $2 &x      $2 &y      $2 &addr $2 &pixel $1 &sprite $1
+|a0 @File    &vector $2 &success $2 &offset $2 &pad   $2 &name   $2 &length $2 &load $2 &save  $2
+
+( variables )
+
+|0000
+
+( init )
+
+|0100 ( -> )
+
+	( theme ) 
+	#0fa7 .System/r DEO2 
+	#0fa7 .System/g DEO2 
+	#0fa7 .System/b DEO2
+
+	( load font )
+	#4900 .File/length DEO2
+	;font-path-large .File/name DEO2
+	;font-data .File/load DEO2
+		( draw label )
+		#0020 #0020 ;title #01 ;draw-uf3 JSR2
+
+	( load font )
+	#2100 .File/length DEO2
+	;font-path-medium .File/name DEO2
+	;font-data .File/load DEO2
+		( draw label )
+		#0020 #0048 ;body #02 ;draw-uf2 JSR2
+
+	( load font )
+	#0900 .File/length DEO2
+	;font-path-small .File/name DEO2
+	;font-data .File/load DEO2
+		( draw label )
+		#0030 #00b8 ;footer #03 ;draw-uf1 JSR2
+	
+BRK
+
+@draw-uf1 ( x* y* text* color -- )
+	
+	STH 
+	SWP2 .Screen/y DEO2
+	SWP2 DUP2 .Screen/x DEO2 SWP2
+	&loop
+		LDAk 
+		DUP #0a ! ,&no-linebreak JCN
+			( move down ) STH OVR2 .Screen/x DEO2 STHr
+			( incr y ) .Screen/y DEI2 #0010 ++ .Screen/y DEO2 
+			POP ,&continue JMP &no-linebreak
+		( get addr ) STHk TOS #0008 ** ;font-data #0100 ++ ++ .Screen/addr DEO2
+		( get width ) STHr TOS ;font-data ++ LDA TOS
+		( draw ) STHkr .Screen/sprite DEO
+		( use width ) .Screen/x DEI2 ++ .Screen/x DEO2
+		&continue
+		( incr addr ) #0001 ++
+		LDAk ,&loop JCN
+	POP2 POP2 POPr
+
+RTN
+
+@draw-uf2 ( x* y* text* color -- )
+	
+	STH 
+	SWP2 .Screen/y DEO2
+	SWP2 DUP2 .Screen/x DEO2 SWP2
+	&loop
+		LDAk 
+		DUP #0a ! ,&no-linebreak JCN
+			( move down ) STH OVR2 .Screen/x DEO2 STHr
+			( incr y ) .Screen/y DEI2 #0010 ++ .Screen/y DEO2 
+			POP ,&continue JMP &no-linebreak
+		STHkr ,&sprite JSR
+		&continue
+		( incr addr ) #0001 ++
+		LDAk ,&loop JCN
+	POP2 POP2 POPr
+	RTN
+
+	&sprite ( char color -- )
+		STH
+		( get addr ) STHk TOS #0020 ** ;font-data #0100 ++ ++ .Screen/addr DEO2
+		( get width ) STHkr TOS ;font-data ++ LDA TOS
+		SWPr
+			( left-top ) STHkr .Screen/sprite DEO
+			.Screen/y DEI2 #0008 ++ .Screen/y DEO2
+			.Screen/addr DEI2 #0010 ++ .Screen/addr DEO2
+			( left-bottom ) STHkr .Screen/sprite DEO
+			.Screen/x DEI2 #0008 ++ .Screen/x DEO2
+			.Screen/y DEI2 #0008 -- .Screen/y DEO2
+			DUP #0a < ,&thin JCN
+			.Screen/addr DEI2 #0008 -- .Screen/addr DEO2
+			( right-top )  STHkr .Screen/sprite DEO
+			.Screen/addr DEI2 #0010 ++ .Screen/addr DEO2
+			.Screen/y DEI2 #0008 ++ .Screen/y DEO2
+			( right-bottom ) STHkr .Screen/sprite DEO
+			.Screen/y DEI2 #0008 -- .Screen/y DEO2 &thin
+		SWPr
+		( use width ) .Screen/x DEI2 ++ #0008 -- .Screen/x DEO2
+		POPr POPr
+	RTN
+
+RTN
+
+@draw-uf3 ( x* y* text* color -- )
+		
+	STH 
+	SWP2 .Screen/y DEO2
+	SWP2 DUP2 .Screen/x DEO2 SWP2
+	&loop
+		LDAk 
+		DUP #0a ! ,&no-linebreak JCN
+			( move down ) OVR2 .Screen/x DEO2
+			( incr y ) .Screen/y DEI2 #0010 ++ .Screen/y DEO2 
+			POP ,&continue JMP &no-linebreak
+		STHkr ,&sprite JSR
+		&continue
+		( incr addr ) #0001 ++
+		LDAk ,&loop JCN
+	POP2 POP2 POPr
+	RTN
+
+	&sprite ( char color -- )
+		STH 
+		( get addr ) DUP TOS #0048 ** ;font-data #0100 ++ ++ .Screen/addr DEO2
+		( get width ) TOS ;font-data ++ LDA TOS
+		#00 #03
+		&ver
+			#00 #03
+			&hor
+				STHkr .Screen/sprite DEO
+				.Screen/x DEI2 #0008 ++ .Screen/x DEO2 
+				.Screen/addr DEI2 #0008 ++ .Screen/addr DEO2
+				INCR LTHk ,&hor JCN
+			POP2
+			.Screen/y DEI2 #0008 ++ .Screen/y DEO2 
+			.Screen/x DEI2 #0018 -- .Screen/x DEO2 
+			INCR LTHk ,&ver JCN
+		POP2
+		.Screen/y DEI2 #0018 -- .Screen/y DEO2 
+		( use width ) .Screen/x DEI2 ++ .Screen/x DEO2
+		POPr
+	RTN
+
+RTN
+
+@title
+	5468 6520 466f 6720 486f 726e $1
+
+@body 
+	4927 6c6c 206d 616b 6520 6120 736f 756e
+	6420 7468 6174 2773 2073 6f20 616c 6f6e
+	6520 0a74 6861 7420 6e6f 206f 6e65 2063
+	616e 206d 6973 7320 6974 2c20 7468 6174
+	2077 686f 6576 6572 200a 6865 6172 7320
+	6974 2077 696c 6c20 7765 6570 2069 6e20
+	7468 6569 7220 736f 756c 732c 200a 616e
+	6420 6865 6172 7468 7320 7769 6c6c 2073
+	6565 6d20 7761 726d 6572 2c20 0a61 6e64
+	2062 6569 6e67 2069 6e73 6964 6520 7769
+	6c6c 2073 6565 6d20 6265 7474 6572 200a
+	746f 2061 6c6c 2077 686f 2068 6561 7220
+	6974 2069 6e20 7468 6520 6469 7374 616e
+	7420 746f 776e 732e 20 $1
+
+@footer
+	2d20 4279 2052 6179 2042 7261 6462 7572 
+	79 $1
+
+@font-path-large  
+	"projects/fonts/geneva24.uf3 $1
+@font-path-medium 
+	"projects/fonts/venice14.uf2 $1
+@font-path-small  
+	"projects/fonts/atari8.uf1 $1
+
+@font-data

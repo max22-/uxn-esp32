@@ -5,7 +5,7 @@
 ( devices )
 
 |00 @System [ &vector $2 &pad $6 &r $2 &g $2 &b $2 ]
-|20 @Screen [ &vector $2 &width $2 &height $2 &pad $2 &x $2 &y $2 &addr $2 &color $1 ]
+|20 @Screen [ &vector $2 &width $2 &height $2 &pad $2 &x $2 &y $2 &addr $2 &pixel $1 &sprite $1 ]
 |90 @Mouse [ &vector $2 &x $2 &y $2 &state $1 &wheel $1 ]
 
 ( variables )
@@ -67,7 +67,7 @@ BRK
 	( clear last cursor )
 	.pointer/x LDZ2 .Screen/x DEO2
 	.pointer/y LDZ2 .Screen/y DEO2
-	#30 .Screen/color DEO
+	#40 .Screen/sprite DEO
 
 	( record pointer positions )
 	.Mouse/x DEI2 .pointer/x STZ2 .Mouse/y DEI2 .pointer/y STZ2
@@ -76,7 +76,7 @@ BRK
 	.pointer/sprite LDZ2 .Screen/addr DEO2
 	.pointer/x LDZ2 .Screen/x DEO2
 	.pointer/y LDZ2 .Screen/y DEO2
-	#31 .Screen/color DEO
+	#41 .Screen/sprite DEO
 
 RTN
 
@@ -102,13 +102,13 @@ RTN
 	( load ) .color STZ .rect/y2 STZ2 .rect/x2 STZ2 DUP2 .Screen/y DEO2 .rect/y1 STZ2 DUP2 .Screen/x DEO2 .rect/x1 STZ2
 	&hor
 		( incr ) .Screen/x DEI2 #0001 ADD2 .Screen/x DEO2
-		( draw ) .rect/y1 LDZ2 .Screen/y DEO2 .color LDZ .Screen/color DEO
-		( draw ) .rect/y2 LDZ2 .Screen/y DEO2 .color LDZ .Screen/color DEO
+		( draw ) .rect/y1 LDZ2 .Screen/y DEO2 .color LDZ .Screen/pixel DEO
+		( draw ) .rect/y2 LDZ2 .Screen/y DEO2 .color LDZ .Screen/pixel DEO
 		.Screen/x DEI2 .rect/x2 LDZ2 LTH2 ,&hor JCN
 	.rect/y1 LDZ2 .Screen/y DEO2
 	&ver
-		( draw ) .rect/x1 LDZ2 .Screen/x DEO2 .color LDZ .Screen/color DEO
-		( draw ) .rect/x2 LDZ2 .Screen/x DEO2 .color LDZ .Screen/color DEO
+		( draw ) .rect/x1 LDZ2 .Screen/x DEO2 .color LDZ .Screen/pixel DEO
+		( draw ) .rect/x2 LDZ2 .Screen/x DEO2 .color LDZ .Screen/pixel DEO
 		( incr ) .Screen/y DEI2 #0001 ADD2 .Screen/y DEO2
 		.Screen/y DEI2 .rect/y2 LDZ2 #0001 ADD2 LTH2 ,&ver JCN
 

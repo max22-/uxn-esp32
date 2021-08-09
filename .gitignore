@@ -8,6 +8,8 @@
 *.bak
 /*-test
 /screenshot-*.bmp
+*snarf
 .pio/
 .vscode/
 data/
+

@@ -9,7 +9,7 @@
 ( devices )
 
 |00 @System     [ &vector $2 &pad     $6 &r      $2 &g     $2 &b      $2 ]
-|20 @Screen     [ &vector $2 &width   $2 &height $2 &pad   $2 &x      $2 &y     $2 &addr $2 &color $1 ]
+|20 @Screen     [ &vector $2 &width   $2 &height $2 &pad   $2 &x      $2 &y $2 &addr $2 &pixel $1 &sprite $1 ]
 |90 @Mouse      [ &vector $2 &x       $2 &y      $2 &state $1 &wheel $1 ]
 
 |0000
@@ -77,7 +77,7 @@ BRK
 	( clear last cursor )
 	.pointer/x LDZ2 .Screen/x DEO2
 	.pointer/y LDZ2 .Screen/y DEO2
-	#30 .Screen/color DEO
+	#40 .Screen/sprite DEO
 
 	( record pointer positions )
 	.Mouse/x DEI2 .pointer/x STZ2 
@@ -86,7 +86,7 @@ BRK
 	( draw new cursor )
 	.pointer/x LDZ2 .Screen/x DEO2
 	.pointer/y LDZ2 .Screen/y DEO2
-	#33 .Mouse/state DEI #00 NEQ #02 MUL SUB .Screen/color DEO
+	#43 .Mouse/state DEI #00 NEQ #02 MUL SUB .Screen/sprite DEO
 
 RTN
 
@@ -101,7 +101,7 @@ RTN
 	&loop
 		.line/x LDZ2 .Screen/x DEO2 
 		.line/y LDZ2 .Screen/y DEO2 
-		.color LDZ .Screen/color DEO
+		.color LDZ .Screen/pixel DEO
 		[ .line/x LDZ2 .line/x0 LDZ2 EQU2 ] 
 		[ .line/y LDZ2 .line/y0 LDZ2 EQU2 ] #0101 EQU2 ,&end JCN
 		.line/e1 LDZ2 2** .line/e2 STZ2

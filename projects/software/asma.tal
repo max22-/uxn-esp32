@@ -1,7 +1,7 @@
 ( devices )
 
 |00 @System     [ &vector $2 &wst      $1 &rst    $1 &pad   $4 &r      $2 &g     $2 &b      $2 ]
-|10 @Console    [ &pad    $8 &char     $1 &byte   $1 &short $2 &string $2 ]
+|10 @Console    [ &pad    $8 &write    $1 ]
 |a0 @File       [ &vector $2 &success  $2 &offset $2 &pad   $2 &name  $2 &length $2 &load $2 &save $2 ]
 
 ( vectors )
@@ -20,6 +20,15 @@
 )
 
 |0100 @reset
+	(
+		Set the log level for helping to debug stuff.
+		Its value is the bitwise OR of all the following output types:
+			#01 prints the number of lines in the source code,
+			#04 dumps all defined labels at end, and
+			#08 prints the heap usage.
+	)
+	#09 ;asma/log-level STA
+
 	(
 		Assemble the source code into an output ROM file.
 
@@ -70,17 +79,6 @@
 )
 
 %asma-IF-ERROR { ;asma/error LDA2 ORA }
-%asma-LOG { #09 }
-(
-	asma-LOG is a log-level parameter for helping to debug stuff.
-	Its value is the bitwise OR of all the following output types:
-		#01 prints the number of lines in the source code,
-		#02 prints tokens as they are processed,
-		#04 dumps all defined labels at end, and
-		#08 prints the heap usage.
-)
-%asma-DEO2 { asma-LOG AND #00 EQU JMP DEO2k POP POP2 }
-%asma-DEO { asma-LOG AND #00 EQU JMP DEOk POP2 }
 
 (
 	Asma's public interface.
@@ -119,30 +117,34 @@
 )
 
 @asma-print-error ( -- )
-	;asma/error LDA2 .Console/string DEO2
-	#3a .Console/char DEO
-	#20 .Console/char DEO
-	;asma/orig-token LDA2 .Console/string DEO2
-	;&line .Console/string DEO2
-	;asma/line LDA2 .Console/short DEO2
-	#2e .Console/char DEO
-	#0a .Console/char DEO
+	;asma/error LDA2 ;asma-print-string JSR2
+	#3a .Console/write DEO
+	#20 .Console/write DEO
+	;asma/orig-token LDA2 ;asma-print-string JSR2
+	;&line ;asma-print-string JSR2
+	;asma/line LDA2 ;asma-print-short JSR2
+	#2e .Console/write DEO
+	#0a .Console/write DEO
 	JMP2r
 
 	&line 20 "on 20 "line 20 00
 
 @asma-print-line-count ( -- )
-	;asma/line LDA2 .Console/short #01 asma-DEO2
-	;&lines .Console/string #01 asma-DEO2
+	;asma/log-level LDA #01 AND #00 EQU ,&skip JCN
+	;asma/line LDA2 ;asma-print-short JSR2
+	;&lines ;asma-print-string JSR2
+	&skip
 	JMP2r
 
 	&lines [ 20 "lines 20 "of 20 "source 20 "code. 0a 00 ]
 
 @asma-print-heap-usage ( -- )
-	;asma/heap LDA2 ;asma-heap SUB2 .Console/short #08 asma-DEO2
-	;&str1 .Console/string #08 asma-DEO2
-	;asma-heap/end ;asma/heap LDA2 SUB2 .Console/short #08 asma-DEO2
-	;&str2 .Console/string #08 asma-DEO2
+	;asma/log-level LDA #08 AND #00 EQU ,&skip JCN
+	;asma/heap LDA2 ;asma-heap SUB2 ;asma-print-short JSR2
+	;&str1 ;asma-print-string JSR2
+	;asma-heap/end ;asma/heap LDA2 SUB2 ;asma-print-short JSR2
+	;&str2 ;asma-print-string JSR2
+	&skip
 	JMP2r
 
 	&str1 [ 20 "bytes 20 "of 20 "heap 20 "used, 20 00 ]
@@ -157,26 +159,28 @@
 	( left node )
 	DUP2 ,asma-print-sublabels JSR
 	( here )
-	#09 .Console/char #04 asma-DEO
+	#09 .Console/write DEO
 	DUP2 #0004 ADD2
 	&loop
 	DUP2 #0001 ADD2 SWP2 LDA
 	DUP #00 EQU ,&end JCN
-	.Console/char #04 asma-DEO
+	.Console/write DEO
 	,&loop JMP
 	&end
 	POP
-	#09 .Console/char #04 asma-DEO
-	LDA2 .Console/short #04 asma-DEO2
-	#0a .Console/char #04 asma-DEO
+	#09 .Console/write DEO
+	LDA2 ;asma-print-short JSR2
+	#0a .Console/write DEO
 
 	( right node )
 	#0002 ADD2 ,asma-print-sublabels JSR
 	JMP2r
 
 @asma-print-labels ( incoming-ptr* -- )
+	;asma/log-level LDA #04 AND #00 EQU ,&skip JCN
 	LDA2
 	ORAk ,&valid-incoming-ptr JCN
+	&skip
 	POP2 JMP2r
 
 	&valid-incoming-ptr
@@ -187,18 +191,39 @@
 	&loop
 	DUP2 #0001 ADD2 SWP2 LDA
 	DUP #00 EQU ,&end JCN
-	.Console/char #04 asma-DEO
+	.Console/write DEO
 	,&loop JMP
 	&end
 	POP
-	#09 .Console/char #04 asma-DEO
-	LDA2k .Console/short #04 asma-DEO2
-	#0a .Console/char #04 asma-DEO
+	#09 .Console/write DEO
+	LDA2k ;asma-print-short JSR2
+	#0a .Console/write DEO
 	( subtree )
 	#0002 ADD2 ;asma-print-sublabels JSR2
 
 	( right node )
 	#0002 ADD2 ,asma-print-labels JSR
+	JMP2r
+
+@asma-print-string ( ptr* -- )
+	LDAk DUP ,&keep-going JCN
+	POP POP2 JMP2r
+
+	&keep-going
+	.Console/write DEO
+	#0001 ADD2
+	,asma-print-string JMP
+
+@asma-print-short ( short* -- )
+	LIT '0 .Console/write DEO
+	LIT 'x .Console/write DEO
+	OVR #04 SFT ,&hex JSR
+	SWP #0f AND ,&hex JSR
+	DUP #04 SFT ,&hex JSR
+	    #0f AND ,&hex JMP
+
+	&hex
+	#30 ADD DUP #39 GTH #27 MUL ADD .Console/write DEO
 	JMP2r
 
 (
@@ -298,7 +323,13 @@
 	POP POP2 POP2
 	JMP2r
 
-@asma [ &pass $1 &state $1 &line $2 &token $2 &orig-token $2 &heap $2 &addr $2 &written-addr $2 &flush-fn $2 &src-filename $2 &dest-filename $2 &error $2 ]
+@asma [
+	&pass $1 &state $1 &line $2
+	&token $2 &orig-token $2
+	&heap $2 &addr $2 &written-addr $2 &flush-fn $2
+	&src-filename $2 &dest-filename $2
+	&error $2 &log-level $1
+]
 @asma-trees [ &labels $2 &macros $2 &opcodes $2 &scope $2 ]
 
 (
@@ -314,8 +345,6 @@
 )
 
 @asma-assemble-token ( string-ptr* -- )
-	DUP2 .Console/string #02 asma-DEO2
-	#0a .Console/char #02 asma-DEO
 	DUP2 ;asma/token STA2
 	DUP2 ;asma/orig-token STA2
 	LDAk ,&not-empty JCN
@@ -489,11 +518,6 @@
 	&after-flush
 	STH2k STA
 	STH2r #0001 ADD2 ,asma-output/ptr STR2
-
-	( #3e .Console/char ;asma/pass LDA asma-DEO
-	#20 .Console/char ;asma/pass LDA asma-DEO
-	#00 .Console/byte ;asma/pass LDA asma-DEO
-	#0a .Console/char ;asma/pass LDA asma-DEO )
 	JMP2r
 
 	&flush ( ptr* -- start-of-buffer* )

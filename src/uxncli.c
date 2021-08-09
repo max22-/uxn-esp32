@@ -19,36 +19,44 @@ WITH REGARD TO THIS SOFTWARE.
 
 #pragma mark - Core
 
-static Device *devconsole;
+static Device *devsystem, *devconsole;
 
 static int
 error(char *msg, const char *err)
 {
-	printf("Error %s: %s\n", msg, err);
+	fprintf(stderr, "Error %s: %s\n", msg, err);
 	return 0;
-}
-
-static void
-printstack(Stack *s)
-{
-	Uint8 x, y;
-	printf("\n\n");
-	for(y = 0; y < 0x08; ++y) {
-		for(x = 0; x < 0x08; ++x) {
-			Uint8 p = y * 0x08 + x;
-			printf(p == s->ptr ? "[%02x]" : " %02x ", s->dat[p]);
-		}
-		printf("\n");
-	}
 }
 
 #pragma mark - Devices
 
 static void
+system_talk(Device *d, Uint8 b0, Uint8 w)
+{
+	if(!w) {
+		d->dat[0x2] = d->u->wst.ptr;
+		d->dat[0x3] = d->u->rst.ptr;
+	} else if(b0 == 0xe) {
+		Uint8 x, y;
+		fprintf(stderr, "\n\n");
+		for(y = 0; y < 0x08; ++y) {
+			for(x = 0; x < 0x08; ++x) {
+				Uint8 p = y * 0x08 + x;
+				fprintf(stderr,
+					p == d->u->wst.ptr ? "[%02x]" : " %02x ",
+					d->u->wst.dat[p]);
+			}
+			fprintf(stderr, "\n");
+		}
+	} else if(b0 == 0xf)
+		d->u->ram.ptr = 0x0000;
+}
+
+static void
 console_talk(Device *d, Uint8 b0, Uint8 w)
 {
-	if(w && b0 == 0x8)
-		write(1, (char *)&d->dat[0x8], 1);
+	if(w && b0 > 0x7)
+		write(b0 - 0x7, (char *)&d->dat[b0], 1);
 }
 
 static void
@@ -62,10 +70,10 @@ file_talk(Device *d, Uint8 b0, Uint8 w)
 		Uint16 addr = mempeek16(d->dat, b0 - 1);
 		FILE *f = fopen(name, read ? "r" : (offset ? "a" : "w"));
 		if(f) {
-			printf("%s %04x %s %s: ", read ? "Loading" : "Saving", addr, read ? "from" : "to", name);
+			fprintf(stderr, "%s %s %s #%04x, ", read ? "Loading" : "Saving", name, read ? "to" : "from", addr);
 			if(fseek(f, offset, SEEK_SET) != -1)
 				result = read ? fread(&d->mem[addr], 1, length, f) : fwrite(&d->mem[addr], 1, length, f);
-			printf("%04x bytes\n", result);
+			fprintf(stderr, "%04x bytes\n", result);
 			fclose(f);
 		}
 		mempoke16(d->dat, 0x2, result);
@@ -101,14 +109,35 @@ nil_talk(Device *d, Uint8 b0, Uint8 w)
 
 #pragma mark - Generics
 
+static const char *errors[] = {"underflow", "overflow", "division by zero"};
+
+int
+uxn_halt(Uxn *u, Uint8 error, char *name, int id)
+{
+	fprintf(stderr, "Halted: %s %s#%04x, at 0x%04x\n", name, errors[error - 1], id, u->ram.ptr);
+	u->ram.ptr = 0;
+	return 0;
+}
+
 static void
 run(Uxn *u)
 {
-	if(!evaluxn(u, PAGE_PROGRAM))
+	if(!uxn_eval(u, PAGE_PROGRAM))
 		error("Reset", "Failed");
 	else if(mempeek16(devconsole->dat, 0))
 		while(read(0, &devconsole->dat[0x2], 1) > 0)
-			evaluxn(u, mempeek16(devconsole->dat, 0));
+			uxn_eval(u, mempeek16(devconsole->dat, 0));
+}
+
+static int
+load(Uxn *u, char *filepath)
+{
+	FILE *f;
+	if(!(f = fopen(filepath, "rb")))
+		return 0;
+	fread(u->ram.dat + PAGE_PROGRAM, sizeof(u->ram.dat) - PAGE_PROGRAM, 1, f);
+	fprintf(stderr, "Loaded %s\n", filepath);
+	return 1;
 }
 
 int
@@ -118,32 +147,30 @@ main(int argc, char **argv)
 
 	if(argc < 2)
 		return error("Input", "Missing");
-	if(!bootuxn(&u))
+	if(!uxn_boot(&u))
 		return error("Boot", "Failed");
-	if(!loaduxn(&u, argv[1]))
+	if(!load(&u, argv[1]))
 		return error("Load", "Failed");
 
-	portuxn(&u, 0x0, "empty", nil_talk);
-	devconsole = portuxn(&u, 0x1, "console", console_talk);
-	portuxn(&u, 0x2, "empty", nil_talk);
-	portuxn(&u, 0x3, "empty", nil_talk);
-	portuxn(&u, 0x4, "empty", nil_talk);
-	portuxn(&u, 0x5, "empty", nil_talk);
-	portuxn(&u, 0x6, "empty", nil_talk);
-	portuxn(&u, 0x7, "empty", nil_talk);
-	portuxn(&u, 0x8, "empty", nil_talk);
-	portuxn(&u, 0x9, "empty", nil_talk);
-	portuxn(&u, 0xa, "file", file_talk);
-	portuxn(&u, 0xb, "datetime", datetime_talk);
-	portuxn(&u, 0xc, "empty", nil_talk);
-	portuxn(&u, 0xd, "empty", nil_talk);
-	portuxn(&u, 0xe, "empty", nil_talk);
-	portuxn(&u, 0xf, "empty", nil_talk);
+	devsystem = uxn_port(&u, 0x0, "system", system_talk);
+	devconsole = uxn_port(&u, 0x1, "console", console_talk);
+	uxn_port(&u, 0x2, "empty", nil_talk);
+	uxn_port(&u, 0x3, "empty", nil_talk);
+	uxn_port(&u, 0x4, "empty", nil_talk);
+	uxn_port(&u, 0x5, "empty", nil_talk);
+	uxn_port(&u, 0x6, "empty", nil_talk);
+	uxn_port(&u, 0x7, "empty", nil_talk);
+	uxn_port(&u, 0x8, "empty", nil_talk);
+	uxn_port(&u, 0x9, "empty", nil_talk);
+	uxn_port(&u, 0xa, "file", file_talk);
+	uxn_port(&u, 0xb, "datetime", datetime_talk);
+	uxn_port(&u, 0xc, "empty", nil_talk);
+	uxn_port(&u, 0xd, "empty", nil_talk);
+	uxn_port(&u, 0xe, "empty", nil_talk);
+	uxn_port(&u, 0xf, "empty", nil_talk);
 
 	run(&u);
 
-	if(argc > 2)
-		printstack(&u.wst);
 	return 0;
 }
 

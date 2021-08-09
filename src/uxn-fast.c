@@ -1,6 +1,5 @@
 #if defined(ARDUINO_UXN_FAST) || !defined(ARDUINO)
 
-#include <stdio.h>
 #include "uxn.h"
 
 /*
@@ -25,39 +24,32 @@ See etc/mkuxn-fast.moon for instructions.
 
 */
 
+#define MODE_RETURN 0x40
+#define MODE_KEEP 0x80
+
 #pragma mark - Operations
 
 /* clang-format off */
-void   mempoke8(Uint8 *m, Uint16 a, Uint8 b) { m[a] = b; }
-Uint8  mempeek8(Uint8 *m, Uint16 a) { return m[a]; }
-void   devpoke8(Device *d, Uint8 a, Uint8 b) { d->dat[a & 0xf] = b; d->talk(d, a & 0x0f, 1); }
-Uint8  devpeek8(Device *d, Uint8 a) { d->talk(d, a & 0x0f, 0); return d->dat[a & 0xf];  }
+static void   mempoke8(Uint8 *m, Uint16 a, Uint8 b) { m[a] = b; }
+static Uint8  mempeek8(Uint8 *m, Uint16 a) { return m[a]; }
+static void   devpoke8(Device *d, Uint8 a, Uint8 b) { d->dat[a & 0xf] = b; d->talk(d, a & 0x0f, 1); }
+static Uint8  devpeek8(Device *d, Uint8 a) { d->talk(d, a & 0x0f, 0); return d->dat[a & 0xf];  }
 void   mempoke16(Uint8 *m, Uint16 a, Uint16 b) { mempoke8(m, a, b >> 8); mempoke8(m, a + 1, b); }
 Uint16 mempeek16(Uint8 *m, Uint16 a) { return (mempeek8(m, a) << 8) + mempeek8(m, a + 1); }
-void   devpoke16(Device *d, Uint8 a, Uint16 b) { devpoke8(d, a, b >> 8); devpoke8(d, a + 1, b); }
-Uint16 devpeek16(Device *d, Uint16 a) { return (devpeek8(d, a) << 8) + devpeek8(d, a + 1); }
-
-#ifndef NO_STACK_CHECKS
-static const char *errors[] = {"underflow", "overflow", "division by zero"};
-
-int
-haltuxn(Uxn *u, Uint8 error, char *name, int id)
-{
-	fprintf(stderr, "Halted: %s %s#%04x, at 0x%04x\n", name, errors[error - 1], id, u->ram.ptr);
-	u->ram.ptr = 0;
-	return 0;
-}
-#endif
+static void   devpoke16(Device *d, Uint8 a, Uint16 b) { devpoke8(d, a, b >> 8); devpoke8(d, a + 1, b); }
 
 /* clang-format on */
 
 #pragma mark - Core
 
 int
-evaluxn(Uxn *u, Uint16 vec)
+uxn_eval(Uxn *u, Uint16 vec)
 {
 	Uint8 instr;
+	if(u->dev[0].dat[0xf]) 
+		return 0;
 	u->ram.ptr = vec;
+	if(u->wst.ptr > 0xf8) u->wst.ptr = 0xf8;
 	while(u->ram.ptr) {
 		instr = u->ram.dat[u->ram.ptr++];
 		switch(instr) {
@@ -4033,44 +4025,31 @@ evaluxn(Uxn *u, Uint16 vec)
 #ifndef NO_STACK_CHECKS
 error:
 	if(u->wst.error)
-		return haltuxn(u, u->wst.error, "Working-stack", instr);
+		return uxn_halt(u, u->wst.error, "Working-stack", instr);
 	else
-		return haltuxn(u, u->rst.error, "Return-stack", instr);
+		return uxn_halt(u, u->rst.error, "Return-stack", instr);
 #endif
 }
 
 int
-bootuxn(Uxn *u)
+uxn_boot(Uxn *u)
 {
-	size_t i;
+	unsigned int i;
 	char *cptr = (char *)u;
 	for(i = 0; i < sizeof(*u); i++)
 		cptr[i] = 0;
 	return 1;
 }
 
-int
-loaduxn(Uxn *u, char *filepath)
-{
-	FILE *f;
-	if(!(f = fopen(filepath, "rb"))) {
-		fprintf(stderr, "Halted: Missing input rom.\n");
-		return 0;
-	}
-	fread(u->ram.dat + PAGE_PROGRAM, sizeof(u->ram.dat) - PAGE_PROGRAM, 1, f);
-	fprintf(stderr, "Uxn loaded[%s].\n", filepath);
-	return 1;
-}
-
 Device *
-portuxn(Uxn *u, Uint8 id, char *name, void (*talkfn)(Device *d, Uint8 b0, Uint8 w))
+uxn_port(Uxn *u, Uint8 id, char *name, void (*talkfn)(Device *d, Uint8 b0, Uint8 w))
 {
 	Device *d = &u->dev[id];
 	d->addr = id * 0x10;
 	d->u = u;
 	d->mem = u->ram.dat;
 	d->talk = talkfn;
-	fprintf(stderr, "Device added #%02x: %s, at 0x%04x \n", id, name, d->addr);
+	(void)name;
 	return d;
 }
 

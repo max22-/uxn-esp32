@@ -6,7 +6,7 @@
 ( devices )
 
 |00 @System     [ &vector $2 &pad      $6 &r      $2 &g     $2 &b      $2 ]
-|20 @Screen     [ &vector $2 &width    $2 &height $2 &pad   $2 &x      $2 &y    $2 &addr  $2 &color $1 ]
+|20 @Screen     [ &vector $2 &width    $2 &height $2 &pad   $2 &x      $2 &y    $2 &addr  $2 &pixel $1 &sprite $1 ]
 |30 @Audio0     [ &vector $2 &position $2 &output $1 &pad   $3 &adsr   $2 &length $2 &addr $2 &volume $1 &pitch $1 ]
 
 ( variables )
@@ -46,13 +46,13 @@ BRK
 	DUP .Audio0/pitch DEO
 
 	( erase last note )
-	#20  .Screen/color DEO
+	#00 .Screen/sprite DEO
 
 	( draw note )
 	#00 SWP 4** #0100 SUB2 .Screen/y DEO2
 	#00 .progress LDZ 8** .Screen/x DEO2
 	;dot .Screen/addr DEO2
-	#21 .Screen/color DEO
+	#01 .Screen/sprite DEO
 
 	( incr ) .progress LDZ #01 ADD #1f AND .progress STZ
 

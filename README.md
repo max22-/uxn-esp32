@@ -23,6 +23,18 @@ mk
 
 If the build fails on 9front because of missing headers or functions, try again after `rm -r /sys/include/npe`.
 
+### Windows
+
+Uxn can be built on Windows with [MSYS2](https://www.msys2.org/). Install by downloading from their website or with Chocolatey with `choco install msys2`. In the MSYS shell, type:
+
+```sh
+pacman -S git mingw-w64-x86_64-gcc mingw64/mingw-w64-x86_64-SDL2
+export PATH="${PATH}:/mingw64/bin"
+git clone https://git.sr.ht/~rabbits/uxn
+cd uxn
+./build.sh
+```
+
 ## Getting Started
 
 Begin by building the assembler and emulator by running the build script. The assembler(`uxnasm`) and emulator(`uxnemu`) are created in the `/bin` folder.

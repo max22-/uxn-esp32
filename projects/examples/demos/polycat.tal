@@ -7,7 +7,7 @@
 ( devices )
 
 |00 @System     [ &vector $2 &wst      $1 &rst    $1 &pad   $4 &r      $2 &g     $2 &b      $2 ]
-|20 @Screen     [ &vector $2 &width    $2 &height $2 &pad   $2 &x      $2 &y      $2 &addr  $2 &color $1 ]
+|20 @Screen     [ &vector $2 &width    $2 &height $2 &pad   $2 &x      $2 &y      $2 &addr  $2 &pixel $1 &sprite $1 ]
 |90 @Mouse      [ &vector $2 &x        $2 &y      $2 &state $1 &wheel $1 ]
 
 ( variables )
@@ -68,10 +68,10 @@ BRK
 	.cat/y LDZ2 .Screen/y DEO2
 	.cat/x LDZ2 STH2k #0008 SUB2 .Screen/x DEO2
 	;ears .Screen/addr DEO2
-	#41 .Screen/color DEO
+	#81 .Screen/sprite DEO
 	STH2r .Screen/x DEO2
 	;ears #0010 ADD2 .Screen/addr DEO2
-	#41 .Screen/color DEO
+	#81 .Screen/sprite DEO
 
 	#0000 ,draw-eye JSR
 	#0000 ,draw-tail JSR
@@ -83,10 +83,10 @@ RTN
 	.cat/y LDZ2 #0008 ADD2 .Screen/y DEO2
 	.cat/x LDZ2 STH2k #0008 SUB2 .Screen/x DEO2
 	DUP2 ;eye ADD2 .Screen/addr DEO2
-	( draw ) #41 .Screen/color DEO
+	( draw ) #81 .Screen/sprite DEO
 	STH2r .Screen/x DEO2
 	;eye #0010 ADD2 ADD2 .Screen/addr DEO2
-	( draw ) #41 .Screen/color DEO
+	( draw ) #81 .Screen/sprite DEO
 
 RTN
 
@@ -95,10 +95,10 @@ RTN
 	.cat/y LDZ2 #0010 ADD2 .Screen/y DEO2
 	.cat/x LDZ2 STH2k #0008 SUB2 .Screen/x DEO2
 	;body .Screen/addr DEO2
-	( draw ) #41 .Screen/color DEO
+	( draw ) #81 .Screen/sprite DEO
 	STH2r .Screen/x DEO2
 	#0010 MUL2 ;body #0010 ADD2 ADD2 .Screen/addr DEO2
-	( draw ) #41 .Screen/color DEO
+	( draw ) #81 .Screen/sprite DEO
 
 RTN
 
@@ -108,18 +108,14 @@ RTN
 	;cursor .Screen/addr DEO2 
 	.pointer/x LDZ2 .Screen/x DEO2 
 	.pointer/y LDZ2 .Screen/y DEO2 
-	#30 .Screen/color DEO
+	#40 .Screen/sprite DEO
 
 	( record pointer positions )
-	.Mouse/x DEI2 .pointer/x STZ2 
-	.Mouse/y DEI2 .pointer/y STZ2
-
-	( draw new cursor )
-	.pointer/x LDZ2 .Screen/x DEO2 
-	.pointer/y LDZ2 .Screen/y DEO2 
+	.Mouse/x DEI2 DUP2 .pointer/x STZ2 .Screen/x DEO2
+	.Mouse/y DEI2 DUP2 .pointer/y STZ2 .Screen/y DEO2 
 
 	( colorize on state )
-	#31 [ .Mouse/state DEI #00 NEQ ] ADD .Screen/color DEO
+	#41 [ .Mouse/state DEI #00 NEQ ] ADD .Screen/sprite DEO
 
 RTN
 
@@ -131,7 +127,7 @@ RTN
 
 	#00 #10
 	&loop
-		( draw ) #21 .Screen/color DEO
+		( draw ) #01 .Screen/sprite DEO
 		( sety ) .Screen/addr DEI2 #0008 ADD2 .Screen/addr DEO2
 		( setx ) .Screen/x DEI2 #0008 ADD2 .Screen/x DEO2
 		( incr ) SWP #01 ADD SWP

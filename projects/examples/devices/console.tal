@@ -1,19 +1,20 @@
 ( dev/console )
 
+|0e @System/debug
 |18 @Console/write
 
 ( init )
 
 |0100 ( -> )
-	
-	;hello-word 
 
-	&loop
+	;hello-word 
+	&while
 		( send ) LDAk .Console/write DEO
 		( incr ) #0001 ADD2
-		( loop ) LDAk ,&loop JCN
+		( loop ) LDAk ,&while JCN
 	POP2
-	
+	( show debugger ) #01 .System/debug DEO
+
 BRK
 
 @hello-word "Hello 20 "World!

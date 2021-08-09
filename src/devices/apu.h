@@ -14,7 +14,6 @@ typedef unsigned int Uint32;
 typedef signed int Sint32;
 
 #define SAMPLE_FREQUENCY 44100
-#define POLYPHONY 4
 
 typedef struct {
 	Uint8 *addr;
@@ -24,6 +23,6 @@ typedef struct {
 	Uint8 pitch, repeat;
 } Apu;
 
-void apu_render(Apu *c, Sint16 *sample, Sint16 *end);
+int apu_render(Apu *c, Sint16 *sample, Sint16 *end);
 void apu_start(Apu *c, Uint16 adsr, Uint8 pitch);
 Uint8 apu_get_vu(Apu *c);

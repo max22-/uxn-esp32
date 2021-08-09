@@ -17,23 +17,12 @@ typedef unsigned char Uint8;
 typedef unsigned short Uint16;
 typedef unsigned int Uint32;
 
-typedef struct Layer {
-#ifndef ARDUINO
-	Uint32 *pixels, colors[4];
-#else
-	Uint8 *pixels;
-	Uint16 colors[4];
-#endif
-} Layer;
-
 typedef struct Ppu {
-	Uint16 hor, ver, width, height;
-	Layer fg, bg;
+	Uint16 width, height;
+	Uint8 *pixels;
 } Ppu;
 
-int initppu(Ppu *p, Uint8 hor, Uint8 ver);
-void putcolors(Ppu *p, Uint8 *addr);
-void putpixel(Ppu *p, Layer *layer, Uint16 x, Uint16 y, Uint8 color);
-void puticn(Ppu *p, Layer *layer, Uint16 x, Uint16 y, Uint8 *sprite, Uint8 color, Uint8 flipx, Uint8 flipy);
-void putchr(Ppu *p, Layer *layer, Uint16 x, Uint16 y, Uint8 *sprite, Uint8 color, Uint8 flipx, Uint8 flipy);
-void inspect(Ppu *p, Uint8 *stack, Uint8 wptr, Uint8 rptr);
+int ppu_init(Ppu *p, Uint8 hor, Uint8 ver);
+void ppu_pixel(Ppu *p, Uint8 layer, Uint16 x, Uint16 y, Uint8 color);
+void ppu_1bpp(Ppu *p, Uint8 layer, Uint16 x, Uint16 y, Uint8 *sprite, Uint8 color, Uint8 flipx, Uint8 flipy);
+void ppu_2bpp(Ppu *p, Uint8 layer, Uint16 x, Uint16 y, Uint8 *sprite, Uint8 color, Uint8 flipx, Uint8 flipy);

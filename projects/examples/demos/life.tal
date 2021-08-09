@@ -9,8 +9,6 @@
 %++ { ADD2 } %-- { SUB2 } %** { MUL2 } %// { DIV2 }
 %<< { LTH2 } %>> { GTH2 } %== { EQU2 } %!! { NEQ2 }
 
-%INCR { SWP #01 + SWP }
-%DECR { SWP #01 - SWP }
 %TOS  { #00 SWP } %TOB  { SWP POP }
 %RTN  { JMP2r }   %MOD  { DUP2 / * - }
 %MOD8 { #07 AND } %MOD2 { #01 AND }
@@ -23,11 +21,12 @@
 
 %GET-SIZE { WIDTH TOS 8// HEIGHT TOS ** }
 %GET-ITERATORS { SWP2k POP SWP POP }
+%GET-ITER { OVR2 SWP POP OVR SWP }
 
 ( devices )
 
 |00 @System     [ &vector $2 &wst      $1 &rst    $1 &pad   $4 &r      $2 &g     $2 &b      $2 ]
-|20 @Screen     [ &vector $2 &width    $2 &height $2 &pad   $2 &x      $2 &y      $2 &addr  $2 &color $1 ]
+|20 @Screen     [ &vector $2 &width    $2 &height $2 &pad   $2 &x      $2 &y      $2 &addr  $2 &pixel $1 &sprite $1 ]
 |80 @Controller [ &vector $2 &button   $1 &key    $1 ]
 |90 @Mouse      [ &vector $2 &x        $2 &y      $2 &state $1 &wheel $1 ]
 
@@ -35,7 +34,7 @@
 
 |0000
 
-@world   [ &paused $1 &frame $1 &count $2 ]
+@world   [ &frame $1 &count $2 ]
 @anchor  [ &x $2 &y $2 ]
 @pointer [ &x $2 &y $2 ]
 
@@ -44,9 +43,9 @@
 |0100 ( -> )
 
 	( theme ) 
-	#02fe .System/r DEO2 
-	#02fc .System/g DEO2 
-	#02f2 .System/b DEO2
+	#02cf .System/r DEO2 
+	#02ff .System/g DEO2 
+	#024f .System/b DEO2
 
 	( vectors )
 	;on-frame   .Screen/vector DEO2
@@ -63,14 +62,15 @@
 	.Screen/width DEI2 2// WIDTH TOS -- .anchor/x STZ2
 	.Screen/height DEI2 2// HEIGHT TOS -- .anchor/y STZ2
 
-	#01 .world/paused STZ
+BRK
+
+@on-frame-paused ( -> )
 
 BRK
 
 @on-frame ( -> )
 	
 	.Mouse/state DEI #00 = #01 JCN [ BRK ]
-	.world/paused LDZ #00 ! #01 JCN [ BRK ]
 
 	( incr frame ) .world/frame LDZ #01 + [ DUP ] .world/frame STZ
 	( reset count ) #0000 .world/count STZ2
@@ -78,32 +78,70 @@ BRK
 	#03 AND #00 = #01 JCN [ BRK ] 
 
 	( clear buffer )
-	BANK2 DUP2 GET-SIZE ++
+	BANK2 STH2k GET-SIZE ++ STH2r
 	&clear-loop
-		OVR2 #0000 SWP2 STA2
-		SWP2 #0002 ++ SWP2
-		NEQ2k ,&clear-loop JCN
+		DUP2 #0000 SWP2 STA2
+		#0002 ++ GTH2k ,&clear-loop JCN
 	POP2 POP2
 
-	;run-grid JSR2
+	( run grid )
+	#00 HEIGHT
+	&ver
+		#00 WIDTH
+		&hor
+			GET-ITERATORS
+			( x y ) DUP2
+			( neighbours ) DUP2 ;get-neighbours JSR2
+			( state ) ROT ROT ;get-cell JSR2
+			,run-cell JSR
+			SWP #01 + SWP
+			LTHk ,&hor JCN
+		POP2
+		SWP #01 + SWP
+		LTHk ,&ver JCN
+	POP2
 
 	( move buffer )
-	BANK2 DUP2 GET-SIZE ++
+	BANK2 DUP2 GET-SIZE ++ SWP2
 	&copy-loop
-		OVR2 DUP2 LDA2 
+		DUP2 LDA2k
 		SWP2 #2000 -- STA2
-		SWP2 #0002 ++ SWP2
-		NEQ2k ,&copy-loop JCN
+		#0002 ++ 
+		GTH2k ,&copy-loop JCN
 	POP2 POP2
 
 	;draw-grid JSR2
 
-	( draw cell count )
-	.anchor/x LDZ2 .Screen/x DEO2
-	.anchor/y LDZ2 HEIGHT #02 * TOS ++ .Screen/y DEO2
-	.world/count LDZ2 #22 ;draw-short JSR2
-
 BRK
+
+@run-cell ( x y neighbours state -- )
+	
+	#00 = ,&dead JCN
+	&alive
+		DUP #02 < ,&dies JCN
+		DUP #03 > ,&dies JCN
+		&lives POP ,save-cell JSR RTN
+		&dies POP POP2 RTN
+	&dead
+		DUP #03 = ,&birth JCN POP POP2 RTN
+		&birth POP ,save-cell JSR RTN
+
+RTN
+
+@save-cell ( x y -- )
+	
+	( get index )
+	HEIGHT MOD SWP WIDTH MOD SWP
+	WIDTH #08 / TOS ROT TOS ** ROT #08 / TOS ++ [ BANK2 ++ ]
+	( incr count )
+	.world/count LDZ2 #0001 ADD2 .world/count STZ2
+	( save in buffer )
+	STH2
+	DUP2 POP MOD8 #01 SWP SFL 
+	LDAkr STHr SWP ORA
+	STH2r STA
+
+RTN
 
 @on-mouse ( -> )
 	
@@ -111,18 +149,14 @@ BRK
 	;cursor .Screen/addr DEO2 
 	.pointer/x LDZ2 .Screen/x DEO2 
 	.pointer/y LDZ2 .Screen/y DEO2 
-	#30 .Screen/color DEO
+	#40 .Screen/sprite DEO
 
 	( record pointer positions )
-	.Mouse/x DEI2 .pointer/x STZ2 
-	.Mouse/y DEI2 .pointer/y STZ2
-
-	( draw new cursor )
-	.pointer/x LDZ2 .Screen/x DEO2 
-	.pointer/y LDZ2 .Screen/y DEO2 
+	.Mouse/x DEI2 DUP2 .pointer/x STZ2 .Screen/x DEO2
+	.Mouse/y DEI2 DUP2 .pointer/y STZ2 .Screen/y DEO2 
 
 	( colorize on state )
-	#32 [ .Mouse/state DEI #00 ! ] + .Screen/color DEO
+	#42 [ .Mouse/state DEI #00 ! ] + .Screen/sprite DEO
 
 	.Mouse/state DEI #00 ! #01 JCN [ BRK ]
 
@@ -143,25 +177,32 @@ BRK
 	.Controller/key DEI #00 ! #01 JCN [ BRK ]
 
 	.Controller/key DEI #20 ! ,&no-toggle JCN
-		.world/paused LDZ #01 ! .world/paused STZ
-	&no-toggle
+		;on-frame
+		.Screen/vector DEI2 ;on-frame-paused == ,&swap JCN
+			POP2 ;on-frame-paused
+			&swap
+		.Screen/vector DEO2
+		&no-toggle
 
 BRK
 
 @draw-grid ( -- )
+	
+	( draw cell count )
+	.anchor/x LDZ2 .Screen/x DEO2
+	.anchor/y LDZ2 HEIGHT #02 * TOS ++ .Screen/y DEO2
+	.world/count LDZ2 #03 ;draw-short JSR2
 
-	#00 HEIGHT
+	HEIGHT #00
 	&ver
-		OVR TOS 2** .anchor/y LDZ2 ++ .Screen/y DEO2
-		#00 WIDTH
+		DUP TOS 2** .anchor/y LDZ2 ++ .Screen/y DEO2
+		WIDTH #00
 		&hor
-			OVR TOS 2** .anchor/x LDZ2 ++ .Screen/x DEO2
-			GET-ITERATORS ,get-cell JSR #01 + .Screen/color DEO
-			INCR
-			NEQk ,&hor JCN
+			DUP TOS 2** .anchor/x LDZ2 ++ .Screen/x DEO2
+			GET-ITER ,get-cell JSR #01 + .Screen/pixel DEO
+			#01 + GTHk ,&hor JCN
 		POP2
-		INCR
-		NEQk ,&ver JCN
+		#01 + GTHk ,&ver JCN
 	POP2
 
 RTN
@@ -193,64 +234,15 @@ RTN
 
 @get-neighbours ( x y -- neighbours )
 	
-	( -1,-1 ) DUP2 #01 - DECR ,get-cell JSR STH
+	( -1,-1 ) DUP2 #01 - [ SWP #01 - SWP ] ,get-cell JSR STH
 	(  0,-1 ) DUP2 #01 -      ,get-cell JSR STH ADDr
-	( +1,-1 ) DUP2 #01 - INCR ,get-cell JSR STH ADDr
-	( -1, 0 ) DUP2       DECR ,get-cell JSR STH ADDr
-	( +1, 0 ) DUP2       INCR ,get-cell JSR STH ADDr
-	( -1,+1 ) DUP2 #01 + DECR ,get-cell JSR STH ADDr
+	( +1,-1 ) DUP2 #01 - [ SWP #01 + SWP ] ,get-cell JSR STH ADDr
+	( -1, 0 ) DUP2       [ SWP #01 - SWP ] ,get-cell JSR STH ADDr
+	( +1, 0 ) DUP2       [ SWP #01 + SWP ] ,get-cell JSR STH ADDr
+	( -1,+1 ) DUP2 #01 + [ SWP #01 - SWP ] ,get-cell JSR STH ADDr
 	(  0,+1 ) DUP2 #01 +      ,get-cell JSR STH ADDr
-	( +1,+1 )      #01 + INCR ,get-cell JSR STH ADDr
+	( +1,+1 )      #01 + [ SWP #01 + SWP ] ,get-cell JSR STH ADDr
 	STHr
-
-RTN
-
-@run-grid ( -- )
-	
-	#00 HEIGHT
-	&ver
-		#00 WIDTH
-		&hor
-			GET-ITERATORS
-			( x y ) DUP2
-			( neighbours ) DUP2 ,get-neighbours JSR
-			( state ) ROT ROT ;get-cell JSR2
-			,run-cell JSR
-			INCR
-			NEQk ,&hor JCN
-		POP2
-		INCR
-		NEQk ,&ver JCN
-	POP2
-
-RTN 
-
-@run-cell ( x y neighbours state -- )
-	
-	#00 = ,&dead JCN
-	&alive
-		DUP #02 < ,&dies JCN
-		DUP #03 > ,&dies JCN
-		&lives POP ,save-cell JSR RTN
-		&dies POP POP2 RTN
-	&dead
-		DUP #03 = ,&birth JCN POP POP2 RTN
-		&birth POP ,save-cell JSR RTN
-
-RTN
-
-@save-cell ( x y -- )
-	
-	( get index )
-	HEIGHT MOD SWP WIDTH MOD SWP
-	WIDTH #08 / TOS ROT TOS ** ROT #08 / TOS ++ [ BANK2 ++ ]
-	( incr count )
-	.world/count LDZ2 #0001 ADD2 .world/count STZ2
-	( save in buffer )
-	STH2
-	DUP2 POP MOD8 #01 SWP SFL 
-	LDAkr STHr SWP ORA
-	STH2r STA
 
 RTN
 
@@ -258,16 +250,16 @@ RTN
 
 	STH SWP 
 	DUP #04 SFT TOS 8** ;font-hex ++ .Screen/addr DEO2
-	( draw ) STHkr .Screen/color DEO
+	( draw ) STHkr .Screen/sprite DEO
 	#0f AND TOS 8** ;font-hex ++ .Screen/addr DEO2
 	.Screen/x DEI2 #0008 ++ .Screen/x DEO2
-	( draw ) STHkr .Screen/color DEO
+	( draw ) STHkr .Screen/sprite DEO
 	DUP #04 SFT TOS 8** ;font-hex ++ .Screen/addr DEO2
 	.Screen/x DEI2 #0008 ++ .Screen/x DEO2
-	( draw ) STHkr .Screen/color DEO
+	( draw ) STHkr .Screen/sprite DEO
 	#0f AND TOS 8** ;font-hex ++ .Screen/addr DEO2
 	.Screen/x DEI2 #0008 ++ .Screen/x DEO2
-	( draw ) STHr .Screen/color DEO
+	( draw ) STHr .Screen/sprite DEO
 
 RTN
 

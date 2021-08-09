@@ -1,5 +1,3 @@
-#include <stdio.h>
-
 /*
 Copyright (c) 2021 Devine Lu Linvega
 
@@ -45,7 +43,7 @@ struct Uxn;
 void mempoke16(Uint8 *m, Uint16 a, Uint16 b);
 Uint16 mempeek16(Uint8 *m, Uint16 a);
 
-int loaduxn(Uxn *c, char *filepath);
-int bootuxn(Uxn *c);
-int evaluxn(Uxn *u, Uint16 vec);
-Device *portuxn(Uxn *u, Uint8 id, char *name, void (*talkfn)(Device *, Uint8, Uint8));
+int uxn_boot(Uxn *c);
+int uxn_eval(Uxn *u, Uint16 vec);
+int uxn_halt(Uxn *u, Uint8 error, char *name, int id);
+Device *uxn_port(Uxn *u, Uint8 id, char *name, void (*talkfn)(Device *, Uint8, Uint8));

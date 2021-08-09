@@ -12,142 +12,61 @@ THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
 WITH REGARD TO THIS SOFTWARE.
 */
 
-#include "../utility.h"
-
-static Uint8 font[][8] = {
-	{0x00, 0x7c, 0x82, 0x82, 0x82, 0x82, 0x82, 0x7c},
-	{0x00, 0x30, 0x10, 0x10, 0x10, 0x10, 0x10, 0x10},
-	{0x00, 0x7c, 0x82, 0x02, 0x7c, 0x80, 0x80, 0xfe},
-	{0x00, 0x7c, 0x82, 0x02, 0x1c, 0x02, 0x82, 0x7c},
-	{0x00, 0x0c, 0x14, 0x24, 0x44, 0x84, 0xfe, 0x04},
-	{0x00, 0xfe, 0x80, 0x80, 0x7c, 0x02, 0x82, 0x7c},
-	{0x00, 0x7c, 0x82, 0x80, 0xfc, 0x82, 0x82, 0x7c},
-	{0x00, 0x7c, 0x82, 0x02, 0x1e, 0x02, 0x02, 0x02},
-	{0x00, 0x7c, 0x82, 0x82, 0x7c, 0x82, 0x82, 0x7c},
-	{0x00, 0x7c, 0x82, 0x82, 0x7e, 0x02, 0x82, 0x7c},
-	{0x00, 0x7c, 0x82, 0x02, 0x7e, 0x82, 0x82, 0x7e},
-	{0x00, 0xfc, 0x82, 0x82, 0xfc, 0x82, 0x82, 0xfc},
-	{0x00, 0x7c, 0x82, 0x80, 0x80, 0x80, 0x82, 0x7c},
-	{0x00, 0xfc, 0x82, 0x82, 0x82, 0x82, 0x82, 0xfc},
-	{0x00, 0x7c, 0x82, 0x80, 0xf0, 0x80, 0x82, 0x7c},
-	{0x00, 0x7c, 0x82, 0x80, 0xf0, 0x80, 0x80, 0x80}};
+static Uint8 blending[5][16] = {
+	{0, 0, 0, 0, 1, 0, 1, 1, 2, 2, 0, 2, 3, 3, 3, 0},
+	{0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3},
+	{1, 2, 3, 1, 1, 2, 3, 1, 1, 2, 3, 1, 1, 2, 3, 1},
+	{2, 3, 1, 2, 2, 3, 1, 2, 2, 3, 1, 2, 2, 3, 1, 2},
+	{1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 0, 1, 1, 1, 1, 0}};
 
 void
-clear(Ppu *p)
+ppu_pixel(Ppu *p, Uint8 layer, Uint16 x, Uint16 y, Uint8 color)
 {
-	int i, sz = p->height * p->width;
-	for(i = 0; i < sz; ++i) {
-		p->fg.pixels[i] = p->fg.colors[0];
-		p->bg.pixels[i] = p->bg.colors[0];
-	}
+	Uint8 *pixel = &p->pixels[y * p->width + x], shift = layer * 2;
+	if(x < p->width && y < p->height)
+		*pixel = (*pixel & ~(0x3 << shift)) | (color << shift);
 }
 
 void
-putcolors(Ppu *p, Uint8 *addr)
+ppu_1bpp(Ppu *p, Uint8 layer, Uint16 x, Uint16 y, Uint8 *sprite, Uint8 color, Uint8 flipx, Uint8 flipy)
 {
-	int i;
-	for(i = 0; i < 4; ++i) {
-		Uint8
-			r = (*(addr + i / 2) >> (!(i % 2) << 2)) & 0x0f,
-			g = (*(addr + 2 + i / 2) >> (!(i % 2) << 2)) & 0x0f,
-			b = (*(addr + 4 + i / 2) >> (!(i % 2) << 2)) & 0x0f;
-#ifndef ARDUINO
-		p->bg.colors[i] = 0xff000000 | (r << 20) | (r << 16) | (g << 12) | (g << 8) | (b << 4) | b;
-		p->fg.colors[i] = 0xff000000 | (r << 20) | (r << 16) | (g << 12) | (g << 8) | (b << 4) | b;
-#else
-		p->bg.colors[i] = (r << 12) | (g << 7) | (b << 1);
-		p->fg.colors[i] = (r << 12) | (g << 7) | (b << 1);
-#endif
-	}
-	p->fg.colors[0] = 0;
-	clear(p);
+	Uint16 v, h;
+	for(v = 0; v < 8; v++)
+		for(h = 0; h < 8; h++) {
+			Uint8 ch1 = (sprite[v] >> (7 - h)) & 0x1;
+			if(ch1 || blending[4][color])
+				ppu_pixel(p,
+					layer,
+					x + (flipx ? 7 - h : h),
+					y + (flipy ? 7 - v : v),
+					blending[ch1][color]);
+		}
 }
 
 void
-putpixel(Ppu *p, Layer *layer, Uint16 x, Uint16 y, Uint8 color)
-{
-	if(x >= p->width || y >= p->height)
-		return;
-#ifndef ARDUINO
-	layer->pixels[y * p->width + x] = layer->colors[color];
-#else
-	layer->pixels[y * p->width + x] = color;
-#endif
-}
-
-void
-puticn(Ppu *p, Layer *layer, Uint16 x, Uint16 y, Uint8 *sprite, Uint8 color, Uint8 flipx, Uint8 flipy)
+ppu_2bpp(Ppu *p, Uint8 layer, Uint16 x, Uint16 y, Uint8 *sprite, Uint8 color, Uint8 flipx, Uint8 flipy)
 {
 	Uint16 v, h;
 	for(v = 0; v < 8; v++)
 		for(h = 0; h < 8; h++) {
 			Uint8 ch1 = ((sprite[v] >> (7 - h)) & 0x1);
-			if(ch1 == 1 || (color != 0x05 && color != 0x0a && color != 0x0f))
-				putpixel(p,
+			Uint8 ch2 = ((sprite[v + 8] >> (7 - h)) & 0x1);
+			Uint8 ch = ch1 + ch2 * 2;
+			if(ch || blending[4][color])
+				ppu_pixel(p,
 					layer,
 					x + (flipx ? 7 - h : h),
 					y + (flipy ? 7 - v : v),
-					ch1 ? color % 4 : color / 4);
-		}
-}
-
-void
-putchr(Ppu *p, Layer *layer, Uint16 x, Uint16 y, Uint8 *sprite, Uint8 color, Uint8 flipx, Uint8 flipy)
-{
-	Uint16 v, h;
-	for(v = 0; v < 8; v++)
-		for(h = 0; h < 8; h++) {
-			Uint8 ch1 = ((sprite[v] >> (7 - h)) & 0x1) * color;
-			Uint8 ch2 = ((sprite[v + 8] >> (7 - h)) & 0x1) * color;
-			putpixel(p,
-				layer,
-				x + (flipx ? 7 - h : h),
-				y + (flipy ? 7 - v : v),
-				(((ch1 + ch2 * 2) + color / 4) & 0x3));
+					blending[ch][color]);
 		}
 }
 
 /* output */
 
-void
-inspect(Ppu *p, Uint8 *stack, Uint8 wptr, Uint8 rptr)
-{
-	Uint8 i, x, y, b;
-	for(i = 0; i < 0x20; ++i) { /* memory */
-		x = ((i % 8) * 3 + 1) * 8, y = (i / 8 + 1) * 8, b = stack[i];
-		puticn(p, &p->bg, x, y, font[(b >> 4) & 0xf], 1 + (wptr == i) * 0x7, 0, 0);
-		puticn(p, &p->bg, x + 8, y, font[b & 0xf], 1 + (wptr == i) * 0x7, 0, 0);
-	}
-	puticn(p, &p->bg, 0x8, y + 0x10, font[(rptr >> 4) & 0xf], 0x2, 0, 0);
-	puticn(p, &p->bg, 0x10, y + 0x10, font[rptr & 0xf], 0x2, 0, 0);
-	for(x = 0; x < 0x20; ++x) { /* guides */
-		putpixel(p, &p->bg, x, p->height / 2, 2);
-		putpixel(p, &p->bg, p->width - x, p->height / 2, 2);
-		putpixel(p, &p->bg, p->width / 2, p->height - x, 2);
-		putpixel(p, &p->bg, p->width / 2, x, 2);
-		putpixel(p, &p->bg, p->width / 2 - 16 + x, p->height / 2, 2);
-		putpixel(p, &p->bg, p->width / 2, p->height / 2 - 16 + x, 2);
-	}
-}
-
 int
-initppu(Ppu *p, Uint8 hor, Uint8 ver)
+ppu_init(Ppu *p, Uint8 hor, Uint8 ver)
 {
-	p->hor = hor;
-	p->ver = ver;
-	p->width = 8 * p->hor;
-	p->height = 8 * p->ver;
-#ifndef ARDUINO
-	if(!(p->bg.pixels = malloc(p->width * p->height * sizeof(Uint32))))
-		return 0;
-	if(!(p->fg.pixels = malloc(p->width * p->height * sizeof(Uint32))))
-		return 0;
-#else
-	if(!(p->bg.pixels = ext_malloc(p->width * p->height * sizeof(Uint8))))
-		return 0;
-	if(!(p->fg.pixels = ext_malloc(p->width * p->height * sizeof(Uint8))))
-		return 0;
-#endif
-	clear(p);
+	p->width = 8 * hor;
+	p->height = 8 * ver;
 	return 1;
 }

@@ -12,7 +12,7 @@
 ( devices )
 
 |00 @System [ &vector $2 &pad   $6 &r      $2 &g     $2 &b     $2 ]
-|20 @Screen [ &vector $2 &width $2 &height $2 &pad   $2 &x     $2 &y $2 &addr $2 &color $1 ]
+|20 @Screen [ &vector $2 &width $2 &height $2 &pad   $2 &x     $2 &y $2 &addr $2 &pixel $1 &sprite $1 ]
 |90 @Mouse  [ &vector $2 &x     $2 &y      $2 &state $1 &wheel $1 ]
 
 ( variables )
@@ -128,7 +128,7 @@ RTN
 	#0000 .Screen/x DEO2 .center/y LDZ2 .Screen/y DEO2
 	#0000 .Screen/width DEI2 ( from/to )
 	&draw-hor
-		( draw ) #01 .Screen/color DEO
+		( draw ) #01 .Screen/pixel DEO
 		( incr ) SWP2 #0002 ADD2 DUP2 .Screen/x DEO2 SWP2
 		LTH2k ,&draw-hor JCN
 	POP2 POP2
@@ -137,7 +137,7 @@ RTN
 	.center/x LDZ2 .Screen/x DEO2 #0000 .Screen/y DEO2
 	#0000 .Screen/height DEI2 ( from/to )
 	&draw-ver
-		( draw ) #02 .Screen/color DEO
+		( draw ) #02 .Screen/pixel DEO
 		( incr ) SWP2 #0002 ADD2 DUP2 .Screen/y DEO2 SWP2
 		LTH2k ,&draw-ver JCN
 	POP2 POP2
@@ -148,7 +148,7 @@ RTN
 	#00 #08
 	&draw-pixel1
 		( move ) OVR #08 MUL #00 SWP #0010 ADD2 .Screen/x DEO2
-		( draw ) OVR .Screen/color DEO
+		( draw ) OVR .Screen/pixel DEO
 		( incr ) SWP #01 ADD SWP
 		LTHk ,&draw-pixel1 JCN
 	POP POP
@@ -156,7 +156,7 @@ RTN
 	#00 #08
 	&draw-pixel2
 		( move ) OVR #08 MUL #00 SWP #0010 ADD2 .Screen/x DEO2
-		( draw ) OVR #08 ADD .Screen/color DEO
+		( draw ) OVR #08 ADD .Screen/pixel DEO
 		( incr ) SWP #01 ADD SWP
 		LTHk ,&draw-pixel2 JCN
 	POP POP
@@ -164,7 +164,7 @@ RTN
 	#00 #08
 	&draw-icn1
 		( move ) OVR #08 MUL #00 SWP #0010 ADD2 .Screen/x DEO2
-		( draw ) OVR #20 ADD .Screen/color DEO
+		( draw ) OVR #00 ADD .Screen/sprite DEO
 		( incr ) SWP #01 ADD SWP
 		LTHk ,&draw-icn1 JCN
 	POP POP
@@ -172,7 +172,7 @@ RTN
 	#00 #08
 	&draw-icn2
 		( move ) OVR #08 MUL #00 SWP #0010 ADD2 .Screen/x DEO2
-		( draw ) OVR #28 ADD .Screen/color DEO
+		( draw ) OVR #08 ADD .Screen/sprite DEO
 		( incr ) SWP #01 ADD SWP
 		LTHk ,&draw-icn2 JCN
 	POP POP
@@ -180,7 +180,7 @@ RTN
 	#00 #08
 	&draw-chr1
 		( move ) OVR #08 MUL #00 SWP #0010 ADD2 .Screen/x DEO2
-		( draw ) OVR #40 ADD .Screen/color DEO
+		( draw ) OVR #80 ADD .Screen/sprite DEO
 		( incr ) SWP #01 ADD SWP
 		LTHk ,&draw-chr1 JCN
 	POP POP
@@ -188,7 +188,7 @@ RTN
 	#00 #08
 	&draw-chr2
 		( move ) OVR #08 MUL #00 SWP #0010 ADD2 .Screen/x DEO2
-		( draw ) OVR #48 ADD .Screen/color DEO
+		( draw ) OVR #88 ADD .Screen/sprite DEO
 		( incr ) SWP #01 ADD SWP
 		LTHk ,&draw-chr2 JCN
 	POP POP
@@ -203,17 +203,17 @@ RTN
 	.window/x1 LDZ2 .window/y1 LDZ2 .window/x2 LDZ2 .window/y2 LDZ2 #01 ;line-rect JSR2
 	.window/x1 LDZ2 #0002 SUB2 .window/y1 LDZ2 #0002 SUB2 .window/x2 LDZ2 #0002 ADD2 .window/y2 LDZ2 #0002 ADD2 #01 ;line-rect JSR2
 
-	.window/x1 LDZ2 #0008 ADD2 .window/y1 LDZ2 #0010 ADD2 ;red_txt #25 ;draw-label JSR2
+	.window/x1 LDZ2 #0008 ADD2 .window/y1 LDZ2 #0010 ADD2 ;red_txt #05 ;draw-label JSR2
 	.window/x1 LDZ2 #0038 ADD2 .Screen/x DEO2 
-	.System/r DEI2 #28 ;draw-short JSR2
+	.System/r DEI2 #08 ;draw-short JSR2
 
-	.window/x1 LDZ2 #0008 ADD2 .window/y1 LDZ2 #0020 ADD2 ;green_txt #25 ;draw-label JSR2
+	.window/x1 LDZ2 #0008 ADD2 .window/y1 LDZ2 #0020 ADD2 ;green_txt #05 ;draw-label JSR2
 	.window/x1 LDZ2 #0038 ADD2 .Screen/x DEO2 
-	.System/g DEI2 #28 ;draw-short JSR2
+	.System/g DEI2 #08 ;draw-short JSR2
 
-	.window/x1 LDZ2 #0008 ADD2 .window/y1 LDZ2 #0030 ADD2 ;blue_txt #25 ;draw-label JSR2
+	.window/x1 LDZ2 #0008 ADD2 .window/y1 LDZ2 #0030 ADD2 ;blue_txt #05 ;draw-label JSR2
 	.window/x1 LDZ2 #0038 ADD2 .Screen/x DEO2 
-	.System/b DEI2 #28 ;draw-short JSR2
+	.System/b DEI2 #08 ;draw-short JSR2
 
 	.window/x1 LDZ2 #0060 ADD2 .window/y1 LDZ2 #0010 ADD2 .window/x1 LDZ2 #0090 ADD2 #00 ;theme/r1 .selection LDZ ADD LDA 4** #01 ;draw-slider JSR2
 	.window/x1 LDZ2 #0060 ADD2 .window/y1 LDZ2 #0020 ADD2 .window/x1 LDZ2 #0090 ADD2 #00 ;theme/g1 .selection LDZ ADD LDA 4** #01 ;draw-slider JSR2
@@ -222,22 +222,22 @@ RTN
 	.window/x1 LDZ2 #0050 ADD2 .Screen/x DEO2
 	.window/y1 LDZ2 #0040 ADD2 .Screen/y DEO2
 	;radio_icns #00 .selection LDZ #00 EQU 8** ADD2 .Screen/addr DEO2
-	#25 .Screen/color DEO
+	#05 .Screen/sprite DEO
 
 	.window/x1 LDZ2 #0060 ADD2 .Screen/x DEO2
 	.window/y1 LDZ2 #0040 ADD2 .Screen/y DEO2
 	;radio_icns #00 .selection LDZ #01 EQU 8** ADD2 .Screen/addr DEO2
-	#25 .Screen/color DEO
+	#05 .Screen/sprite DEO
 
 	.window/x1 LDZ2 #0070 ADD2 .Screen/x DEO2
 	.window/y1 LDZ2 #0040 ADD2 .Screen/y DEO2
 	;radio_icns #00 .selection LDZ #02 EQU 8** ADD2 .Screen/addr DEO2
-	#25 .Screen/color DEO
+	#05 .Screen/sprite DEO
 
 	.window/x1 LDZ2 #0080 ADD2 .Screen/x DEO2
 	.window/y1 LDZ2 #0040 ADD2 .Screen/y DEO2
 	;radio_icns #00 .selection LDZ #03 EQU 8** ADD2 .Screen/addr DEO2
-	#25 .Screen/color DEO
+	#05 .Screen/sprite DEO
 
 RTN
 
@@ -247,16 +247,13 @@ RTN
 	;pointer_icn .Screen/addr DEO2
 	.pointer/x LDZ2 .Screen/x DEO2
 	.pointer/y LDZ2 .Screen/y DEO2
-	#30 .Screen/color DEO
+	#40 .Screen/sprite DEO
 
 	( record pointer positions )
-	.Mouse/x DEI2 .pointer/x STZ2 
-	.Mouse/y DEI2 .pointer/y STZ2
+	.Mouse/x DEI2 DUP2 .pointer/x STZ2 .Screen/x DEO2 
+	.Mouse/y DEI2 DUP2 .pointer/y STZ2 .Screen/y DEO2
 
-	( draw new cursor )
-	.pointer/x LDZ2 .Screen/x DEO2
-	.pointer/y LDZ2 .Screen/y DEO2
-	#33 .Mouse/state DEI #00 NEQ #02 MUL SUB .Screen/color DEO
+	#43 .Mouse/state DEI #00 NEQ #02 MUL SUB .Screen/sprite DEO
 
 RTN
 
@@ -269,21 +266,21 @@ RTN
 	;halftone_icn .Screen/addr DEO2
 
 	;slidera_icn .Screen/addr DEO2
-	( draw ) #25 .Screen/color DEO
+	( draw ) #05 .Screen/sprite DEO
 	;sliderb_icn .Screen/addr DEO2
 
 	&loop
 		( incr ) .Screen/x DEI2 8+ .Screen/x DEO2
-		( draw ) #25 .Screen/color DEO
+		( draw ) #05 .Screen/sprite DEO
 		.Screen/x DEI2 .slider/x2 LDZ2 #0008 ADD2 LTH2 ,&loop JCN
 
 	( incr ) .Screen/x DEI2 #0004 ADD2 .Screen/x DEO2
 	;sliderc_icn .Screen/addr DEO2
-	( draw ) #25 .Screen/color DEO
+	( draw ) #05 .Screen/sprite DEO
 
 	.slider/x1 LDZ2 .slider/pos LDZ2 ADD2 .Screen/x DEO2
 	;sliderd_icn .Screen/addr DEO2
-	( draw ) #2a .Screen/color DEO
+	( draw ) #0a .Screen/sprite DEO
 
 RTN
 
@@ -296,7 +293,7 @@ RTN
 		STH2 STH2 OVR2 OVR2
 		&hor
 			( save ) OVR2 .Screen/x DEO2
-			( draw ) .color LDZ .Screen/color DEO
+			( draw ) .color LDZ .Screen/pixel DEO
 			( incr ) SWP2 #0001 ADD2 SWP2
 			LTH2k ,&hor JCN
 		POP2 POP2 STH2r STH2r
@@ -311,13 +308,13 @@ RTN
 	( load ) .color STZ .rect/y2 STZ2 .rect/x2 STZ2 DUP2 .Screen/y DEO2 .rect/y1 STZ2 DUP2 .Screen/x DEO2 .rect/x1 STZ2
 	&hor
 		( incr ) .Screen/x DEI2 ++ .Screen/x DEO2
-		( draw ) .rect/y1 LDZ2 .Screen/y DEO2 .color LDZ .Screen/color DEO
-		( draw ) .rect/y2 LDZ2 .Screen/y DEO2 .color LDZ .Screen/color DEO
+		( draw ) .rect/y1 LDZ2 .Screen/y DEO2 .color LDZ .Screen/pixel DEO
+		( draw ) .rect/y2 LDZ2 .Screen/y DEO2 .color LDZ .Screen/pixel DEO
 		.Screen/x DEI2 .rect/x2 LDZ2 LTH2 ,&hor JCN
 	.rect/y1 LDZ2 .Screen/y DEO2
 	&ver
-		( draw ) .rect/x1 LDZ2 .Screen/x DEO2 .color LDZ .Screen/color DEO
-		( draw ) .rect/x2 LDZ2 .Screen/x DEO2 .color LDZ .Screen/color DEO
+		( draw ) .rect/x1 LDZ2 .Screen/x DEO2 .color LDZ .Screen/pixel DEO
+		( draw ) .rect/x2 LDZ2 .Screen/x DEO2 .color LDZ .Screen/pixel DEO
 		( incr ) .Screen/y DEI2 ++ .Screen/y DEO2
 		.Screen/y DEI2 .rect/y2 LDZ2 ++ LTH2 ,&ver JCN
 
@@ -332,7 +329,7 @@ RTN
 	&loop
 		DUP2 LDA #00 SWP 8**
 		;font ADD2 .Screen/addr DEO2 
-		( draw ) STHkr .Screen/color DEO
+		( draw ) STHkr .Screen/sprite DEO
 		( incr ) ++
 		( incr ) .Screen/x DEI2 8+ .Screen/x DEO2
 		DUP2 LDA ,&loop JCN
@@ -344,16 +341,16 @@ RTN
 
 	STH SWP 
 	DUP #04 SFT #00 SWP 8** ;font-hex ADD2 .Screen/addr DEO2
-	( draw ) STHkr .Screen/color DEO
+	( draw ) STHkr .Screen/sprite DEO
 	#0f AND #00 SWP 8** ;font-hex ADD2 .Screen/addr DEO2
 	.Screen/x DEI2 8+ .Screen/x DEO2
-	( draw ) STHkr .Screen/color DEO
+	( draw ) STHkr .Screen/sprite DEO
 	DUP #04 SFT #00 SWP 8** ;font-hex ADD2 .Screen/addr DEO2
 	.Screen/x DEI2 8+ .Screen/x DEO2
-	( draw ) STHkr .Screen/color DEO
+	( draw ) STHkr .Screen/sprite DEO
 	#0f AND #00 SWP 8** ;font-hex ADD2 .Screen/addr DEO2
 	.Screen/x DEI2 8+ .Screen/x DEO2
-	( draw ) STHr .Screen/color DEO
+	( draw ) STHr .Screen/sprite DEO
 
 RTN
 

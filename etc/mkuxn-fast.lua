@@ -187,7 +187,7 @@ local i = 0
 local allops = { }
 local wanted = false
 for l in assert(io.lines('src/uxn.c')) do
-  if l == 'void (*ops[])(Uxn *u) = {' then
+  if l == 'static void (*ops[])(Uxn *u) = {' then
     wanted = true
   elseif l == '};' then
     wanted = false
@@ -228,7 +228,7 @@ end
 i = 0
 wanted = false
 for l in assert(io.lines('src/uxnasm.c')) do
-  if l == 'char ops[][4] = {' then
+  if l == 'static char ops[][4] = {' then
     wanted = true
   elseif l == '};' then
     wanted = false
@@ -291,22 +291,18 @@ See etc/mkuxn-fast.moon for instructions.
     local _continue_0 = false
     repeat
       local l = f:read('*l')
-      if l:match(' push') or l:match('[ *]pop') then
+      if l:match(' push') or l:match('[ *]pop') or l:match('devpeek16') then
         _continue_0 = true
         break
       end
       if l == '/* Stack */' then
         wanted = false
       end
-      if l:match('errors%[%]') then
-        _with_0:write('\n#ifndef NO_STACK_CHECKS\n')
-        wanted = true
-      end
       if wanted then
         _with_0:write(('%s\n'):format(l))
       end
       if l == '}' then
-        _with_0:write('#endif\n\n')
+        _with_0:write('\n')
         break
       end
       _continue_0 = true
@@ -320,10 +316,13 @@ See etc/mkuxn-fast.moon for instructions.
 #pragma mark - Core
 
 int
-evaluxn(Uxn *u, Uint16 vec)
+uxn_eval(Uxn *u, Uint16 vec)
 {
 	Uint8 instr;
+	if(u->dev[0].dat[0xf]) 
+		return 0;
 	u->ram.ptr = vec;
+	if(u->wst.ptr > 0xf8) u->wst.ptr = 0xf8;
 	while(u->ram.ptr) {
 		instr = u->ram.dat[u->ram.ptr++];
 		switch(instr) {
@@ -358,9 +357,9 @@ evaluxn(Uxn *u, Uint16 vec)
 #ifndef NO_STACK_CHECKS
 error:
 	if(u->wst.error)
-		return haltuxn(u, u->wst.error, "Working-stack", instr);
+		return uxn_halt(u, u->wst.error, "Working-stack", instr);
 	else
-		return haltuxn(u, u->rst.error, "Return-stack", instr);
+		return uxn_halt(u, u->rst.error, "Return-stack", instr);
 #endif
 }
 
@@ -372,7 +371,7 @@ int
     if not l then
       break
     end
-    if l:match('^bootuxn') then
+    if l:match('^uxn_boot') then
       wanted = true
     end
     if wanted then

@@ -3,8 +3,8 @@
 ( devices )
 
 |00 @System [ &vector $2 &pad $6 &r $2 &g $2 &b $2 ]
-|20 @Screen [ &vector $2 &width $2 &height $2 &pad $2 &x $2 &y $2 &addr $2 &color $1 ]
-|a0 @File       [ &vector $2 &success $2 &offset $2 &pad $2 &name $2 &length $2 &load $2 &save $2 ]
+|20 @Screen [ &vector $2 &width $2 &height $2 &pad $2 &x $2 &y $2 &addr $2 &pixel $1 &sprite $1 ]
+|a0 @File   [ &vector $2 &success $2 &offset $2 &pad $2 &name $2 &length $2 &load $2 &save $2 ]
 
 ( variables )
 
@@ -43,7 +43,7 @@
 	DUP #0a EQU ,&linefeed JCN
 	#0005 SFT2 ;font ADD2
 	.Screen/addr DEO2
-	#29 .Screen/color DEO
+	#09 .Screen/sprite DEO
 	.Screen/x DEI2 #0008 ADD2 .Screen/x DEO2
 	&next
 	#0001 ADD2

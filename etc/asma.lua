@@ -24,7 +24,7 @@ local opcodes_in_order = { }
 do
   local wanted = false
   for l in assert(io.lines('src/uxnasm.c')) do
-    if l == 'char ops[][4] = {' then
+    if l == 'static char ops[][4] = {' then
       wanted = true
     elseif wanted then
       if l == '};' then
@@ -202,7 +202,7 @@ do
 
 @asma-heap
 
-|ff00 &end
+|e000 &end
 
 (
 	Buffer for use with loading source code.
@@ -214,7 +214,7 @@ do
 
 @asma-read-buffer
 
-|ff80 &end
+|f800 &end
 
 (
 	Buffer for use with writing output.

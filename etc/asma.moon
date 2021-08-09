@@ -35,7 +35,7 @@ opcodes_in_order = {}
 do -- opcodes
 	wanted = false
 	for l in assert io.lines 'src/uxnasm.c'
-		if l == 'char ops[][4] = {'
+		if l == 'static char ops[][4] = {'
 			wanted = true
 		elseif wanted
 			if l == '};'
@@ -168,7 +168,7 @@ with assert io.open 'projects/software/asma.tal.tmp', 'w'
 
 @asma-heap
 
-|ff00 &end
+|e000 &end
 
 (
 	Buffer for use with loading source code.
@@ -180,7 +180,7 @@ with assert io.open 'projects/software/asma.tal.tmp', 'w'
 
 @asma-read-buffer
 
-|ff80 &end
+|f800 &end
 
 (
 	Buffer for use with writing output.

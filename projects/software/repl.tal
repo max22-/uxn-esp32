@@ -1,0 +1,214 @@
+( repl
+
+  implemented: hardly anything
+
+  yet to implement: practically everything
+)
+
+( devices )
+
+|00 @System  &vector $2 &pad     $6 &r      $2 &g     $2 &b      $2
+|20 @Screen  &vector $2 &width   $2 &height $2 &pad   $2 &x      $2 &y      $2 &addr $2 &pixel $1 &sprite $1
+|80 @Controller [ &vector $2 &button   $1 &key    $1 ]
+|a0 @File    &vector $2 &success $2 &offset $2 &pad   $2 &name   $2 &length $2 &load $2 &save  $2
+
+( init )
+
+|0100 ( -> )
+@user-program
+	;init ;repl/fn STA2
+	#2000 JMP2
+	&erase-end
+
+|2000 ( -> )
+	&end
+	,repl/fn LDR2 JSR2
+	BRK
+
+@repl [ &fn $2 &font-height $1 &font-cells $1 ]
+@buffer [ &cursor $2 &end $2 ]
+
+@init
+	( theme )
+	#0fa7 .System/r DEO2
+	#0fa7 .System/g DEO2
+	#0fa7 .System/b DEO2
+
+	( vectors )
+	#2000 .Screen/vector DEO2
+	;on-key .Controller/vector DEO2
+
+	( default function )
+	;main ,repl/fn STR2
+
+	( buffer )
+	;ring-buffer
+		DUP2 ,buffer/cursor STR2
+		,buffer/end STR2
+
+	( clear out user-program )
+	;user-program/erase-end ;user-program
+	&clear-loop
+	#0000 OVR2 STA2
+	#0002 ADD2
+	GTH2k ,&clear-loop JCN
+	POP2 POP2
+
+	( load font )
+	;font ;load-font JMP2 ( tail call )
+
+@main ( -- )
+	JMP2r
+
+@on-key ( -> )
+	.Controller/button DEI #01 AND ,&skip JCN
+	.Controller/key DEI
+		DUP #e0 AND ,&append JCN
+		DUP #08 EQU ,&backspace JCN
+		DUP #0d EQU ,&execute JCN
+	POP &skip BRK
+
+	&append
+	;buffer/cursor LDA2
+	STH2k STA
+	STH2r #0001 ADD2 ;ring-buffer ORA2 ;buffer/cursor STA2
+	,&draw JMP
+
+	&backspace
+	&execute
+	DUP EOR
+	;buffer/cursor LDA2
+	#0001 SUB2 ;ring-buffer ORA2 DUP2 ;buffer/cursor STA2
+	STA
+
+	&draw
+	#0000 DUP2 .Screen/x DEO2 .Screen/y DEO2
+	;ring-buffer ;wrapped-write JSR2
+
+	#00 ;draw-glyph JSR2
+	BRK
+
+@load-font ( filename* -- )
+	DUP2 .File/name DEO2
+	( find end of string for suffix )
+	&loop
+		#0001 ADD2
+		LDAk ,&loop JCN
+	( suffix is cell size )
+	#0001 SUB2 LDAk #0f AND ;repl/font-cells STA
+	( search backwards for number )
+	&loop2
+		#0001 SUB2
+		LDAk DUP #2f GTH STH #3a LTH STHr #0101 NEQ2 ,&loop2 JCN
+	( parse number to find font height )
+	#0001 STH2
+	&loop3
+		LDAk DUPk #2f GTH STH #3a LTH STHr #0101 NEQ2 ,&end-loop3 JCN
+		#30 SUB STHr MULk STH ADDr #0a MUL STH POP
+		#0001 SUB2
+		,&loop3 JMP
+	&end-loop3
+	STH2r POP ;repl/font-height STA
+	POP
+	POP2
+
+	;repl/font-cells LDA DUP MUL #08 MUL #01 ADD #00 .File/length DEO2
+	;font-data .File/load DEO2
+
+	JMP2r
+
+@get-word-width ( string* -- string* width* )
+	DUP2 LIT2r 0000
+	&loop
+	LDAk DUP #20 GTH ,&not-end JCN
+	POP
+	POP2 STH2r
+	JMP2r
+
+	&not-end
+	#00 SWP ;font-data ADD2 LDA
+	LITr 00 STH ADD2r
+	#0001 ADD2
+	,&loop JMP
+
+@wrapped-write ( string* -- )
+	LDAk ,&not-end JCN
+	POP2
+	JMP2r
+
+	&not-end
+	,get-word-width JSR .Screen/x DEI2 ADD2 .Screen/width DEI2 LTH2 ,&no-cr JCN
+	,cr JSR
+	&no-cr
+	,write JSR
+	,wrapped-write JMP
+
+@cr ( -- )
+	#0000 .Screen/x DEO2
+	.Screen/y DEI2 #00 ;repl/font-height LDA ADD2 .Screen/y DEO2
+	JMP2r
+
+@write ( string* -- end-of-string* )
+	LDAk DUP ,&not-end JCN
+	POP
+	JMP2r
+
+	&not-end
+	#00 SWP #00 ;repl/font-cells LDA MUL2k MUL2 #0008 MUL2 #0100 ADD2 ( string* char* tile* )
+	;font-data ADD2 .Screen/addr DEO2
+	#0d ,draw-glyph JSR
+	#00 ;repl/font-cells LDA #fff8 MUL2 .Screen/y DEI2 ADD2 .Screen/y DEO2
+	;font-data ADD2 LDA #00 SWP .Screen/x DEI2 ADD2 .Screen/x DEO2
+	LDAk STH
+	#0001 ADD2
+	STHr #20 GTH ;write JCN2
+	JMP2r
+
+@draw-glyph ( color -- )
+	STH
+	;repl/font-cells LDA
+	&outer
+		DUP #00 EQU ,&end-outer JCN
+		;repl/font-cells LDA
+		&inner
+			DUP #00 EQU ,&end-inner JCN
+			STHkr .Screen/sprite DEO
+			#0008 DUP2
+				.Screen/x DEI2 ADD2 .Screen/x DEO2
+				.Screen/addr DEI2 ADD2 .Screen/addr DEO2
+			#01 SUB
+			,&inner JMP
+		&end-inner
+		POP
+		#00 ;repl/font-cells LDA #fff8 MUL2 .Screen/x DEI2 ADD2 .Screen/x DEO2
+		#0008 .Screen/y DEI2 ADD2 .Screen/y DEO2
+		#01 SUB
+		,&outer JMP
+	&end-outer
+	POP
+	POPr
+	JMP2r
+
+@body 
+	4927 6c6c 206d 616b 6520 6120 736f 756e
+	6420 7468 6174 2773 2073 6f20 616c 6f6e
+	6520 74 6861 7420 6e6f 206f 6e65 2063
+	616e 206d 6973 7320 6974 2c20 7468 6174
+	2077 686f 6576 6572 20 6865 6172 7320
+	6974 2077 696c 6c20 7765 6570 2069 6e20
+	7468 6569 7220 736f 756c 732c 20 616e
+	6420 6865 6172 7468 7320 7769 6c6c 2073
+	6565 6d20 7761 726d 6572 2c20 61 6e64
+	2062 6569 6e67 2069 6e73 6964 6520 7769
+	6c6c 2073 6565 6d20 6265 7474 6572 20
+	746f 2061 6c6c 2077 686f 2068 6561 7220
+	6974 2069 6e20 7468 6520 6469 7374 616e
+	7420 746f 776e 732e 20 $1
+
+@font
+	"projects/fonts/venice14.uf2 $1
+
+@font-data
+
+|fe00 @ring-buffer
+

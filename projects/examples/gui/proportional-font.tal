@@ -3,7 +3,7 @@
 ( devices )
 
 |00 @System [ &vector $2 &pad $6 &r $2 &g $2 &b $2 ]
-|20 @Screen [ &vector $2 &width $2 &height $2 &pad $2 &x $2 &y $2 &addr $2 &color $1 ]
+|20 @Screen [ &vector $2 &width $2 &height $2 &pad $2 &x $2 &y $2 &addr $2 &pixel $1 &sprite $1 ]
 
 ( variables )
 
@@ -30,7 +30,7 @@ BRK
 	DUP #0a EQU ,&linefeed JCN
 	#0005 SFT2 ;font ADD2
 	DUP2 .Screen/addr DEO2
-	#29 .Screen/color DEO
+	#09 .Screen/sprite DEO
 	,get-x-advance JSR .Screen/x DEI2 ADD2 STH2kr ADD2 .Screen/x DEO2
 	&next
 	#0001 ADD2

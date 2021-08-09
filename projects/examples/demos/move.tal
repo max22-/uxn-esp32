@@ -7,7 +7,7 @@
 ( devices )
 
 |00 @System     [ &vector $2 &pad    $6 &r      $2 &g     $2 &b      $2 ]
-|20 @Screen     [ &vector $2 &width  $2 &height $2 &pad   $2 &x      $2 &y $2 &addr $2 &color $1 ]
+|20 @Screen     [ &vector $2 &width  $2 &height $2 &pad   $2 &x      $2 &y $2 &addr $2 &pixel $1 &sprite $1 ]
 |80 @Controller [ &vector $2 &button $1 &key    $1 ] 
 
 ( variables )
@@ -33,23 +33,23 @@
 	.Screen/height DEI2 2// .Screen/y DEO2
 
 	;default_icn .Screen/addr DEO2
-	#31 .Screen/color DEO
-	#2a .slime STZ
+	#41 .Screen/sprite DEO
+	#0a .slime STZ
 
 BRK
 
 @on-frame ( -> )
 
-	#2a .slime STZ
+	#0a .slime STZ
 	;default_icn .Screen/addr DEO2
 
 	( hold ctrl key to change slime color )
 	.Controller/button DEI #0f AND
-		DUP #01 NEQ ,&no-ctrl JCN #25 .slime STZ &no-ctrl
-		DUP #02 NEQ ,&no-alt JCN #2f .slime STZ &no-alt
+		DUP #01 NEQ ,&no-ctrl JCN #05 .slime STZ &no-ctrl
+		DUP #02 NEQ ,&no-alt JCN #0f .slime STZ &no-alt
 	POP
 
-	( clear ) #30 .Screen/color DEO
+	( clear ) #40 .Screen/sprite DEO
 
 	( detect movement )
 	.Controller/button DEI #f0 AND
@@ -72,11 +72,11 @@ BRK
 	POP
 
 	( draw face )
-	#31 .Screen/color DEO
+	#41 .Screen/sprite DEO
 
 	( draw slime )
 	;slime_icn .Screen/addr DEO2
-	.slime LDZ .Screen/color DEO
+	.slime LDZ .Screen/sprite DEO
 
 BRK
 

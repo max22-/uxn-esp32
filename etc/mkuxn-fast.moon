@@ -146,7 +146,7 @@ i = 0
 allops = {}
 wanted = false
 for l in assert io.lines 'src/uxn.c'
-	if l == 'void (*ops[])(Uxn *u) = {'
+	if l == 'static void (*ops[])(Uxn *u) = {'
 		wanted = true
 	elseif l == '};'
 		wanted = false
@@ -164,7 +164,7 @@ for l in assert io.lines 'src/uxn.c'
 i = 0
 wanted = false
 for l in assert io.lines 'src/uxnasm.c'
-	if l == 'char ops[][4] = {'
+	if l == 'static char ops[][4] = {'
 		wanted = true
 	elseif l == '};'
 		wanted = false
@@ -210,17 +210,14 @@ See etc/mkuxn-fast.moon for instructions.
 	wanted = true
 	while true
 		l = f\read '*l'
-		if l\match' push' or l\match'[ *]pop'
+		if l\match' push' or l\match'[ *]pop' or l\match'devpeek16'
 			continue
 		if l == '/* Stack */'
 			wanted = false
-		if l\match 'errors%[%]'
-			\write '\n#ifndef NO_STACK_CHECKS\n'
-			wanted = true
 		if wanted
 			\write '%s\n'\format l
 		if l == '}'
-			\write '#endif\n\n'
+			\write '\n'
 			break
 	\write [[
 /* clang-format on */
@@ -228,10 +225,13 @@ See etc/mkuxn-fast.moon for instructions.
 #pragma mark - Core
 
 int
-evaluxn(Uxn *u, Uint16 vec)
+uxn_eval(Uxn *u, Uint16 vec)
 {
 	Uint8 instr;
+	if(u->dev[0].dat[0xf]) 
+		return 0;
 	u->ram.ptr = vec;
+	if(u->wst.ptr > 0xf8) u->wst.ptr = 0xf8;
 	while(u->ram.ptr) {
 		instr = u->ram.dat[u->ram.ptr++];
 		switch(instr) {
@@ -254,9 +254,9 @@ evaluxn(Uxn *u, Uint16 vec)
 #ifndef NO_STACK_CHECKS
 error:
 	if(u->wst.error)
-		return haltuxn(u, u->wst.error, "Working-stack", instr);
+		return uxn_halt(u, u->wst.error, "Working-stack", instr);
 	else
-		return haltuxn(u, u->rst.error, "Return-stack", instr);
+		return uxn_halt(u, u->rst.error, "Return-stack", instr);
 #endif
 }
 
@@ -267,7 +267,7 @@ int
 		l = f\read '*l'
 		if not l
 			break
-		if l\match '^bootuxn'
+		if l\match '^uxn_boot'
 			wanted = true
 		if wanted
 			\write '%s\n'\format l
