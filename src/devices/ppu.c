@@ -22,9 +22,19 @@ static Uint8 blending[5][16] = {
 void
 ppu_pixel(Ppu *p, Uint8 layer, Uint16 x, Uint16 y, Uint8 color)
 {
-	Uint8 *pixel = &p->pixels[y * p->width + x], shift = layer * 2;
-	if(x < p->width && y < p->height)
-		*pixel = (*pixel & ~(0x3 << shift)) | (color << shift);
+	Uint32 idx = y * p->width + x;
+	Uint8 *address = &p->pixels[idx / 2];
+	Uint8 nibble = 1 - idx % 2;
+
+	Uint8 bg[2] = {(*address >> 0) & 0b11, (*address >> 4) & 0b11};
+	Uint8 fg[2] = {(*address >> 2) & 0b11, (*address >> 6) & 0b11};
+
+	if(layer == 0)
+		bg[nibble] = color;
+	else
+		fg[nibble] = color;
+
+	*address =(fg[1] << 6) | (bg[1] <<4) | (fg[0] << 2) | bg[0];
 }
 
 void
