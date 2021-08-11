@@ -285,9 +285,9 @@ run(Uxn* u)
 	uxn_eval(u, 0x0100);
 	redraw(u);
 	int elapsed, start;
-	start = micros();
 
 	while(true) {
+		start = micros();
 		/*
 		domouse();
 		*/
