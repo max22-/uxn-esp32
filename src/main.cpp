@@ -16,7 +16,7 @@ extern "C" {
 
 // Config
 
-static char *rom = (char *)"/spiffs/screen.rom";
+static char *rom = (char *)"/spiffs/audio.rom";
 const int hor = 40, ver = 30;
 
 // *******
@@ -122,8 +122,8 @@ uxn_init(void)
 {
 	if(!ppu_init(ppu, hor, ver))
 		error("PPU", "Init failure");
-	#warning uncomment this when audio will be implemented
-	//initaudio(audio_callback);
+	if(!initaudio(audio_callback))
+		error("Audio", "Init failure");
 	ppu->pixels = (Uint8*)spr.getPointer();
 	return 1;
 }
