@@ -5,6 +5,12 @@
 #include <SPIFFS.h>
 #include "arduino-drivers/esp32/audio/audio.h"
 #endif
+#if defined(WIO_TERMINAL)
+#include <Seeed_Arduino_FS.h>
+
+# include <stdarg.h>
+# include "arduino-drivers/wio-terminal/audio.h"
+#endif
 
 extern "C" {
 #include "uxn.h"
@@ -16,13 +22,41 @@ extern "C" {
 
 // Config
 
+#ifdef ESP32
 static char *rom = (char *)"/spiffs/audio.rom";
+#else
+# ifdef WIO_TERMINAL
+static char *rom = (char *)"/uxn/bin/hello.rom";
+# endif
+#endif
+
 const int hor = 40, ver = 30;
 
 // *******
 
 TFT_eSPI tft = TFT_eSPI();
+
+#if defined(WIO_TERMINAL)
+
+class Wio_eSprite : public TFT_eSprite {
+  public:
+	Wio_eSprite(TFT_eSPI *tft): TFT_eSprite(tft)
+	{}
+
+    void* getPointer(void)
+	{
+		if (!_created) return nullptr;
+		return _img8_1;
+	}
+
+	void createPalette(uint16_t *palette = nullptr, uint8_t colors = 16)
+	{}
+};
+
+Wio_eSprite spr = Wio_eSprite(&tft);
+#else
 TFT_eSprite spr = TFT_eSprite(&tft);
+#endif
 
 #define POLYPHONY 4
 
@@ -51,6 +85,22 @@ static Uint8 uxn_font[][8] = {	// there is already a variable named "font" in TF
 	{0x00, 0x7c, 0x82, 0x80, 0xf0, 0x80, 0x82, 0x7c},
 	{0x00, 0x7c, 0x82, 0x80, 0xf0, 0x80, 0x80, 0x80}};
 
+#ifdef WIO_TERMINAL
+extern "C" {
+/*static*/ void
+console_printf(const char* format, ...)
+{
+	va_list args;
+	va_start(args, format);   
+
+	char buf[50];
+    vsnprintf(buf, 50, format, args);
+    Serial.println(buf);
+	va_end(args);   
+}
+}
+#endif
+
 int
 clamp(int val, int min, int max)
 {
@@ -68,7 +118,7 @@ quit()
 static void
 error(char *msg, const char *err)
 {
-	fprintf(stderr, "%s: %s\n", msg, err);
+	console_printf("%s: %s\n", msg, err);
 	quit();
 }
 
@@ -122,8 +172,10 @@ uxn_init(void)
 {
 	if(!ppu_init(ppu, hor, ver))
 		error("PPU", "Init failure");
+#ifndef WIO_TERMINAL
 	if(!initaudio(audio_callback))
 		error("Audio", "Init failure");
+#endif
 	ppu->pixels = (Uint8*)spr.getPointer();
 	return 1;
 }
@@ -167,8 +219,12 @@ system_talk(Device *d, Uint8 b0, Uint8 w)
 static void
 console_talk(Device *d, Uint8 b0, Uint8 w)
 {
+#ifdef WIO_TERMINAL
+	Serial.write(b0);
+#else
 	if(w && b0 > 0x7)
 		write(b0 - 0x7, (char *)&d->dat[b0], 1);
+#endif
 }
 
 static void
@@ -197,7 +253,7 @@ static void
 audio_talk(Device *d, Uint8 b0, Uint8 w)
 {
 	Apu *c = apu[d - devaudio0];
-	#warning Replace the following line by something else if we can't open the I2S sound output ?
+	#warning Replace the following line by something else if we cannot open the I2S sound output ?
 	//if(!audio_id) return;
 	if(!w) {
 		if(b0 == 0x2)
@@ -274,7 +330,7 @@ static const char *errors[] = {"underflow", "overflow", "division by zero"};
 int
 uxn_halt(Uxn *u, Uint8 error, char *name, int id)
 {
-	fprintf(stderr, "Halted: %s %s#%04x, at 0x%04x\n", name, errors[error - 1], id, u->ram.ptr);
+	console_printf("Halted: %s %s#%04x, at 0x%04x\n", name, errors[error - 1], id, u->ram.ptr);
 	u->ram.ptr = 0;
 	return 0;
 }
@@ -302,14 +358,64 @@ run(Uxn* u)
 	}
 }
 
+void
+print_dir(File d, uint8_t indent=0)
+{
+	while (true) {
+		File entry = d.openNextFile();
+		if (!entry) {
+			break;
+		}
+		for (uint8_t i = 0; i < indent; i++) {
+			Serial.print('  ');
+		}
+		Serial.print(entry.name());
+		if (entry.isDirectory()) {
+			Serial.print("/");
+			print_dir(entry, indent+1);
+		}
+		else {
+			Serial.print("\t\t");
+      		Serial.print(entry.size(), DEC);
+      		Serial.println(" bytes");
+		}
+		entry.close();
+	}
+}
+
+static void
+dir(char* path, int indent = 0)
+{
+	if (!SD.begin(SDCARD_SS_PIN, SDCARD_SPI, 4000000UL)) {
+		console_printf("SDcard initialization failed!");
+  	}
+	File d = SD.open(path);
+	print_dir(d);
+	d.close();
+}
+
 static int
 load(Uxn *u, char *filepath)
 {
+#if defined(WIO_TERMINAL)
+	//dir("/");
+
+	File f;
+	if (!(f = SD.open(filepath))) {
+		return 0;
+	}
+	Serial.print("Loading max. ");
+	Serial.print(sizeof(u->ram.dat) - PAGE_PROGRAM, HEX);
+	Serial.println(" bytes");
+	f.read(u->ram.dat + PAGE_PROGRAM, sizeof(u->ram.dat) - PAGE_PROGRAM);
+	f.close();
+#else
 	FILE *f;
 	if(!(f = fopen(filepath, "rb")))
 		return 0;
 	fread(u->ram.dat + PAGE_PROGRAM, sizeof(u->ram.dat) - PAGE_PROGRAM, 1, f);
-	fprintf(stderr, "Loaded %s\n", filepath);
+#endif
+	console_printf("Loaded %s\n", filepath);
 	return 1;
 }
 
@@ -317,6 +423,8 @@ void
 setup()
 {
 	Serial.begin(115200);
+	while (!Serial);
+	console_printf("uxn> ");
 	tft.init();
 	tft.setRotation(3);
 	tft.fillScreen(TFT_BLACK);
@@ -330,6 +438,12 @@ setup()
 
 #if defined(ESP32)
 	SPIFFS.begin();
+#endif
+
+#if defined(WIO_TERMINAL)
+	if (!SD.begin(SDCARD_SS_PIN, SDCARD_SPI, 4000000UL)) {
+        error("SDcard", "SDcard mount failed");
+    }
 #endif
 
 	if((u = (Uxn *)malloc(sizeof(Uxn))) == nullptr)
@@ -369,6 +483,8 @@ setup()
 	/* Write screen size to dev/screen */
 	mempoke16(devscreen->dat, 2, ppu->width);
 	mempoke16(devscreen->dat, 4, ppu->height);
+
+	Serial.println("Init complete.");
 	tft.println("Starting Uxn in 2 seconds");
 	delay(2000);
 }

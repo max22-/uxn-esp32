@@ -121,6 +121,8 @@ static void (*ops[])(Uxn *u) = {
 
 #pragma mark - Core
 
+void console_printf(const char* format, ...);
+
 int
 uxn_eval(Uxn *u, Uint16 vec)
 {
@@ -145,12 +147,14 @@ uxn_eval(Uxn *u, Uint16 vec)
 		} else {
 			pop8 = pop8_nokeep;
 		}
+		console_printf("Uxn: %02x\n", instr & 0x3f);
 		(*ops[instr & 0x3f])(u);
 		if(u->wst.error)
 			return uxn_halt(u, u->wst.error, "Working-stack", instr);
 		if(u->rst.error)
 			return uxn_halt(u, u->rst.error, "Return-stack", instr);
 	}
+	console_printf("Uxn: end-of-loop\n");
 	return 1;
 }
 
