@@ -1,16 +1,14 @@
 #include <time.h>
 #include <unistd.h>
 
-#include <Arduino.h>
-#include <TFT_eSPI.h>
 #include <SPI.h>
 #include <Seeed_Arduino_FS.h>
 
 extern "C" {
 #include "uxn.h"
-#include "devices/ppu.h"
 
 static Device *devsystem, *devconsole;
+static bool running = false;
 
 void
 console_printf(const char* format, ...)
@@ -18,8 +16,8 @@ console_printf(const char* format, ...)
 	va_list args;
 	va_start(args, format);   
 
-	char buf[50];
-    vsnprintf(buf, 50, format, args);
+	char buf[80];
+    vsnprintf(buf, 80, format, args);
     Serial.print(buf);
 	va_end(args);   
 }
@@ -34,27 +32,14 @@ uxn_halt(Uxn *u, Uint8 error, char *name, int id)
 }
 } // extern "C"
 
-static int
+#include "screen.h"
+#include "monitor.h"
+
+int
 error(char *msg, const char *err)
 {
 	console_printf("Error %s: %s\n", msg, err);
 	return 0;
-}
-
-static void
-inspect(Stack *s, char *name)
-{
-	Uint8 x, y;
-	console_printf("\n%s\n", name);
-	for(y = 0; y < 0x04; ++y) {
-		for(x = 0; x < 0x08; ++x) {
-			Uint8 p = y * 0x08 + x;
-			console_printf(
-				p == s->ptr ? "[%02x]" : " %02x ",
-				s->dat[p]);
-		}
-		console_printf("\n");
-	}
 }
 
 static int
@@ -70,8 +55,8 @@ system_talk(Device *d, Uint8 b0, Uint8 w)
 		case 0x2: d->u->wst.ptr = d->dat[0x2]; break;
 		case 0x3: d->u->rst.ptr = d->dat[0x3]; break;
 		case 0xe:
-			inspect(&d->u->wst, "Working-stack");
-			inspect(&d->u->rst, "Return-stack");
+			mon_inspect(&d->u->wst, "Working-stack");
+			mon_inspect(&d->u->rst, "Return-stack");
 			break;
 		case 0xf: return 0;
 		}
@@ -144,12 +129,8 @@ void
 uxn_run(Uxn *u)
 {
 	Uint16 vec = PAGE_PROGRAM;
+	running = true;
 	uxn_eval(u, vec);
-	while((!u->dev[0].dat[0xf]) && (read(0, &devconsole->dat[0x2], 1) > 0)) {
-		vec = peek16(devconsole->dat, 0);
-		if(!vec) vec = u->ram.ptr; /* continue after last BRK */
-		uxn_eval(u, vec);
-	}
 }
 
 int
@@ -166,13 +147,7 @@ uxn_load(Uxn *u, char *filepath)
 	return 1;
 }
 
-#include "monitor.h"
-
-TFT_eSPI tft = TFT_eSPI();
-TFT_eSprite spr = TFT_eSprite(&tft);
-
 Uxn u;
-Ppu ppu;
 
 char rom[] = "/uxn/bin/hello.rom";
 
@@ -186,7 +161,7 @@ uxn_setup(Uxn* u, char* rom)
 
 	/* system   */ devsystem = uxn_port(u, 0x0, system_talk);
 	/* console  */ devconsole = uxn_port(u, 0x1, console_talk);
-	/* empty    */ uxn_port(u, 0x2, nil_talk);
+	/* empty       uxn_port(u, 0x2, nil_talk); */
 	/* empty    */ uxn_port(u, 0x3, nil_talk);
 	/* empty    */ uxn_port(u, 0x4, nil_talk);
 	/* empty    */ uxn_port(u, 0x5, nil_talk);
@@ -214,21 +189,11 @@ setup()
 		console_printf("SDcard initialization failed!");
   	}
 
-	tft.init();
-	tft.setRotation(3);
-	tft.fillScreen(TFT_BLACK);
-	tft.setCursor(0, 0);
-	tft.setTextColor(TFT_GREEN);
-	spr.setColorDepth(4);
-/*
-	if (spr.createSprite(8 * hor, 8 * ver) == NULL) {
-		error("tTFT_eSPI", "Cannot create sprite");
-		quit();
-	}
-*/
     if (!uxn_setup(&u, rom)) {
         return;
     }
+
+	screen_init(&u);
 
     mon_init();
 	//uxn_run(&u);
@@ -238,8 +203,29 @@ void
 loop()
 {
     char c;
+
+	if (devsystem->dat[0xf]) {
+		if (running) {
+			screen_redraw(&u);
+			running = false;
+			error("Run", "Ended.");
+		}
+	}
+
     if (Serial.available() > 0) {
         c = Serial.read();
-        mon_onechar(&u, c);
+		if (!running) {
+	        mon_onechar(&u, c);
+		}
+		else
+		if (c == 0x18) { // CTRL-X
+			running = false;
+			error("Run", "Quit.");
+		}
+		else {
+			devconsole->dat[0x2] = c;
+			uxn_eval(&u, devconsole->vector);
+		}
     }
+	screen_loop(&u);
 }

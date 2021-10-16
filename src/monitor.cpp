@@ -15,6 +15,8 @@ void uxn_run(Uxn *u);
 #define LINE_LENGTH 40
 static char line[LINE_LENGTH];
 static int cursor = 0;
+static bool is_edit = false;
+static short start;
 
 static void
 diss(uint8_t* mem, uint16_t addr)
@@ -83,12 +85,28 @@ dump(uint8_t* mem, uint16_t addr)
 static void
 print_line()
 {
-    Serial.print("\ruxn> ");
+    Serial.print(is_edit ? "\r...> " : "\ruxn> ");
     for (int i = 0; i < LINE_LENGTH; i++) {
         Serial.print(' ');
     }
-    Serial.print("\ruxn> ");
+    Serial.print(is_edit ? "\r...> " : "\ruxn> ");
     Serial.print(line);
+}
+
+void
+mon_inspect(Stack *s, char *name)
+{
+	Uint8 x, y;
+	console_printf("\n%s\n", name);
+	for(y = 0; y < 0x04; ++y) {
+		for(x = 0; x < 0x08; ++x) {
+			Uint8 p = y * 0x08 + x;
+			console_printf(
+				p == s->ptr ? "[%02x]" : " %02x ",
+				s->dat[p]);
+		}
+		console_printf("\n");
+	}
 }
 
 void
@@ -98,10 +116,25 @@ mon_init()
 }
 
 static void
+edit(Uxn* u, char* line) {
+    char* prev;
+    uint8_t byte;
+
+    while (true) {
+        prev = line;
+        byte = strtoul(line, &line, 16);
+        if (prev < line) {
+            u->ram.dat[start++] = byte;
+        }
+        else {
+            break;
+        }
+    }
+}
+
+static void
 monitor(Uxn* u, char* line)
 {
-    short start;
-
     switch (line[0]) {
         case 'l':
             uxn_load(u, line+1);
@@ -116,6 +149,10 @@ monitor(Uxn* u, char* line)
         case ';':
             start = 0xffff & strtoul(line+1, NULL, 16);
             diss(u->ram.dat, start);
+            break;
+        case 'e':
+            start = 0xffff & strtoul(line+1, NULL, 16);
+            is_edit = true;
             break;
         default:
             console_printf("Unknown '%c'. Try (l)oad, (r)un, (.)dump, (;)disass.\n", line[0]);
@@ -136,11 +173,19 @@ mon_onechar(Uxn* u, char c)
     if (c == 0x0a) {
         Serial.println();
         cursor = 0;
-        monitor(u, line);
+        if (line[0] == '\0') {
+            is_edit = false;
+        }
+        if (is_edit) {
+            edit(u, line);
+        }
+        else {
+            monitor(u, line);
+        }
         line[0] = '\0';
     }
     else
-    if (cursor < LINE_LENGTH && ((c >= '0' && c <= 'z') || c == '/' || c == '.')) {
+    if (cursor < LINE_LENGTH && ((c >= '0' && c <= 'z') || c == '/' || c == '.' || c == ' ')) {
         line[cursor++] = c;
         line[cursor] = '\0';
     }
