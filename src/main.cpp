@@ -7,8 +7,6 @@ extern "C" {
 }
 
 static const char *rom = "/spiffs/screen.rom";
-#define WIDTH 320
-#define HEIGHT 240
 
 static TFT_eSPI tft = TFT_eSPI();
 static TFT_eSprite screen_sprite(&tft);
