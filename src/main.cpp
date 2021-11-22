@@ -3,12 +3,17 @@
 #include <SPIFFS.h>
 extern "C" {
   #include "uxn.h"
+  #include "devices/ppu.h"
 }
 
-static const char *rom = "/spiffs/console.rom";
+static const char *rom = "/spiffs/screen.rom";
+#define WIDTH 320
+#define HEIGHT 240
 
 static TFT_eSPI tft = TFT_eSPI();
-static Device *devsystem, *devconsole;
+static TFT_eSprite screen_sprite(&tft);
+static Ppu ppu;
+static Device *devsystem, *devconsole, *devscreen;
 
 static void
 error(const char *msg, const char *err)
@@ -22,20 +27,33 @@ error(const char *msg, const char *err)
     delay(1000);
 }
 
-static void
-inspect(Stack *s, const char *name)
+void
+set_palette(Uint8 *addr)
 {
-	Uint8 x, y;
-	fprintf(stderr, "\n%s\n", name);
-	for(y = 0; y < 0x04; ++y) {
-		for(x = 0; x < 0x08; ++x) {
-			Uint8 p = y * 0x08 + x;
-			fprintf(stderr,
-				p == s->ptr ? "[%02x]" : " %02x ",
-				s->dat[p]);
-		}
-		fprintf(stderr, "\n");
+	int i;
+	Uint16 palette[16];
+	for(i = 0; i < 4; ++i) {
+		Uint8
+			r = (*(addr + i / 2) >> (!(i % 2) << 2)) & 0x0f,
+			g = (*(addr + 2 + i / 2) >> (!(i % 2) << 2)) & 0x0f,
+			b = (*(addr + 4 + i / 2) >> (!(i % 2) << 2)) & 0x0f;
+		palette[i] = (r << 12) | (g << 7) | (b << 1);
+		screen_sprite.setPaletteColor(i, palette[i]);
 	}
+	for(i = 4; i < 16; ++i) {
+		palette[i] = palette[i / 4];
+		screen_sprite.setPaletteColor(i, palette[i]);
+	}
+	ppu.reqdraw = 1;
+}
+
+static void
+redraw(Uxn *u)
+{
+	if(devsystem->dat[0xe])
+		ppu_debug(&ppu, u->wst.dat, u->wst.ptr, u->rst.ptr, u->ram.dat);
+	screen_sprite.pushSprite(0, 0);
+	ppu.reqdraw = 0;
 }
 
 static Uint8
@@ -54,11 +72,9 @@ system_deo(Device *d, Uint8 port)
 	switch(port) {
 	case 0x2: d->u->wst.ptr = d->dat[port]; break;
 	case 0x3: d->u->rst.ptr = d->dat[port]; break;
-	case 0xe:
-		inspect(&d->u->wst, "Working-stack");
-		inspect(&d->u->rst, "Return-stack");
-		break;
 	}
+	if(port > 0x7 && port < 0xe)
+		set_palette(&d->dat[0x8]);
 }
 
 static void
@@ -68,6 +84,57 @@ console_deo(Device *d, Uint8 port)
 		d->vector = peek16(d->dat, 0x0);
 	if(port > 0x7)
 		write(port - 0x7, (char *)&d->dat[port], 1);
+}
+
+static Uint8
+screen_dei(Device *d, Uint8 port)
+{
+	switch(port) {
+	case 0x2: return ppu.width >> 8;
+	case 0x3: return ppu.width;
+	case 0x4: return ppu.height >> 8;
+	case 0x5: return ppu.height;
+	default: return d->dat[port];
+	}
+}
+
+static void
+screen_deo(Device *d, Uint8 port)
+{
+	switch(port) {
+	case 0x1: d->vector = peek16(d->dat, 0x0); break;
+	case 0x5:
+		/*
+		if(!FIXED_SIZE) set_size(peek16(d->dat, 0x2), peek16(d->dat, 0x4), 1);
+		Not supported for little devices :)
+		*/
+		break;
+	case 0xe: {
+		Uint16 x = peek16(d->dat, 0x8);
+		Uint16 y = peek16(d->dat, 0xa);
+		Uint8 layer = d->dat[0xe] & 0x40;
+		ppu_write(&ppu, !!layer, x, y, d->dat[0xe] & 0x3);
+		if(d->dat[0x6] & 0x01) poke16(d->dat, 0x8, x + 1); /* auto x+1 */
+		if(d->dat[0x6] & 0x02) poke16(d->dat, 0xa, y + 1); /* auto y+1 */
+		break;
+	}
+	case 0xf: {
+		Uint16 x = peek16(d->dat, 0x8);
+		Uint16 y = peek16(d->dat, 0xa);
+		Uint8 layer = d->dat[0xf] & 0x40;
+		Uint8 *addr = &d->mem[peek16(d->dat, 0xc)];
+		if(d->dat[0xf] & 0x80) {
+			ppu_2bpp(&ppu, !!layer, x, y, addr, d->dat[0xf] & 0xf, d->dat[0xf] & 0x10, d->dat[0xf] & 0x20);
+			if(d->dat[0x6] & 0x04) poke16(d->dat, 0xc, peek16(d->dat, 0xc) + 16); /* auto addr+16 */
+		} else {
+			ppu_1bpp(&ppu, !!layer, x, y, addr, d->dat[0xf] & 0xf, d->dat[0xf] & 0x10, d->dat[0xf] & 0x20);
+			if(d->dat[0x6] & 0x04) poke16(d->dat, 0xc, peek16(d->dat, 0xc) + 8); /* auto addr+8 */
+		}
+		if(d->dat[0x6] & 0x01) poke16(d->dat, 0x8, x + 8); /* auto x+8 */
+		if(d->dat[0x6] & 0x02) poke16(d->dat, 0xa, y + 8); /* auto y+8 */
+		break;
+	}
+	}
 }
 
 static Uint8
@@ -104,12 +171,43 @@ load(Uxn *u, const char *filepath)
 	return 1;
 }
 
+static void
+run(Uxn *u)
+{
+  char c;
+  unsigned long ts, elapsed;
+  redraw(u);
+  while(!devsystem->dat[0xf]) {
+	ts = micros();
+	if(Serial.available() > 0) {
+		Serial.readBytes(&c, 1);
+		devconsole->dat[0x2] = c;
+		if(!uxn_eval(u, devconsole->vector))
+			error("Console", "eval failed");
+	}
+	uxn_eval(u, devscreen->vector);
+	if(ppu.reqdraw || devsystem->dat[0xe])
+	  redraw(u);
+	elapsed = micros() - ts;
+	if(elapsed < 16666)
+		delayMicroseconds(16666 - elapsed);
+
+  }
+}
+
 void setup() {
   Uxn *u;
+  Uint8 *pixels;
   Serial.begin(115200);
   tft.init();
   tft.setRotation(3);
   tft.fillScreen(TFT_BLACK);
+  screen_sprite.setColorDepth(4);
+  pixels = (Uint8*)screen_sprite.createSprite(tft.width(), tft.height());
+  if(pixels == NULL)
+	error("TFT_eSPI", "createSprite failed");
+  ppu_init(&ppu, tft.width(), tft.height(), pixels);
+  
   SPIFFS.begin();
 
   u = (Uxn*)malloc(sizeof(Uxn));
@@ -119,9 +217,9 @@ void setup() {
   if(!uxn_boot(u)) 
     error("Boot", "Failed");
 
-  /* system   */ devsystem = uxn_port(u, 0x0, system_dei, system_deo);
+    /* system   */ devsystem = uxn_port(u, 0x0, system_dei, system_deo);
 	/* console  */ devconsole = uxn_port(u, 0x1, nil_dei, console_deo);
-	/* empty    */ uxn_port(u, 0x2, nil_dei, nil_deo);
+	/* screen   */ devscreen = uxn_port(u, 0x2, screen_dei, screen_deo);
 	/* empty    */ uxn_port(u, 0x3, nil_dei, nil_deo);
 	/* empty    */ uxn_port(u, 0x4, nil_dei, nil_deo);
 	/* empty    */ uxn_port(u, 0x5, nil_dei, nil_deo);
@@ -141,8 +239,9 @@ void setup() {
 
   if(!uxn_eval(u, PAGE_PROGRAM))
     error("Init", "Failed");
+
+  run(u);
 }
 
 void loop() {
-  // put your main code here, to run repeatedly:
 }
