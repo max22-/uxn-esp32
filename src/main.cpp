@@ -18,7 +18,7 @@ static Device *devsystem, *devconsole, *devscreen;
 static void
 error(const char *msg, const char *err)
 {
-	fprintf(stderr, "Error %s: %s\n", msg, err);
+  fprintf(stderr, "Error %s: %s\n", msg, err);
   tft.fillScreen(TFT_BLACK);
   tft.setCursor(0, 0);
   tft.setTextColor(TFT_GREEN);
