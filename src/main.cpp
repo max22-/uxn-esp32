@@ -96,7 +96,7 @@ load(Uxn *u, const char *filepath)
 {
 	FILE *f;
 	int r;
-	if(!(f = fopen(filepath, "rb"))) {fprintf(stderr, "file not found"); return 0;}
+	if(!(f = fopen(filepath, "rb"))) return 0;
 	r = fread(u->ram.dat + PAGE_PROGRAM, 1, sizeof(u->ram.dat) - PAGE_PROGRAM, f);
 	fclose(f);
 	if(r < 1) return 0;
