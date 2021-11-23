@@ -10,11 +10,19 @@ Install [PlatforimIO Core](https://platformio.org/install/cli) if you want to us
 ```
 git clone https://github.com/max22-/uxn-esp32
 cd uxn-esp32
+pio run
+```
+
+Then edit [User_Setup.h](https://github.com/Bodmer/TFT_eSPI/blob/master/User_Setup.h) in the TFT_eSPI lib directory which should have appeared in .pio/libdeps/esp32dev/TFT_eSPI after the build is complete.
+
+Rename wifi_credentials.sample.h to wifi_credentials.h and modify its contents. Idem for the configuration at the top of main.cpp. Wifi is used only to get time from an NTP server for the datetime device. You can comment out USE_WIFI if you dan't want to use it.
+
+Then it is time to upload everything on the device :
+
+```
 pio run -t uploadfs
 pio run -t upload
 ```
-
-Do not forget to edit [User_Setup.h](https://github.com/Bodmer/TFT_eSPI/blob/master/User_Setup.h) in the TFT_eSPI lib directory (to configure the screen pins).
 
 I will try to make it buildable with Arduino IDE as well in the future.
 
@@ -22,4 +30,4 @@ The roms must be in the "data" folder. (they are uploaded with "pio run -t uploa
 
 # Devices available
 
-Console, screen, file. More to come later !
+Console, screen, file, datetime. More to come later !

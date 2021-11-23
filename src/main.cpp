@@ -7,7 +7,19 @@ extern "C" {
   #include "devices/file.h"
 }
 
-static const char *rom = "/spiffs/screen.rom";
+/********** Config ***********/
+#define USE_WIFI
+const char* ntp_server = "pool.ntp.org";
+const long gmt_offset_sec = 3600;
+const int daylight_offset_sec = 3600;
+static const char *rom = "/spiffs/datetime.rom";
+/*****************************/
+
+#ifdef USE_WIFI
+#include "WiFi.h"
+#include "wifi_credentials.h"
+#include "time.h"
+#endif
 
 static TFT_eSPI tft = TFT_eSPI();
 static TFT_eSprite screen_sprite(&tft);
@@ -150,6 +162,30 @@ file_deo(Device *d, Uint8 port)
 }
 
 static Uint8
+datetime_dei(Device *d, Uint8 port)
+{
+	time_t seconds = time(NULL);
+	struct tm zt = {0};
+	struct tm *t = localtime(&seconds);
+	if(t == NULL)
+		t = &zt;
+	switch(port) {
+	case 0x0: return (t->tm_year + 1900) >> 8;
+	case 0x1: return (t->tm_year + 1900);
+	case 0x2: return t->tm_mon;
+	case 0x3: return t->tm_mday;
+	case 0x4: return t->tm_hour;
+	case 0x5: return t->tm_min;
+	case 0x6: return t->tm_sec;
+	case 0x7: return t->tm_wday;
+	case 0x8: return t->tm_yday >> 8;
+	case 0x9: return t->tm_yday;
+	case 0xa: return t->tm_isdst;
+	default: return d->dat[port];
+	}
+}
+
+static Uint8
 nil_dei(Device *d, Uint8 port)
 {
 	return d->dat[port];
@@ -214,6 +250,21 @@ void setup() {
   tft.init();
   tft.setRotation(3);
   tft.fillScreen(TFT_BLACK);
+  tft.setTextColor(TFT_GREEN);
+  tft.setCursor(0, 0);
+
+#ifdef USE_WIFI
+  tft.printf("Connecting to \"%s\"", WIFI_SSID);
+  WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
+  while(WiFi.status() != WL_CONNECTED) {
+	  delay(500);
+	  tft.print(".");
+  }
+  WiFi.setAutoReconnect(true);
+  Serial.println("Connected.");
+  configTime(gmt_offset_sec, daylight_offset_sec, ntp_server);
+#endif
+
   screen_sprite.setColorDepth(4);
   pixels = (Uint8*)screen_sprite.createSprite(tft.width(), tft.height());
   if(pixels == NULL)
@@ -240,7 +291,7 @@ void setup() {
 	/* empty    */ uxn_port(u, 0x8, nil_dei, nil_deo);
 	/* empty    */ uxn_port(u, 0x9, nil_dei, nil_deo);
 	/* empty    */ uxn_port(u, 0xa, nil_dei, file_deo);
-	/* empty    */ uxn_port(u, 0xb, nil_dei, nil_deo);
+	/* datetime */ uxn_port(u, 0xb, datetime_dei, nil_deo);
 	/* empty    */ uxn_port(u, 0xc, nil_dei, nil_deo);
 	/* empty    */ uxn_port(u, 0xd, nil_dei, nil_deo);
 	/* empty    */ uxn_port(u, 0xe, nil_dei, nil_deo);
