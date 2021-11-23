@@ -14,7 +14,7 @@ pio run -t uploadfs
 pio run -t upload
 ```
 
-Do not forget to edit User_Setup.h in the TFT_eSPI lib directory (to configure the screen pins).
+Do not forget to edit [User_Setup.h](https://github.com/Bodmer/TFT_eSPI/blob/master/User_Setup.h) in the TFT_eSPI lib directory (to configure the screen pins).
 
 I will try to make it buildable with Arduino IDE as well in the future.
 
