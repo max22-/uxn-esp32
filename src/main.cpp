@@ -8,11 +8,11 @@ extern "C" {
 }
 
 /********** Config ***********/
-#define USE_WIFI
+#include "config.h"
 const char* ntp_server = "pool.ntp.org";
 const long gmt_offset_sec = 3600;
 const int daylight_offset_sec = 3600;
-static const char *rom = "/spiffs/datetime.rom";
+static const char *rom = "/spiffs/left.rom";
 /*****************************/
 
 #ifdef USE_WIFI
@@ -20,6 +20,9 @@ static const char *rom = "/spiffs/datetime.rom";
 #include "wifi_credentials.h"
 #include "time.h"
 #endif
+
+int devctrl_init();
+int devctrl_handle(Uxn *u);
 
 static TFT_eSPI tft = TFT_eSPI();
 static TFT_eSprite screen_sprite(&tft);
@@ -233,6 +236,7 @@ run(Uxn *u)
 		if(!uxn_eval(u, devconsole->vector))
 			error("Console", "eval failed");
 	}
+	devctrl_handle(u);
 	uxn_eval(u, devscreen->vector);
 	if(ppu.reqdraw || devsystem->dat[0xe])
 	  redraw(u);
@@ -252,6 +256,8 @@ void setup() {
   tft.fillScreen(TFT_BLACK);
   tft.setTextColor(TFT_GREEN);
   tft.setCursor(0, 0);
+
+  devctrl_init();
 
 #ifdef USE_WIFI
   tft.printf("Connecting to \"%s\"", WIFI_SSID);
@@ -280,22 +286,22 @@ void setup() {
   if(!uxn_boot(u)) 
     error("Boot", "Failed");
 
-    /* system   */ devsystem = uxn_port(u, 0x0, system_dei, system_deo);
-	/* console  */ devconsole = uxn_port(u, 0x1, nil_dei, console_deo);
-	/* screen   */ devscreen = uxn_port(u, 0x2, screen_dei, screen_deo);
-	/* empty    */ uxn_port(u, 0x3, nil_dei, nil_deo);
-	/* empty    */ uxn_port(u, 0x4, nil_dei, nil_deo);
-	/* empty    */ uxn_port(u, 0x5, nil_dei, nil_deo);
-	/* empty    */ uxn_port(u, 0x6, nil_dei, nil_deo);
-	/* empty    */ uxn_port(u, 0x7, nil_dei, nil_deo);
-	/* empty    */ uxn_port(u, 0x8, nil_dei, nil_deo);
-	/* empty    */ uxn_port(u, 0x9, nil_dei, nil_deo);
-	/* empty    */ uxn_port(u, 0xa, nil_dei, file_deo);
-	/* datetime */ uxn_port(u, 0xb, datetime_dei, nil_deo);
-	/* empty    */ uxn_port(u, 0xc, nil_dei, nil_deo);
-	/* empty    */ uxn_port(u, 0xd, nil_dei, nil_deo);
-	/* empty    */ uxn_port(u, 0xe, nil_dei, nil_deo);
-	/* empty    */ uxn_port(u, 0xf, nil_dei, nil_deo);
+    /* system     */ devsystem = uxn_port(u, 0x0, system_dei, system_deo);
+	/* console    */ devconsole = uxn_port(u, 0x1, nil_dei, console_deo);
+	/* screen     */ devscreen = uxn_port(u, 0x2, screen_dei, screen_deo);
+	/* empty      */ uxn_port(u, 0x3, nil_dei, nil_deo);
+	/* empty      */ uxn_port(u, 0x4, nil_dei, nil_deo);
+	/* empty      */ uxn_port(u, 0x5, nil_dei, nil_deo);
+	/* empty      */ uxn_port(u, 0x6, nil_dei, nil_deo);
+	/* empty      */ uxn_port(u, 0x7, nil_dei, nil_deo);
+	/* controller */ uxn_port(u, 0x8, nil_dei, nil_deo);
+	/* empty      */ uxn_port(u, 0x9, nil_dei, nil_deo);
+	/* empty      */ uxn_port(u, 0xa, nil_dei, file_deo);
+	/* datetime   */ uxn_port(u, 0xb, datetime_dei, nil_deo);
+	/* empty      */ uxn_port(u, 0xc, nil_dei, nil_deo);
+	/* empty      */ uxn_port(u, 0xd, nil_dei, nil_deo);
+	/* empty      */ uxn_port(u, 0xe, nil_dei, nil_deo);
+	/* empty      */ uxn_port(u, 0xf, nil_dei, nil_deo);
 
   if(!load(u, rom))
     error("Load", "Failed");
