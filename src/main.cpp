@@ -12,7 +12,7 @@ extern "C" {
 const char* ntp_server = "pool.ntp.org";
 const long gmt_offset_sec = 3600;
 const int daylight_offset_sec = 3600;
-static const char *rom = "/spiffs/left.rom";
+static const char *rom = "/spiffs/bunnymark.rom";
 /*****************************/
 
 #ifdef USE_WIFI
@@ -23,8 +23,10 @@ static const char *rom = "/spiffs/left.rom";
 
 int devctrl_init();
 int devctrl_handle(Uxn *u);
+int devmouse_init();
+int devmouse_handle(Uxn *u);
 
-static TFT_eSPI tft = TFT_eSPI();
+TFT_eSPI tft = TFT_eSPI();
 static TFT_eSprite screen_sprite(&tft);
 static Ppu ppu;
 static Device *devsystem, *devconsole, *devscreen;
@@ -237,6 +239,7 @@ run(Uxn *u)
 			error("Console", "eval failed");
 	}
 	devctrl_handle(u);
+	devmouse_handle(u);
 	uxn_eval(u, devscreen->vector);
 	if(ppu.reqdraw || devsystem->dat[0xe])
 	  redraw(u);
@@ -258,6 +261,7 @@ void setup() {
   tft.setCursor(0, 0);
 
   devctrl_init();
+  devmouse_init();
 
 #ifdef USE_WIFI
   tft.printf("Connecting to \"%s\"", WIFI_SSID);
@@ -295,7 +299,7 @@ void setup() {
 	/* empty      */ uxn_port(u, 0x6, nil_dei, nil_deo);
 	/* empty      */ uxn_port(u, 0x7, nil_dei, nil_deo);
 	/* controller */ uxn_port(u, 0x8, nil_dei, nil_deo);
-	/* empty      */ uxn_port(u, 0x9, nil_dei, nil_deo);
+	/* mouse      */ uxn_port(u, 0x9, nil_dei, nil_deo);
 	/* empty      */ uxn_port(u, 0xa, nil_dei, file_deo);
 	/* datetime   */ uxn_port(u, 0xb, datetime_dei, nil_deo);
 	/* empty      */ uxn_port(u, 0xc, nil_dei, nil_deo);

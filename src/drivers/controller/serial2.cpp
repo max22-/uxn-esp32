@@ -1,7 +1,10 @@
 #include <Arduino.h>
+#include "config.h"
 extern "C" {
 #include <uxn.h>
 }
+
+#ifdef USE_SERIAL2
 
 int 
 devctrl_init()
@@ -21,3 +24,5 @@ devctrl_handle(Uxn *u)
     }
     return 1;
 }
+
+#endif
