@@ -30,4 +30,4 @@ The roms must be in the "data" folder. (they are uploaded with "pio run -t uploa
 
 # Devices available
 
-Console, screen, file, datetime. More to come later !
+Console, screen, file, datetime, mouse (touch screen). More to come later !
