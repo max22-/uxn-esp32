@@ -21,6 +21,7 @@ static char *rom = "/spiffs/bunnymark.rom";
 #include "time.h"
 #endif
 
+int specific_boot();
 int devscreen_init();
 int devscreen_redraw();
 int devctrl_init();
@@ -131,7 +132,7 @@ run(Uxn *u)
 }
 
 void setup() {
-  Serial.begin(115200);
+  specific_boot();
 
   devscreen_init();
   devctrl_init();

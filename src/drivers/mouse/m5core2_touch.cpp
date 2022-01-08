@@ -1,19 +1,14 @@
 #include "config.h"
-#ifdef USE_TOUCH_SCREEN
+#ifdef USE_M5CORE2_TOUCH
 
-#include <Arduino.h>
-#include <TFT_eSPI.h>
+#include <M5Core2.h>
 extern "C" {
 #include <uxn.h>
 #include <devices/mouse.h>
 }
 
-extern TFT_eSPI tft;
-
 int 
 devmouse_init() {
-    uint16_t calData[5] = CAL_DATA;
-    tft.setTouch(calData);
     return 1;
 }
 
@@ -23,8 +18,7 @@ devmouse_handle(Device *d) {
   static Uint8 old_pressed = 0;
   Uint8 pressed = 0;
 
-  /* The pressed/released state is not really stable (at least on the screen i have tested) */
-  if (tft.getTouch(&x, &y)) {
+  if (M5.Lcd.getTouch(&x, &y)) {
     mouse_pos(d, x, y);
     pressed = 1;
   }

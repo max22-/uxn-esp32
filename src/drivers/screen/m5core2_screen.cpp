@@ -1,7 +1,7 @@
 #include "config.h"
-#ifdef USE_TFT_ESPI
+#ifdef USE_M5CORE2_SCREEN
 
-#include <TFT_eSPI.h>
+#include <M5Core2.h>
 extern "C" {
     #include <uxn.h>
     #include <devices/screen.h>
@@ -9,21 +9,17 @@ extern "C" {
 
 extern void error(const char *msg, const char *err);
 
-TFT_eSPI tft = TFT_eSPI();
 Uint16 *line;
 
-int 
+int
 devscreen_init() {
-  tft.begin();
-  tft.initDMA();
-  tft.setRotation(3);
-  tft.fillScreen(TFT_BLACK);
-  tft.setTextColor(TFT_GREEN);
-  tft.setCursor(0, 0);
-  line = (Uint16*)heap_caps_malloc(tft.width() * sizeof(Uint16), MALLOC_CAP_8BIT | MALLOC_CAP_DMA);
+  M5.Lcd.fillScreen(BLACK);
+  M5.Lcd.setTextColor(TFT_GREEN);
+  M5.Lcd.setCursor(0, 0);
+  line = (Uint16*)heap_caps_malloc(M5.Lcd.width() * sizeof(Uint16), MALLOC_CAP_8BIT | MALLOC_CAP_DMA);
   if(line == NULL)
     error("devscreen_init", "not enough memory");
-  screen_resize(&uxn_screen, tft.width(), tft.height());
+  screen_resize(&uxn_screen, M5.Lcd.width(), M5.Lcd.height());
   if(uxn_screen.pixels == NULL)
     error("devscreen_init", "not enough memory");
   return 1;
@@ -40,11 +36,12 @@ devscreen_redraw() {
 
 	for(i = 0; i < 16; i++) {
     c = uxn_screen.palette[(i >> 2) ? (i >> 2) : (i & 3)];
-    palette[i] = c >> 8 | c << 8; /* We swap bytes for the tft screen */
+    //palette[i] = c >> 8 | c << 8; /* We swap bytes for the tft screen */
+    palette[i] = c;
   }
 
-  tft.startWrite();
-  tft.setAddrWindow(0, 0, w, h);
+  M5.Lcd.startWrite();
+  M5.Lcd.setWindow(0, 0, w, h);
 
   /* TODO: write  more efficient loop */
   /* but it is not the bottleneck (the SPI port IS) */
@@ -57,12 +54,12 @@ devscreen_redraw() {
       line[x+1] = palette[p2];
     }
     /*Serial.printf("Busy ? %s\n", tft.dmaBusy() ? "true" : "false");*/
-    tft.pushPixelsDMA(line, w);
+    M5.Lcd.writePixels(line, w);
   }
-  tft.endWrite();
+  M5.Lcd.endWrite();
   uxn_screen.changed = 0;
-  /* Serial.printf("\n%ld us\n", micros() - timestamp); */
-  return 1;
+   Serial.printf("\n%ld us\n", micros() - timestamp); 
+  return 1; 
 }
 
 #endif
