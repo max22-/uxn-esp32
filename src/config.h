@@ -3,6 +3,10 @@
 
 #define USE_WIFI
 
+/********* devscreen *********/
+#define USE_TFT_ESPI
+/*****************************/
+
 /********** devctrl **********/
 //#define USE_NUNCHUCK
 #define USE_SERIAL2

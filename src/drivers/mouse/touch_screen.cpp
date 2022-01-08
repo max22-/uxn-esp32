@@ -3,6 +3,7 @@
 #include "config.h"
 extern "C" {
 #include <uxn.h>
+#include <devices/mouse.h>
 }
 
 #ifdef USE_TOUCH_SCREEN
@@ -17,25 +18,25 @@ devmouse_init() {
 }
 
 int
-devmouse_handle(Uxn *u) {
-  Device *devmouse = &u->dev[0x9];
+devmouse_handle(Device *d) {
   Uint16 x, y;
-  Uint8 eval_flag = 0;
-  static Uint8 pressed = 0;
+  static Uint8 old_pressed = 0;
+  Uint8 pressed = 0;
 
   /* The pressed/released state is not really stable (at least on the screen i have tested) */
   if (tft.getTouch(&x, &y)) {
-    poke16(devmouse->dat, 0x2, x);
-    poke16(devmouse->dat, 0x4, y);
-    eval_flag = 1;
+    mouse_pos(d, x, y);
     pressed = 1;
-  } else {
-    eval_flag = pressed == 1;
-    pressed = 0;
   }
-  devmouse->dat[0x6] = pressed;
-  if(eval_flag)
-    uxn_eval(u, devmouse->vector);
+
+  if(pressed != old_pressed) {
+    if(pressed)
+      mouse_down(d, 0x1);
+    else
+      mouse_up(d, 0x1);
+  }
+
+  old_pressed = pressed;
 
   return 1;
 }
