@@ -13,7 +13,8 @@
 
 /********** devctrl **********/
 //#define USE_NUNCHUCK
-#define USE_SERIAL2
+//#define USE_SERIAL2
+#define USE_M5CORE2_BUTTONS
 /*****************************/
 
 /********** devmouse *********/
