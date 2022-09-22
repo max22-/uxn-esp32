@@ -1,0 +1,11 @@
+pcm.!default {
+	type file
+	slave.pcm null
+	file /proc/self/fd/3
+	format "raw"
+}
+
+pcm.null {
+	type null
+}
+

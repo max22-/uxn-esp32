@@ -1,0 +1,15 @@
+@check-rom ( filename* -- 00 if the file doesn't exist or not a valid ROM
+                       OR 01 if the ROM seems to be valid )
+	.File/name DEO2
+	#0001 .File/length DEO2
+	;&first-char .File/read DEO2
+
+	( did the file read okay? )
+	.File/success DEI2 ORA
+
+	( is the first character a LIT, LIT2, LITk or LIT2k? )
+	LIT &first-char $1 #9f AND #80 EQU
+
+	AND
+	JMP2r
+

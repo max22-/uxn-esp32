@@ -1,0 +1,243 @@
+%BYE { #01 .System/halt DEO BRK }
+%DEBUG { #ab .System/debug DEO }
+%IN-RANGE { ROT INCk SWP SUB2 GTH }
+%MOD { DIVk MUL SUB }
+%MOD2 { DIV2k MUL2 SUB2 }
+%NL { #0a .Console/write DEO }
+%SP { #20 .Console/write DEO }
+
+@print-string ( string* -- )
+	LDAk ,&not-end JCN
+	POP2 JMP2r
+	&not-end
+	LDAk .Console/write DEO
+	INC2
+	,print-string JMP
+
+@print-short-decimal ( short* -- )
+	#03e8 DIV2k
+		DUP ,print-byte-decimal/second JSR
+		MUL2 SUB2
+	#0064 DIV2k
+		DUP ,print-byte-decimal/third JSR
+		MUL2 SUB2
+	NIP ,print-byte-decimal/second JMP
+
+@print-byte-decimal ( byte -- )
+	#64 DIVk DUP #30 ADD .Console/write DEO MUL SUB
+	&second
+	#0a DIVk DUP #30 ADD .Console/write DEO MUL SUB
+	&third
+	             #30 ADD .Console/write DEO
+	JMP2r
+
+@print-32z-hex ( 32-zp -- )
+	#00 SWP
+	,print-32-hex JMP
+
+@print-64z-hex ( 64-zp -- )
+	#00 SWP
+	( fall through )
+
+@print-64-hex ( 64-ptr* -- )
+	DUP2 #0004 ADD2 SWP2 ( lo32-ptr* hi32-ptr* )
+	,print-32-hex JSR
+	( fall through )
+
+@print-32-hex ( 32-ptr* -- )
+	INC2k INC2 SWP2 ( lo-ptr* hi-ptr* )
+	LDA2 ,print-short-hex JSR
+	LDA2 ( fall through )
+
+@print-short-hex ( short* -- )
+	SWP ,print-byte-hex JSR
+	( fall through )
+
+@print-byte-hex ( byte -- )
+	DUP #04 SFT ,print-nibble-hex JSR
+	#0f AND ( fall through )
+
+@print-nibble-hex ( nibble -- )
+	#30 ADD DUP #39 GTH #07 MUL ADD .Console/write DEO
+	JMP2r
+
+@next-input-byte ( -- number 00
+                   OR 01 at end of file )
+	,next-input-short JSR ,&eof JCN
+	NIP #00
+	JMP2r
+
+	&eof
+	#01
+	JMP2r
+
+@next-input-short ( -- number* 00
+                    OR 01 at end of file )
+	LIT2 &ptr :heap
+	LIT2r 0000
+	&ffwd
+	LDAk #3039 IN-RANGE ,&number JCN
+	INC2k SWP2 LDA ,&ffwd JCN
+	( eof )
+	POP2 POP2r
+	;heap ,&ptr STR2
+	#01 JMP2r
+
+	&number
+	LIT2r 000a MUL2r
+	LDAk #30 SUB #00 STH STH ADD2r
+	INC2
+	LDAk #3039 IN-RANGE ,&number JCN
+
+	,&ptr STR2
+	STH2r #00
+	JMP2r
+
+@add64 ( dest-ptr* src-ptr* -- carry )
+	OVR2 #0004 ADD2 OVR2 #0004 ADD2
+	,add32 JSR
+	( fall through )
+
+@adc32 ( dest-ptr* src-ptr* carry -- carry )
+	STH
+	OVR2 #0002 ADD2 OVR2 #0002 ADD2
+	STHr ,adc16 JSR
+	,adc16 JMP ( tail call )
+
+@add64z ( dest-zp src-zp -- carry )
+	OVR #04 ADD OVR #04 ADD
+	,add32z JSR
+	( fall through )
+
+@adc32z ( dest-zp src-zp carry -- carry )
+	STH
+	OVR #02 ADD OVR #02 ADD
+	STHr ,adc16z JSR
+	,adc16z JMP ( tail call )
+
+@add32z-short ( dest-zp src* -- carry )
+	#00 SWP SWP2 ROT
+	( fall through )
+
+@add32-short ( dest-ptr* src* -- carry )
+	,&short STR2
+	;&src ,add32 JMP ( tail call )
+
+	&src 0000 &short 0000
+
+@add32 ( dest-ptr* src-ptr* -- carry )
+	OVR2 #0002 ADD2 OVR2 #0002 ADD2
+	,add16 JSR
+	( fall through )
+
+@adc16 ( dest-ptr* src-ptr* carry -- carry )
+	#00 EQU ,add16 JCN
+	OVR2 ;&one ,add16 JSR STH
+	,add16 JSR
+	STHr ORA
+	JMP2r
+
+	&one 0001
+
+@add16 ( dest-ptr* src-ptr* -- carry )
+	OVR2 LDA2 DUP2 ROT2 LDA2 ( dest-ptr* dest* dest* src* )
+	ADD2 GTH2k STH NIP2 ( dest-ptr* sum* / carry )
+	SWP2 STA2 STHr ( carry )
+	JMP2r
+
+@add32z ( dest-zp src-zp -- carry )
+	OVR #02 ADD OVR #02 ADD
+	,add16z JSR
+	( fall through )
+
+@adc16z ( dest-zp src-zp carry -- carry )
+	#00 EQU ,add16z JCN
+	OVR #00 SWP ;adc16/one ,add16 JSR STH
+	,add16z JSR
+	STHr ORA
+	JMP2r
+
+@add16z ( dest-zp src-zp -- carry )
+	OVR LDZ2 ROT LDZ2 OVR2 ( dest-zp dest* src* dest* )
+	ADD2 GTH2k STH NIP2 ( dest-zp sum* / carry )
+	ROT STZ2 STHr ( carry )
+	JMP2r
+
+@gth64 ( left-ptr* right-ptr* -- 01 if left > right
+                              OR 00 otherwise )
+	OVR2 OVR2 ,gth32 JSR ,&greater JCN
+	OVR2 OVR2 SWP2 ,gth32 JSR ,&less JCN
+	#0004 ADD2 SWP2 #0004 ADD2 SWP2 ,gth32 JMP ( tail call )
+
+	&greater POP2 POP2 #01 JMP2r
+	&less    POP2 POP2 #00 JMP2r
+
+@gth32z ( left-zp* right-zp* -- 01 if left > right
+                             OR 00 otherwise )
+	#00 ROT ROT #00 SWP
+	( fall through )
+
+@gth32 ( left-ptr* right-ptr* -- 01 if left > right
+                              OR 00 otherwise )
+	OVR2 LDA2 OVR2 LDA2 ( left-ptr* right-ptr* left* right* )
+	EQU2k ,&lo JCN
+	GTH2 NIP2 NIP NIP
+	JMP2r
+
+	&lo
+	POP2 POP2
+	INC2 INC2 LDA2 SWP2 INC2 INC2 LDA2 ( right-lo* left-lo* )
+	LTH2
+	JMP2r
+
+@add32z-short-short-mul ( dest-zp a* b* -- carry )
+	STH2 STH2 #00 SWP STH2r STH2r
+	( fall through )
+
+@add32-short-short-mul ( dest-ptr* a* b* -- carry )
+	LITr 00 STH LITr 00 STH ( dest-ptr* a* / blo* bhi* )
+	#00 ROT ROT #00 SWP ( dest-ptr* ahi* alo* / blo* bhi* )
+	STH2kr OVR2 MUL2 ,&alo-bhi STR2
+	OVR2 STH2r MUL2 ,&ahi-bhi STR2 ( dest-ptr ahi* alo* / blo* )
+	STH2kr MUL2 ,&alo-blo STR2 ( dest-ptr* ahi* / blo* )
+	STH2r MUL2 ,&ahi-blo STR2 ( dest-ptr* )
+	DUP2 ;&sum1 ;add32 JSR2 STH
+	DUP2 ;&sum2 ;add32 JSR2 STH
+	     ;&sum3 ;add32 JSR2
+	STH2r ORA ORA
+	JMP2r
+
+	&sum1 &ahi-bhi 0000 &alo-blo 0000
+	&sum2 00 &ahi-blo 0000 00
+	&sum3 00 &alo-bhi 0000 00
+
+@zero64 ( ptr* -- )
+	#08 ,zero JMP ( tail call )
+
+@zero32z ( zp -- )
+	#00 SWP
+	( fall through )
+
+@zero32 ( ptr* -- )
+	#04
+	( fall through )
+
+@zero ( ptr* len -- )
+	#00 SWP ADD2k NIP2 SWP2
+	&loop
+	DUP2 #00 ROT ROT STA
+	INC2
+	GTH2k ,&loop JCN
+	POP2 POP2
+	JMP2r
+
+@is-nonzero64 ( ptr* -- flag )
+	DUP2 ,is-nonzero32 JSR STH
+	#0004 ADD2 ,is-nonzero32 JSR STHr ORA
+	JMP2r
+
+@is-nonzero32 ( ptr* -- flag )
+	LDA2k ORA STH
+	INC2 INC2 LDA2 ORA STHr ORA
+	JMP2r
+

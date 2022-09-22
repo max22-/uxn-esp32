@@ -1,0 +1,250 @@
+( bitwise )
+
+|00 @System     [ &vector $2 &wst      $1 &rst    $1 &pad   $4 &r      $2 &g      $2 &b    $2 &debug  $1 &halt $1 ]
+|10 @Console    [ &vector $2 &read     $1 &pad    $5 &write $1 &error  $1 ]
+|20 @Screen     [ &vector $2 &width    $2 &height $2 &auto  $1 &pad    $1 &x      $2 &y      $2 &addr $2 &pixel $1 &sprite $1 ]
+|30 @Audio0     [ &vector $2 &position $2 &output $1 &pad   $3 &adsr   $2 &length $2 &addr $2 &volume $1 &pitch $1 ]
+|40 @Audio1     [ &vector $2 &position $2 &output $1 &pad   $3 &adsr   $2 &length $2 &addr $2 &volume $1 &pitch $1 ]
+|50 @Audio2     [ &vector $2 &position $2 &output $1 &pad   $3 &adsr   $2 &length $2 &addr $2 &volume $1 &pitch $1 ]
+|60 @Audio3     [ &vector $2 &position $2 &output $1 &pad   $3 &adsr   $2 &length $2 &addr $2 &volume $1 &pitch $1 ]
+|80 @Controller [ &vector $2 &button   $1 &key    $1 ]
+|90 @Mouse      [ &vector $2 &x        $2 &y      $2 &state $1 &wheel  $1 ]
+|a0 @File       [ &vector $2 &success  $2 &stat   $2 &delete $1 &append $1 &name  $2 &length $2 &read $2 &write $2 ]
+|c0 @DateTime   [ &year   $2 &month    $1 &day    $1 &hour  $1 &minute $1 &second $1 &dotw $1 &doty   $2 &isdst $1 ]
+
+( variables )
+
+|0000
+
+@a-frame
+	&x $2 &y $2 &x2 $2 &y2 $2
+@b-frame
+	&x $2 &y $2 &x2 $2 &y2 $2
+@input
+	&a $1 &b $1
+@pointer
+	&x $2 &y $2
+
+( program )
+
+|0100 ( -> )
+
+	( theme ) 
+	#0fe7 .System/r DEO2 
+	#0fce .System/g DEO2 
+	#0f2c .System/b DEO2
+
+	;on-mouse   .Mouse/vector DEO2
+
+	.Screen/width DEI2 #01 SFT2
+		DUP2 #0040 SUB2 .a-frame/x STZ2 DUP2 #0040 ADD2 .a-frame/x2 STZ2
+		DUP2 #0040 SUB2 .b-frame/x STZ2 #0040 ADD2 .b-frame/x2 STZ2
+
+	.Screen/height DEI2 #01 SFT2 #0020 SUB2
+		DUP2 #0010 SUB2 .a-frame/y STZ2 DUP2 .a-frame/y2 STZ2
+		DUP2 .b-frame/y STZ2 #0010 ADD2 .b-frame/y2 STZ2
+
+	;redraw JSR2
+
+BRK
+
+@on-mouse ( -> )
+
+	;draw-cursor JSR2 
+	
+	.Mouse/state DEI #00 NEQ JMP [ BRK ]
+
+	.Mouse/x DEI2 .Mouse/y DEI2 .a-frame ;within-rect JSR2 
+		;on-touch-a JCN2
+	.Mouse/x DEI2 .Mouse/y DEI2 .b-frame ;within-rect JSR2 
+		;on-touch-b JCN2
+
+BRK
+
+@on-touch-a ( -> )
+
+	.Mouse/x DEI2 .a-frame/x LDZ2 SUB2
+	#04 SFT2 NIP #07 SWP SUB STH
+
+	.input/a LDZ 
+		#01 [ STHr #40 SFT ] SFT EOR 
+		.input/a STZ
+
+	;redraw JSR2
+	#00 .Mouse/state DEO
+
+BRK
+
+@on-touch-b ( -> )
+
+	.Mouse/x DEI2 .b-frame/x LDZ2 SUB2
+	#04 SFT2 NIP #07 SWP SUB STH
+
+	.input/b LDZ 
+		#01 [ STHr #40 SFT ] SFT EOR 
+		.input/b STZ
+
+	;redraw JSR2
+	#00 .Mouse/state DEO
+
+BRK
+
+@redraw ( -- )
+
+	.a-frame/x LDZ2  .Screen/x DEO2
+	.a-frame/y LDZ2  .Screen/y DEO2
+	.input/a LDZ #01 ;draw-byte JSR2
+
+	.b-frame/x LDZ2 .Screen/x DEO2
+	.b-frame/y LDZ2 .Screen/y DEO2
+	.input/b LDZ #01 ;draw-byte JSR2
+
+	.b-frame/x LDZ2 .Screen/x DEO2
+	.Screen/y DEI2 #000d ADD2 .Screen/y DEO2
+	.input LDZ2 AND #03 ;draw-byte JSR2
+
+	.b-frame/x LDZ2 .Screen/x DEO2
+	.Screen/y DEI2 #000d ADD2 .Screen/y DEO2
+	.input LDZ2 ORA #03 ;draw-byte JSR2
+
+	.b-frame/x LDZ2 .Screen/x DEO2
+	.Screen/y DEI2 #000d ADD2 .Screen/y DEO2
+	.input LDZ2 EOR #03 ;draw-byte JSR2
+
+	( labels )
+	#05 .Screen/auto DEO
+	.b-frame/x LDZ2 #0020 SUB2 .Screen/x DEO2
+	;names-icn/and .Screen/addr DEO2
+	.b-frame/y2 LDZ2 #0004 ADD2 .Screen/y DEO2
+	,&draw-label JSR
+	.b-frame/y2 LDZ2 #0014 ADD2 .Screen/y DEO2
+	,&draw-label JSR
+	.b-frame/y2 LDZ2 #0024 ADD2 .Screen/y DEO2
+	,&draw-label JSR
+	#00 .Screen/auto DEO
+
+JMP2r
+	&draw-label
+		.b-frame/x LDZ2 #0020 SUB2 .Screen/x DEO2
+		#03 .Screen/sprite DEOk DEOk DEO
+	JMP2r
+
+@draw-byte ( value -- )
+
+	STH STH
+	#0800
+	&loop
+		#07 OVR SUB
+		STHkr SWP SFT #01 AND OVRr STHr ;draw-bit JSR2
+		INC GTHk ,&loop JCN
+	POP2
+	.Screen/y DEI2 #0003 ADD2 .Screen/y DEO2
+	.Screen/x DEI2 #0008 ADD2 .Screen/x DEO2
+	STHr ;draw-hex JSR2
+	POPr
+
+JMP2r
+
+@draw-bit ( value color -- )
+
+	STH STH
+
+	#05 .Screen/auto DEO
+	;button-icns/off [ #00 STHkr #50 SFT ADD2 ] .Screen/addr DEO2
+	OVRr STHr .Screen/sprite DEO
+	OVRr STHr .Screen/sprite DEO
+	.Screen/y DEI2 #0008 ADD2 .Screen/y DEO2
+	.Screen/x DEI2 #0010 SUB2 .Screen/x DEO2
+	OVRr STHr .Screen/sprite DEO
+	OVRr STHr .Screen/sprite DEO
+	#00 .Screen/auto DEO
+	.Screen/y DEI2 #0008 SUB2 .Screen/y DEO2
+
+	POP2r
+
+JMP2r
+
+@draw-hex ( value -- )
+
+	#01 .Screen/auto DEO
+	DUP #04 SFT ,&draw JSR
+	#0f AND ,&draw JSR
+	#01 .Screen/auto DEO
+
+JMP2r
+	&draw
+		#00 SWP #30 SFT2 ;font-hex ADD2 .Screen/addr DEO2
+		( draw ) #01 .Screen/sprite DEO
+	JMP2r
+
+@draw-cursor ( -- )
+	
+	( clear last cursor )
+	;cursor .Screen/addr DEO2 
+	.pointer/x LDZ2 .Screen/x DEO2 
+	.pointer/y LDZ2 .Screen/y DEO2 
+	#40 .Screen/sprite DEO
+	( record pointer positions )
+	.Mouse/x DEI2 DUP2 .pointer/x STZ2 .Screen/x DEO2 
+	.Mouse/y DEI2 DUP2 .pointer/y STZ2 .Screen/y DEO2  
+	( colorize on state )
+	#42 [ .Mouse/state DEI #00 NEQ ] ADD .Screen/sprite DEO
+
+JMP2r
+
+@within-rect ( x* y* rect -- flag )
+	
+	STH
+	( y < rect.y1 ) DUP2 STHkr INC INC LDZ2 LTH2 ,&skip JCN
+	( y > rect.y2 ) DUP2 STHkr #06 ADD LDZ2 GTH2 ,&skip JCN
+	SWP2
+	( x < rect.x1 ) DUP2 STHkr LDZ2 LTH2 ,&skip JCN
+	( x > rect.x2 ) DUP2 STHkr #04 ADD LDZ2 GTH2 ,&skip JCN
+	POP2 POP2 POPr
+	#01 
+JMP2r
+	&skip
+	POP2 POP2 POPr
+	#00
+
+JMP2r
+
+@cursor 
+	80c0 e0f0 f8e0 1000 
+
+@button-icns
+	&off
+	3f40 8080 8080 8080
+	f804 0202 0202 0202
+	8080 8080 8040 3f00
+	0202 0202 0204 f800
+	&on
+	3f40 9fbf bfbf bfbf
+	f804 f2fa fafa fafa
+	bfbf bfbf 9f40 3f00
+	fafa fafa f204 f800
+
+@names-icn
+	&and
+	fc02 027e 8286 fa00
+	bcc2 8282 8282 8200
+	fc82 8282 8282 fc00
+	&ora
+	7c82 8282 8282 7c00
+	fc82 82fc 8282 8200
+	fc02 027e 8286 fa00
+	&eor
+	8282 4438 4482 8200
+	7c82 8282 8282 7c00
+	fc82 82fc 8282 8200
+
+@font-hex ( 0-F )
+	007c 8282 8282 827c 0030 1010 1010 1010
+	007c 8202 7c80 80fe 007c 8202 1c02 827c
+	000c 1424 4484 fe04 00fe 8080 7c02 827c
+	007c 8280 fc82 827c 007c 8202 1e02 0202
+	007c 8282 7c82 827c 007c 8282 7e02 827c
+	007c 8202 7e82 827e 00fc 8282 fc82 82fc
+	007c 8280 8080 827c 00fc 8282 8282 82fc
+	007c 8280 f080 827c 007c 8280 f080 8080
+

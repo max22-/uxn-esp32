@@ -1,0 +1,70 @@
+( Pig:
+	Each turn you roll a die and add the total to your points.
+	You can stop at any time and keep that total, or keep rolling.
+	If you ever roll a 1 you lose all the points you accrued. )
+
+|10 @Console &vector $2 &read $1 &pad $5 &write $1 &error $1
+
+|0000 @t $1 ( Total saved )
+
+|0100 @game ( -> )
+
+	#00 .t STZ
+	;input-main .Console/vector DEO2
+	,input-main/main JMP
+
+@roll ( -- dice )
+
+	[ LIT2 &r f793 ]
+	( 5*R+35 ) #0005 MUL2 #0023 ADD2
+	( R-R/6547*6547 ) DUP2 #1993 DIV2 #1993 MUL2 SUB2
+	DUP2 #c5 DEI2 ADD2 ,&r STR2 ADD ( mod ) #06 DIVk MUL SUB
+
+JMP2r
+
+@input-main ( -> )
+
+	.Console/read DEI
+	LIT "0 EQUk NIP ,&no JCN
+	LIT "1 EQUk NIP ,&yes JCN
+	( ignore other inputs )
+	POP
+
+BRK
+	&no ( char -- )
+		POP ;score-txt ,pstr JSR .t LDZ ,pdec JSR ;byte-txt ,&halt JMP
+	&yes ( char -- )
+		POP ,roll JSR ;rolled-txt ,pstr JSR INCk ,pdec/d JSR DUP ,&not-bust JCN
+	&bust ( char -- )
+		POP ;bust-txt
+	&halt ( msg* -- )
+		,pstr JSR #0a .Console/write DEO #010f DEO BRK
+	&not-bust ( dice -- )
+		INC .t LDZ ADD .t STZ 
+	&main ( -- )
+		;total-txt ,pstr JSR .t LDZ ,pdec JSR ;roll-txt ,pstr JSR BRK
+
+@pdec ( value -- )
+
+	DUP #0a DIV ,&emit JSR
+	&d #0a DIVk MUL SUB ,&emit JSR
+	#0a .Console/write DEO
+
+JMP2r
+	&emit #30 ADD .Console/write DEO JMP2r
+
+@pstr ( str* -- )
+
+	&while
+		LDAk DUP LIT "_ EQU #3f MUL SUB .Console/write DEO
+		INC2 LDAk ,&while JCN
+	POP2
+
+JMP2r
+
+@total-txt "Your_current_total_is:_ $1
+@roll-txt "Would_you_like_to_roll?_(0_no,_1_yes)_ $1
+@score-txt "Your_score_is:_ $1
+@rolled-txt "You_rolled:_ $1
+@bust-txt "Busted! $1
+@byte-txt "Goodbye. $1

@@ -1,0 +1,51 @@
+# include this file in your ~/.nanorc:
+# include "path/to/uxntal.nanorc"
+
+syntax "uxntal" "\.tal$"
+
+# numbers
+color lightblue "[0-9a-f]{2}(\s|$)"
+color lightblue "[0-9a-f]{4}(\s|$)"
+
+# literal hex
+color cyan "#[0-9a-f]{2}(\s|$)"
+color cyan "#[0-9a-f]{4}(\s|$)"
+
+# absolute pad
+color bold,blue "\|[0-9a-f]{2}"
+color bold,blue "\|[0-9a-f]{4}"
+
+# labels
+# label define
+color green "@\S+"
+# sub-label define
+color green "&\S+"
+# literal addr absolute
+color magenta ";\S+"
+# literal addr relative
+color magenta ",\S+"
+# literal addr zero page
+color lightmagenta "\.\S+"
+
+# raw
+# character
+color lightred "'\S"
+# string
+color lightred ""\S+"
+# addr
+color lightyellow ":\S+"
+
+# include
+color lightcyan "~\S+"
+
+# macros definition
+color yellow "\%\S+"
+color yellow "[{}]"
+
+# instructions
+color bold,cyan "(BRK|LIT|INC|POP|DUP|NIP|SWP|OVR|ROT|EQU|NEQ|GTH|LTH|JMP|JCN|JSR|STH|LDZ|STZ|LDR|STR|LDA|STA|DEI|DEO|ADD|SUB|MUL|DIV|AND|ORA|EOR|SFT)[2kr]{,3}(\s|$)"
+
+# comments
+comment "( | )"
+color blue start="\(" end="\)"
+

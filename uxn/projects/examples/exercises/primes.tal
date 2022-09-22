@@ -1,0 +1,42 @@
+( Primes:
+	An integer greater than one is called a prime number
+	if its only positive divisors are one and itself. )
+
+|0100 ( -> ) @reset
+
+	#0000 INC2k
+	&loop
+		DUP2 ,is-prime JSR #00 EQU ,&skip JCN
+			( print ) DUP2 ,print/short JSR
+			( space ) #2018 DEO
+			&skip
+		INC2 NEQ2k ,&loop JCN
+	POP2 POP2
+	( halt ) #010f DEO
+	
+BRK
+
+@is-prime ( number* -- flag )
+
+	DUP2 #0001 EQU2 ,&fail JCN
+	STH2k
+	( range ) #01 SFT2 #0002
+	&loop
+		STH2kr OVR2 ( mod2 ) [ DIV2k MUL2 SUB2 ] ORA ,&continue JCN
+			POP2 POP2
+			POP2r #00 JMP2r
+			&continue
+		INC2 GTH2k ,&loop JCN
+	POP2 POP2
+	POP2r #01
+
+JMP2r
+	&fail POP2 #00 JMP2r
+
+@print ( short* -- )
+
+	&short ( short* -- ) SWP ,&byte JSR
+	&byte ( byte -- ) DUP #04 SFT ,&char JSR
+	&char ( char -- ) #0f AND DUP #09 GTH #27 MUL ADD #30 ADD #18 DEO
+
+JMP2r

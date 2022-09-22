@@ -1,0 +1,102 @@
+( devices )
+
+|00 @System     [ &vector $2 &wst      $1 &rst    $1 &pad   $4 &r $2 &g $2 &b $2   &debug $1 &halt $1 ]
+|10 @Console    [ &vector $2 &read     $1 &pad    $5 &write $1 &error  $1 ]
+|a0 @File       [ &vector $2 &success  $2 &stat   $2 &delete $1 &append $1 &name $2 &length $2 &read $2 &write $2 ]
+
+( vectors )
+
+|0100 @reset
+	(
+		Set the log level for helping to debug stuff.
+		Its value is the bitwise OR of all the following output types:
+			#01 prints the number of lines in the source code,
+			#04 dumps all defined labels at end, and
+			#08 prints the heap usage.
+	)
+	#0d ;asma/log-level STA
+
+	;asma-heap ;heap STA2
+
+	(
+		Assemble the source code into an output ROM file.
+
+		If all you want is to use asma.tal to assemble files, insert a BRK
+		after this statement.
+	)
+	;&source-file ;&dest-file ;asma-assemble-file JSR2
+
+	(
+		If an error has occurred, BRK here, otherwise continue. (The error
+		message will already have been printed to the Console in
+		asma-assemble-file.)
+	)
+	;asma/error LDA2 #0000 EQU2 JMP BRK
+
+	(
+		Load the output ROM over the currently running program, almost as if
+		we loaded the ROM with uxnemu directly!
+
+		It's not a totally pristine environment, as File/read doesn't zero out
+		memory beyond the end of the file. So if the assembled program assumes
+		that all memory above it is zero, it may misbehave.
+
+		Asma itself doesn't use the zero page, but this example code writes a
+		DEO2 instruction to 0x00ff. In order to execute File/read and have the
+		CPU continue at memory location 0x0100, we write the final DEO2
+		instruction there and jump there as our final act.
+
+		Just in case the assembled code is zero-length (which can occur when
+		assembling an empty source file), we write a BRK to the reset vector so
+		that will prevent an infinite loop.
+	)
+	;&dest-file .File/name DEO2
+	#ff00 .File/length DEO2
+	#0100 .File/read
+	LIT DEO2 #00ff STA
+	LIT BRK #0100 STA
+	#00ff JMP2
+
+	&source-file
+		"projects/examples/demos/piano.tal 00
+	&dest-file
+		"bin/asma-boot.rom 00
+
+~projects/library/asma.tal
+
+(
+	Heap, a large temporary area for keeping track of labels. More complex
+	programs need more of this space. If there's insufficient space then the
+	assembly process will fail, but having extra space above what the most
+	complex program needs provides no benefit.
+
+	This heap, and the buffers below, are free to be used to hold temporary
+	data between assembly runs, and do not need to be initialized with any
+	particular contents to use the assembler.
+)
+
+@asma-heap
+
+|e000 &end
+
+(
+	Buffer for use with loading source code.
+	The minimum size is the length of the longest token plus one, which is
+	0x21 to keep the same capability of the C assembler.
+	Larger sizes are more efficient, provided there is enough
+	heap space to keep track of all the labels.
+)
+
+@asma-read-buffer
+
+|f800 &end
+
+(
+	Buffer for use with writing output.
+	The minimum size is 1, and larger sizes are more efficient.
+)
+
+@asma-write-buffer
+
+|ffff &end
+

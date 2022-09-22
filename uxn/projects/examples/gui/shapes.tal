@@ -1,0 +1,203 @@
+( GUI Shapes )
+
+%ABS2 { DUP2 #0f SFT2 EQU #05 JCN #0000 SWP2 SUB2 }
+%LTS2  { #8000 ADD2 SWP2 #8000 ADD2 GTH2 }
+%GTS2  { #8000 ADD2 SWP2 #8000 ADD2 LTH2 }
+%WIDTH { #0100 } %HEIGHT { #00a0 }
+
+( devices )
+
+|00 @System [ &vector $2 &pad $6 &r $2 &g $2 &b $2 ]
+|20 @Screen [ &vector $2 &width $2 &height $2 &pad $2 &x $2 &y $2 &addr $2 &pixel $1 &sprite $1 ]
+
+( variables )
+
+|0000
+
+( draw requirements )
+@color [ &byte $1 ]
+
+@rect [ &x1 $2 &y1 $2 &x2 $2 &y2 $2 ]
+@line [ &x0 $2 &y0 $2 &x $2 &y $2 &sx $2 &sy $2 &dx $2 &dy $2 &e1 $2 &e2 $2 ]
+@circle [ &xc $2 &yc $2 &x $2 &y $2 &r $2 &d $2 ]
+
+( program )
+
+|0100
+	
+	( theme ) 
+	#f0ff .System/r DEO2 
+	#f03c .System/g DEO2 
+	#f03f .System/b DEO2
+
+	( background ) ;checker-icn #03 ;cover-pattern JSR2
+
+	.Screen/width DEI2 #01 SFT2 WIDTH #01 SFT2 SUB2 #0008 ADD2
+	.Screen/height DEI2 #01 SFT2 HEIGHT #01 SFT2 SUB2 #0008 ADD2
+	WIDTH HEIGHT
+	STH2 STH2 OVR2 STH2r ADD2 OVR2 STH2r ADD2 #02 ;fill-rect JSR2
+
+	.Screen/width DEI2 #01 SFT2 WIDTH #01 SFT2 SUB2
+	.Screen/height DEI2 #01 SFT2 HEIGHT #01 SFT2 SUB2
+	WIDTH HEIGHT
+	STH2 STH2 OVR2 STH2r ADD2 OVR2 STH2r ADD2 #01 ;fill-rect JSR2
+
+	.Screen/width DEI2 #01 SFT2 WIDTH #01 SFT2 SUB2  #0008 ADD2
+	.Screen/height DEI2 #01 SFT2 HEIGHT #01 SFT2 SUB2  #0008 ADD2
+	WIDTH #0010 SUB2 HEIGHT #0010 SUB2
+	STH2 STH2 OVR2 STH2r ADD2 OVR2 STH2r ADD2 #03 ;line-rect JSR2
+
+	.Screen/width DEI2 #01 SFT2 .Screen/height DEI2 #01 SFT2 WIDTH #02 SFT2 #02 ;draw-circle JSR2
+
+	#0010 #0030 #0068 #02 ;line-hor JSR2
+	#0020 #0058 #0078 #02 ;line-ver JSR2
+	
+BRK
+
+@line-slow ( x1 y1 x2 y2 color -- )
+	
+	( load ) .color STZ #0001 SUB2 .line/y0 STZ2 #0001 SUB2 .line/x0 STZ2 .line/y STZ2 .line/x STZ2
+	.line/x0 LDZ2 .line/x LDZ2 SUB2 ABS2 .line/dx STZ2
+	.line/y0 LDZ2 .line/y LDZ2 SUB2 ABS2 #0000 SWP2 SUB2 .line/dy STZ2
+	#ffff #00 .line/x LDZ2 .line/x0 LDZ2 LTS2 #10 SFT2 ADD2 .line/sx STZ2
+	#ffff #00 .line/y LDZ2 .line/y0 LDZ2 LTS2 #10 SFT2 ADD2 .line/sy STZ2
+	.line/dx LDZ2 .line/dy LDZ2 ADD2 .line/e1 STZ2
+	&loop
+		.line/x LDZ2 .Screen/x DEO2 .line/y LDZ2 .Screen/y DEO2 .color LDZ .Screen/pixel DEO
+		.line/x LDZ2 .line/x0 LDZ2 EQU2 .line/y LDZ2 .line/y0 LDZ2 EQU2 AND ,&end JCN
+		.line/e1 LDZ2 #10 SFT2 .line/e2 STZ2
+		.line/e2 LDZ2 .line/dy LDZ2 LTS2 ,&skipy JCN
+			.line/e1 LDZ2 .line/dy LDZ2 ADD2 .line/e1 STZ2
+			.line/x LDZ2 .line/sx LDZ2 ADD2 .line/x STZ2
+		&skipy
+		.line/e2 LDZ2 .line/dx LDZ2 GTS2 ,&skipx JCN
+			.line/e1 LDZ2 .line/dx LDZ2 ADD2 .line/e1 STZ2
+			.line/y LDZ2 .line/sy LDZ2 ADD2 .line/y STZ2
+		&skipx
+		;&loop JMP2
+
+	&end
+
+JMP2r
+
+@line-rect ( x1* y1* x2* y2* color -- )
+
+	STH
+	DUP2 ,&ver-y2 STR2 ,&hor-y2 STR2
+	DUP2 ,&ver-x2 STR2 ,&hor-x2 STR2
+	DUP2 ,&ver-y1 STR2 ,&hor-y1 STR2
+	DUP2 ,&ver-x1 STR2 ,&hor-x1 STR2
+	( horizontal )
+	[ LIT2 &hor-x2 $2 ] INC2 [ LIT2 &hor-x1 $2 ]
+	&hor
+		DUP2 .Screen/x DEO2
+		[ LIT2 &hor-y1 $2 ] .Screen/y DEO2 STHkr .Screen/pixel DEOk
+		[ LIT2 &hor-y2 $2 ] .Screen/y DEO2 DEO
+		INC2 GTH2k ,&hor JCN
+	POP2 POP2
+	( vertical )
+	[ LIT2 &ver-y2 $2 ] [ LIT2 &ver-y1 $2 ]
+	&ver
+		DUP2 .Screen/y DEO2
+		[ LIT2 &ver-x1 $2 ] .Screen/x DEO2 STHkr .Screen/pixel DEOk
+		[ LIT2 &ver-x2 $2 ] .Screen/x DEO2 DEO
+		INC2 GTH2k ,&ver JCN
+	POP2 POP2
+	POPr
+
+JMP2r
+
+@fill-rect ( x1* y1* x2* y2* color -- )
+	
+	,&color STR
+	( x1 x2 y1 y2 ) ROT2
+	&ver
+		( save ) DUP2 .Screen/y DEO2
+		STH2 STH2 OVR2 OVR2 SWP2
+		&hor
+			( save ) DUP2 .Screen/x DEO2
+			( draw ) ,&color LDR .Screen/pixel DEO
+			( incr ) INC2
+			OVR2 OVR2 GTS2 ,&hor JCN
+		POP2 POP2 STH2r STH2r
+		( incr ) INC2
+		OVR2 OVR2 GTS2 ,&ver JCN
+	POP2 POP2 POP2 POP2
+
+JMP2r
+	&color $1
+
+@draw-circle ( xc yc r color -- )
+
+	( load ) .color STZ .circle/r STZ2 .circle/yc STZ2 .circle/xc STZ2
+	#0000 .circle/x STZ2 .circle/r LDZ2 .circle/y STZ2
+	.circle/r LDZ2 #10 SFT2 .circle/d STZ2
+	( draw ) ;&seg JSR2
+	&loop
+		( incr ) .circle/x LDZ2 INC2 .circle/x STZ2
+		.circle/d LDZ2 #0001 LTS2 ,&else JCN
+			( decr ) .circle/y LDZ2 #0001 SUB2 .circle/y STZ2
+			.circle/x LDZ2 .circle/y LDZ2 SUB2 #20 SFT2 .circle/d LDZ2 ADD2 .circle/d STZ2
+			;&end JMP2
+		&else
+			.circle/x LDZ2 #20 SFT2 .circle/d LDZ2 ADD2 .circle/d STZ2
+		&end
+		( draw ) ;&seg JSR2
+		.circle/y LDZ2 .circle/x LDZ2 #0001 SUB2 GTS2 ,&loop JCN
+	JMP2r
+	&seg
+		.circle/xc LDZ2 .circle/x LDZ2 ADD2 .Screen/x DEO2 .circle/yc LDZ2 .circle/y LDZ2 ADD2 .Screen/y DEO2 .color LDZ .Screen/pixel DEO
+		.circle/xc LDZ2 .circle/x LDZ2 SUB2 .Screen/x DEO2 .circle/yc LDZ2 .circle/y LDZ2 ADD2 .Screen/y DEO2 .color LDZ .Screen/pixel DEO
+		.circle/xc LDZ2 .circle/x LDZ2 ADD2 .Screen/x DEO2 .circle/yc LDZ2 .circle/y LDZ2 SUB2 .Screen/y DEO2 .color LDZ .Screen/pixel DEO
+		.circle/xc LDZ2 .circle/x LDZ2 SUB2 .Screen/x DEO2 .circle/yc LDZ2 .circle/y LDZ2 SUB2 .Screen/y DEO2 .color LDZ .Screen/pixel DEO
+		.circle/xc LDZ2 .circle/y LDZ2 ADD2 .Screen/x DEO2 .circle/yc LDZ2 .circle/x LDZ2 ADD2 .Screen/y DEO2 .color LDZ .Screen/pixel DEO
+		.circle/xc LDZ2 .circle/y LDZ2 SUB2 .Screen/x DEO2 .circle/yc LDZ2 .circle/x LDZ2 ADD2 .Screen/y DEO2 .color LDZ .Screen/pixel DEO
+		.circle/xc LDZ2 .circle/y LDZ2 ADD2 .Screen/x DEO2 .circle/yc LDZ2 .circle/x LDZ2 SUB2 .Screen/y DEO2 .color LDZ .Screen/pixel DEO
+		.circle/xc LDZ2 .circle/y LDZ2 SUB2 .Screen/x DEO2 .circle/yc LDZ2 .circle/x LDZ2 SUB2 .Screen/y DEO2 .color LDZ .Screen/pixel DEO
+
+JMP2r
+
+@cover-pattern ( addr* color -- )
+	
+	( load ) STH .Screen/addr DEO2
+	.Screen/height DEI2 #0000
+	&ver
+		( save ) DUP2 .Screen/y DEO2
+		.Screen/width DEI2 #0000
+		&hor
+			( save ) DUP2 .Screen/x DEO2
+			( draw ) STHkr .Screen/sprite DEO
+			#0008 ADD2 GTH2k ,&hor JCN
+		POP2 POP2
+		#0008 ADD2 GTH2k ,&ver JCN
+	POP2 POP2
+	POPr
+
+JMP2r
+
+@line-hor ( x0* x1* y* color -- )
+	
+	STH .Screen/y DEO2
+	SWP2
+	&loop
+		( save ) DUP2 .Screen/x DEO2
+		( draw ) STHkr .Screen/pixel DEO
+		INC2 GTH2k ,&loop JCN
+	POP2 POP2 POPr
+
+JMP2r
+
+@line-ver ( x* y0* y1* color -- )
+	
+	STH ROT2 .Screen/x DEO2
+	SWP2
+	&loop
+		( save ) DUP2 .Screen/y DEO2
+		( draw ) STHkr .Screen/pixel DEO
+		INC2 GTH2k ,&loop JCN
+	POP2 POP2 POPr
+
+JMP2r
+
+@checker-icn
+	f0f0 f0f0 0f0f 0f0f

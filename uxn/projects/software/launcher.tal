@@ -1,0 +1,517 @@
+( launcher )
+
+|00 @System     &vector $2 &wst      $1 &rst    $1 &pad    $4 &r      $2 &g      $2 &b    $2 &debug  $1 &halt $1
+|10 @Console    &vector $2 &read     $1 &pad    $5 &write  $1 &error  $1
+|20 @Screen     &vector $2 &width    $2 &height $2 &auto   $1 &pad $1 &x      $2 &y      $2 &addr $2 &pixel $1 &sprite $1
+|30 @Audio0     &vector $2 &position $2 &output $1 &pad    $3 &adsr   $2 &length $2 &addr $2 &volume $1 &pitch $1
+|80 @Controller &vector $2 &button   $1 &key    $1
+|90 @Mouse      &vector $2 &x        $2 &y      $2 &state  $1 &pad    $3 &scrollx $2 &scrolly $2
+|a0 @File       &vector $2 &success  $2 &stat   $2 &delete $1 &append $1 &name $2 &length $2 &read $2 &write $2
+|c0 @DateTime   &year   $2 &month    $1 &day    $1 &hour   $1 &minute $1 &second $1 &dotw $1 &doty $2 &isdst $1
+
+( variables )
+
+|0000
+
+@pointer
+	&x  $2 &y  $2
+@browser
+	&x $2 &y $2 &x2 $2 &y2 $2
+	&sel $1 &last $1 &scroll $1
+	&lines $1
+
+( init )
+
+|0100 ( -> )
+
+	( theme )
+	#f079 .System/r DEO2
+	#f0c2 .System/g DEO2
+	#f0a4 .System/b DEO2
+
+	( vectors )
+	;on-frame .Screen/vector DEO2
+	;on-button .Controller/vector DEO2
+	;on-mouse .Mouse/vector DEO2
+
+	( resize )
+	#0200 .Screen/width DEO2
+	#0140 .Screen/height DEO2
+
+	( asma debugger )
+	#0d ;asma/log-level STA
+
+	;asma-heap ;heap STA2
+
+	( setup synth )
+	#0102 .Audio0/adsr DEO2
+	;sin-pcm .Audio0/addr DEO2
+	#0100 .Audio0/length DEO2
+	#dd .Audio0/volume DEO ( TODO: turn ON )
+
+	( place )
+	#0088 .browser/x STZ2
+	#0010 .browser/y STZ2
+	.Screen/height DEI2 #33 SFT2 #0011 SUB2 .browser/y2 STZ2
+
+	( theme support )
+	;load-theme JSR2
+
+	( draw mascot )
+	#0010 #0010 #0060 #0060 ;mascot-icn #01 ;draw-icn JSR2
+
+	;load-dir JSR2
+
+	( force selection )
+	#ff .browser/last STZ
+	#00 ;select-file JSR2
+
+BRK
+
+@on-frame ( -> )
+
+	( unused )
+
+BRK
+
+@on-mouse ( -> )
+
+	;pointer-icn .Screen/addr DEO2
+	( clear last cursor )
+	.pointer/x LDZ2 .Screen/x DEO2
+	.pointer/y LDZ2 .Screen/y DEO2
+	#40 .Screen/sprite DEO
+
+	( draw new cursor )
+	.Mouse/x DEI2 DUP2 .pointer/x STZ2 .Screen/x DEO2
+	.Mouse/y DEI2 DUP2 .pointer/y STZ2 .Screen/y DEO2
+	#41 .Mouse/state DEI #01 EQU ADD .Screen/sprite DEO
+
+	( wheel )
+	.Mouse/scrolly INC DEI
+	DUP #ff NEQ ,&no-up JCN
+		.browser/scroll LDZ #00 EQU ,&no-up JCN
+		DUP .browser/scroll LDZ ADD ;scroll-to JSR2
+		&no-up
+	DUP #01 NEQ ,&no-down JCN
+		.browser/scroll LDZ .browser/lines LDZ EQU ,&no-down JCN
+		DUP .browser/scroll LDZ ADD ;scroll-to JSR2
+		&no-down
+	POP
+
+	( within browser )
+	.Mouse/y DEI2 .browser/y LDZ2 LTH2 ,&outside JCN
+	.Mouse/y DEI2 .browser/y2 LDZ2 #0010 SUB2 GTH2 ,&outside JCN
+	( select choice )
+	.Mouse/y DEI2 .browser/y LDZ2 SUB2
+		#04 SFT2 NIP .browser/scroll LDZ ADD ;select-file JSR2
+	( run choice )
+	.Mouse/state DEI #00 EQU ,&no-click JCN
+		.browser/sel LDZ ;run-file JSR2
+		&no-click
+	&outside
+
+BRK
+
+@on-button ( -> )
+
+	( controller )
+	.Controller/button DEI
+	DUP #10 NEQ ,&no-up JCN
+		.browser/sel LDZ #00 EQU ,&no-up JCN
+		.browser/sel LDZ #01 SUB ;select-file JSR2
+		;follow-selection JSR2
+		POP BRK
+		&no-up
+	DUP #20 NEQ ,&no-down JCN
+		.browser/sel LDZ INC .browser/lines LDZ EQU ,&no-down JCN
+		.browser/sel LDZ INC ;select-file JSR2
+		;follow-selection JSR2
+		POP BRK
+		&no-down
+	DUP #01 NEQ ,&no-a JCN
+		.browser/sel LDZ ;run-file JSR2
+		POP BRK
+		&no-a
+	POP
+	( keyboard )
+	.Controller/key DEI
+	DUP #0d NEQ ,&no-enter JCN
+		.browser/sel LDZ ;run-file JSR2
+		POP BRK
+		&no-enter
+	POP
+
+BRK
+
+@load-dir ( -- )
+
+	;dir/path .File/name DEO2
+	#1000 .File/length DEO2
+	;dir/data .File/read DEO2
+	.File/success DEI2 ;dir/length STA2
+	#00 .browser/lines STZ
+
+	( split with null-char )
+	;dir/data
+	&while
+		LDAk #1f GTH ,&no-lb JCN
+			( split ) STH2k #00 STH2r STA
+			( count lines ) .browser/lines LDZk INC SWP STZ
+			&no-lb
+		INC2 LDAk ,&while JCN
+	POP2
+
+JMP2r
+
+@select-file ( id -- )
+
+	( has changed )
+	DUP .browser/last LDZ NEQ ,&has-changed JCN
+		POP JMP2r
+		&has-changed
+	( beyond )
+	DUP .browser/lines LDZ LTH ,&valid JCN
+		POP JMP2r
+		&valid
+
+	#00 ;draw-browser JSR2
+	DUP .browser/sel STZ
+	DUP .browser/last STZ
+		#30 ADD .Audio0/pitch DEO
+	#01 ;draw-browser JSR2
+
+	( draw mascot )
+	#0010 #0010 #0060 #0060
+	;mascot-icn .browser/sel LDZ #03 AND #00 SWP #0480 MUL2 ADD2 #01
+		;draw-icn JSR2
+
+	( draw position )
+	#06 .Screen/auto DEO
+	#0010 .Screen/x DEO2
+	#0080 .Screen/y DEO2
+	.browser/sel LDZ #02 ;draw-byte JSR2
+	LIT "/ #02 ;draw-char JSR2
+	.browser/lines LDZ #01 SUB #02 ;draw-byte JSR2
+	#00 .Screen/auto DEO
+
+JMP2r
+
+@follow-selection ( -- )
+
+	.browser/y2 LDZ2 .browser/y LDZ2 SUB2 #04 SFT2 NIP .browser/sel LDZ .browser/scroll LDZ SUB
+	GTHk ,&no-down JCN
+		.browser/scroll LDZ INC ,scroll-to JSR
+		&no-down
+	DUP2 SWP LTH ,&no-up JCN
+		.browser/sel LDZ ,scroll-to JSR
+		&no-up
+	POP2
+
+JMP2r
+
+@scroll-to ( line -- )
+
+	STH
+	( more lines than visible )
+	.browser/lines LDZ .browser/y2 LDZ2 .browser/y LDZ2 SUB2 #04 SFT2 NIP
+	GTHk ,&can-scroll JCN
+		POPr POP2 JMP2r
+		&can-scroll
+	( less than max scroll )
+	SUB INC STHkr GTH ,&valid-scroll JCN
+		POPr JMP2r
+		&valid-scroll
+	#00 ;draw-browser JSR2
+	STHr .browser/scroll STZ
+	#01 ;draw-browser JSR2
+
+JMP2r
+
+@run-file ( id -- )
+
+	( release inputs )
+	#0000 .Controller/button DEO2
+	#00 .Mouse/state DEO
+
+	;get-entry JSR2 #0005 ADD2
+	
+	DUP2 ;check-rom JSR2 ,&valid JCN
+		( check if tal file )
+		DUP2 ;scap JSR2 #0004 SUB2 ;&tal-ext ;scmp JSR2 #01 NEQ ,&no-tal JCN
+			( assemble tal file )
+			DUP2 ;&output-path ;scpy JSR2
+			;&rom-ext ;&output-path ;scat JSR2
+			;&output-path ;asma-assemble-file JSR2
+			;load-dir JSR2
+			;redraw JSR2
+			JMP2r
+			&no-tal
+		POP2 JMP2r
+		&valid
+	;load-rom JSR2
+
+JMP2r
+	&tal-ext ".tal $1
+	&rom-ext ".rom $1
+	&output-path $20
+
+@redraw ( -- )
+
+	( force selection )
+	#ff .browser/last STZ
+	#00 ;select-file JSR2
+
+JMP2r
+
+@draw-browser ( mask -- )
+
+	( when empty )
+	.browser/lines LDZ #01 EQU ;draw-browser-empty JCN2
+
+	STH
+
+	( draw hand )
+	.browser/x LDZ2 #0018 SUB2 .browser/y LDZ2
+	.browser/sel LDZ .browser/scroll LDZ SUB #00 SWP #40 SFT2 ADD2
+	#0010 #0010
+		;hand-icn STHkr #10 SFT ;draw-icn JSR2
+	( draw files )
+	.browser/y2 LDZ2 .browser/y LDZ2 SUB2 #04 SFT2 NIP #00
+	&loop
+		( reached end )
+		INCk .browser/lines LDZ GTH ,&end JCN
+		( has file )
+		.browser/x LDZ2 .Screen/x DEO2
+		#00 OVR #40 SFT2 .browser/y LDZ2 ADD2 .Screen/y DEO2
+		DUP .browser/scroll LDZ ADD ;get-entry JSR2
+			DUP2 ;get-type JSR2 ;draw-type JSR2
+			#01 STHkr MUL ;draw-str JSR2
+		INC GTHk ,&loop JCN
+		&end
+	POP2
+
+	POPr
+
+JMP2r
+
+@draw-browser-empty ( mask -- )
+
+	POP
+	.browser/x LDZ2 .Screen/x DEO2
+	.browser/y LDZ2 .Screen/y DEO2
+	;&empty-txt #01 ;draw-str JSR2
+
+JMP2r
+	&empty-txt "Empty 20 "Folder $1
+
+@get-type ( line* -- type )
+
+	;scap JSR2 #0004 SUB2 ;&rom-ext ;scmp JSR2
+
+JMP2r
+	&rom-ext ".rom $1
+
+@get-entry ( id -- addr* )
+
+	( limit ) STH
+	( counter ) LITr 00
+	;dir/length LDA2 #0000
+	&loop
+		EQUkr STHr #00 EQU ,&no-reached JCN
+			POP2r NIP2 ;dir/data ADD2 JMP2r
+			&no-reached
+		DUP2 ;dir/data ADD2 LDA ,&no-lb JCN
+			INCr
+			&no-lb
+		INC2 GTH2k ,&loop JCN
+	POP2 POP2
+	POP2r
+	;dir/data
+
+JMP2r
+
+@draw-type ( type -- )
+
+	STHk #00 SWP #50 SFT2 ;file-icns ADD2 .Screen/addr DEO2
+	#05 .Screen/auto DEO
+	#02 STHkr SUB .Screen/sprite DEOk DEO
+
+	.Screen/x DEI2k #0010 SUB2 ROT DEO2
+	.Screen/y DEI2k #0008 ADD2 ROT DEO2
+	
+	#02 STHr SUB .Screen/sprite DEOk DEO
+
+	.Screen/x DEI2k #0008 ADD2 ROT DEO2
+	.Screen/y DEI2k #0008 SUB2 ROT DEO2
+	#00 .Screen/auto DEO
+
+JMP2r
+
+@draw-icn ( x* y* width* height* addr* color  -- )
+	
+	#05 .Screen/auto DEO
+	( load ) STH .Screen/addr DEO2 ,&height STR2 ,&width STR2 ,&y STR2 ,&x STR2
+	,&height LDR2 #0000
+	&ver
+		( save ) DUP2 ,&y LDR2 ADD2 .Screen/y DEO2
+		,&x LDR2 .Screen/x DEO2
+		,&width LDR2 #0000
+		&hor
+			( draw ) STHkr .Screen/sprite DEO
+			#0008 ADD2 GTH2k ,&hor JCN
+		POP2 POP2
+		#0008 ADD2 GTH2k ,&ver JCN
+	POP2 POP2
+	POPr
+	#00 .Screen/auto DEO
+
+JMP2r
+	&x $2 &y $2 &width $2 &height $2
+
+@draw-str ( text* color -- )
+
+	#06 .Screen/auto DEO
+	STH
+	&while
+		LDAk STHkr ,draw-char JSR
+		INC2 LDAk ,&while JCN
+	POP2
+	POPr
+
+JMP2r
+
+@draw-byte ( byte color -- )
+
+	STH
+	DUP #04 SFT ,&parse JSR STHkr ,draw-char JSR
+	#0f AND ,&parse JSR STHr ,draw-char JSR
+
+JMP2r
+	&parse ( byte -- char ) DUP #09 GTH ,&above JCN #30 ADD JMP2r
+	&above #57 ADD JMP2r
+
+@draw-char ( char color -- )
+
+	SWP
+	#15 .Screen/auto DEO
+	#20 SUB #00 SWP #40 SFT2 ;font ADD2 .Screen/addr DEO2
+	.Screen/sprite DEO
+
+JMP2r
+
+( theme )
+
+@theme-txt ".theme $1
+
+@load-theme ( -- )
+
+	;theme-txt .File/name DEO2
+	#0006 .File/length DEO2
+	#fffa .File/read DEO2
+
+	.File/success DEI2 #0006 NEQ2 ,&ignore JCN
+		#fffa LDA2 .System/r DEO2
+		#fffc LDA2 .System/g DEO2
+		#fffe LDA2 .System/b DEO2
+		&ignore
+
+JMP2r
+
+( helpers )
+
+@scmp ( a* b* -- flag )
+
+	STH2
+	&loop
+		LDAk LDAkr STHr NEQ ,&end JCN
+		LDAk LDAkr STHr ORA ,&not-end JCN
+			POP2 POP2r #01 JMP2r
+			&not-end
+		INC2 INC2r ,&loop JMP
+	&end
+	POP2 POP2r #00
+
+JMP2r
+
+@scat ( src* dst* -- )
+
+	DUP2 ,slen JSR ADD2
+
+@scpy ( src* dst* -- )
+
+	STH2
+	&while
+		LDAk STH2kr STA INC2r
+		INC2 LDAk ,&while JCN
+	POP2
+	#00 STH2r STA
+
+JMP2r
+
+@slen ( str* -- len* )
+
+	DUP2 ,scap JSR SWP2 SUB2
+
+JMP2r
+
+@scap ( str* -- str-end* )
+
+	( clamp ) LDAk #00 NEQ JMP JMP2r
+	&while INC2 LDAk ,&while JCN
+
+JMP2r
+
+@pointer-icn
+	80c0 e0f0 f8e0 1000
+@hand-icn
+	000c 0a0a 1224 4780
+	0000 0000 0000 fc02
+	8180 8080 8040 3f00
+	fc20 c020 c020 c000
+@file-icns
+	003f 3f30 3f30 3f30
+	00fc fc0c fc0c fc0c
+	3f33 3f3f 3f3f 3f00
+	fcfc fcc4 c8d0 e000
+	003f 3f30 3132 3231
+	00fc fc0c 8c4c 4c8c
+	303f 3f3f 3f3f 3f00
+	0cfc fcc4 c8d0 e000
+@sin-pcm
+	8083 8689 8c8f 9295 989b 9ea1 a4a7 aaad
+	b0b3 b6b9 bbbe c1c3 c6c9 cbce d0d2 d5d7
+	d9db dee0 e2e4 e6e7 e9eb ecee f0f1 f2f4
+	f5f6 f7f8 f9fa fbfb fcfd fdfe fefe fefe
+	fffe fefe fefe fdfd fcfb fbfa f9f8 f7f6
+	f5f4 f2f1 f0ee eceb e9e7 e6e4 e2e0 dedb
+	d9d7 d5d2 d0ce cbc9 c6c3 c1be bbb9 b6b3
+	b0ad aaa7 a4a1 9e9b 9895 928f 8c89 8683
+	807d 7a77 7471 6e6b 6865 625f 5c59 5653
+	504d 4a47 4542 3f3d 3a37 3532 302e 2b29
+	2725 2220 1e1c 1a19 1715 1412 100f 0e0c
+	0b0a 0908 0706 0505 0403 0302 0202 0202
+	0102 0202 0202 0303 0405 0506 0708 090a
+	0b0c 0e0f 1012 1415 1719 1a1c 1e20 2225
+	2729 2b2e 3032 3537 3a3d 3f42 4547 4a4d
+	5053 5659 5c5f 6265 686b 6e71 7477 7a7d
+
+~projects/library/check-rom.tal
+~projects/library/load-rom.tal
+~projects/assets/mascot0cx0c.tal
+~projects/assets/msx01x02.tal
+
+( directory memory )
+@dir
+	&path ". $1
+	&length $2
+	&data $1000
+
+( assembler memory )
+
+~projects/library/asma.tal
+
+@asma-heap
+|e000 &end @asma-read-buffer
+|f800 &end @asma-write-buffer
+|ffff &end

@@ -1,0 +1,250 @@
+( GUI Terminal )
+
+( devices )
+
+|00 @System     [ &vector $2 &pad    $6 &r      $2 &g     $2 &b      $2 ]
+|20 @Screen     &vector $2 &width   $2 &height $2 &auto  $1 &pad   $1 &x     $2 &y $2 &addr $2 &pixel $1 &sprite $1
+|80 @Controller [ &vector $2 &button $1 &key    $1 ]
+
+( variables )
+
+|0000
+
+@buffer $80
+
+( init )
+
+|0100 ( -> )
+
+	( theme ) 
+	#0f0f .System/r DEO2 
+	#0ff0 .System/g DEO2 
+	#0fff .System/b DEO2
+
+	( vectors ) 
+	;on-button .Controller/vector DEO2
+
+	( AUTO-Y-ADDR )
+	#06 .Screen/auto DEO
+
+	#01 ;draw-input JSR2
+
+BRK
+
+@on-button ( -> )
+
+	.Controller/key DEI
+	DUP ,&no-null JCN
+		POP BRK
+		&no-null
+	DUP #0d NEQ ,&no-enter JCN
+		#00 ;draw-input JSR2
+		;validate JSR2
+		;buffer #0080 ;mclr JSR2
+		#01 ;draw-input JSR2
+		&no-enter
+	DUP #08 NEQ ,&no-backspace JCN
+		#00 ;draw-input JSR2
+		;buffer ;spop JSR2
+		#01 ;draw-input JSR2
+		&no-backspace
+	DUP STHk #1f GTH STHr #7b LTH #0101 NEQ2 ,&no-valid JCN
+	;buffer ;slen JSR2 #007f GTH2 ,&no-valid JCN
+		STHk ;buffer STHr ;sput JSR2
+		#01 ;draw-input JSR2
+		&no-valid
+	POP
+
+BRK
+
+@validate ( -- )
+
+	#0010 .Screen/x DEO2
+	.Screen/height DEI2 #0040 SUB2 .Screen/y DEO2
+
+	( clear )
+	#8000
+	&loop
+		#30 #00 ;draw-char JSR2
+		INC GTHk ,&loop JCN
+	POP2
+	#0010 .Screen/x DEO2
+
+	( respond )
+	;strings/you-said #02 ;draw-str JSR2
+	LIT 22 #02 ;draw-char JSR2
+	;buffer #03 ;draw-str JSR2
+	LIT 22 #02 ;draw-char JSR2
+	LIT ". #02 ;draw-char JSR2
+
+JMP2r
+
+@draw-input ( color -- )
+
+	STH
+	#0010 .Screen/x DEO2
+	.Screen/height DEI2 #0020 SUB2 .Screen/y DEO2
+
+	( marker ) LIT "> #03 ;draw-char JSR2
+
+	;buffer STHr ;draw-str JSR2
+
+JMP2r
+
+@draw-str ( str* color -- )
+
+	STH
+	&while
+		LDAk STHkr ,draw-char JSR
+		INC2 LDAk ,&while JCN
+	POP2
+	POPr
+
+JMP2r
+
+@draw-char ( char color -- )
+
+	SWP
+	[ #20 SUB #00 SWP #40 SFT2 ;font ADD2 ] .Screen/addr DEO2
+	.Screen/sprite DEOk DEO
+	.Screen/y DEI2 #0010 SUB2 .Screen/y DEO2
+	.Screen/x DEI2 #0008 ADD2 .Screen/x DEO2
+
+JMP2r
+
+( utils )
+
+@slen ( str* -- len* )
+
+	DUP2 ,scap JSR SWP2 SUB2
+
+JMP2r
+
+@scap ( str* -- str-end* )
+
+	( clamp ) LDAk #00 NEQ JMP JMP2r
+	&while INC2 LDAk ,&while JCN
+
+JMP2r
+
+@sput ( str* char -- )
+
+	ROT ROT ,scap JSR STA
+
+JMP2r
+
+@spop ( str* -- )
+
+	( clamp ) LDAk #00 NEQ JMP JMP2r
+	#00 ROT ROT ,scap JSR #0001 SUB2 STA
+
+JMP2r
+
+@mclr ( addr* len* -- )
+
+	OVR2 ADD2 SWP2
+	&loop
+		STH2k #00 STH2r STA
+		INC2 GTH2k ,&loop JCN
+	POP2 POP2
+
+JMP2r
+
+@strings
+	&you-said "You 20 "said 20 $1
+
+@font ( terminus01x02 )
+	0000 0000 0000 0000 0000 0000 0000 0000
+	0000 183c 3c3c 1818 1800 1818 0000 0000
+	0066 6666 2400 0000 0000 0000 0000 0000
+	0000 006c 6cfe 6c6c 6cfe 6c6c 0000 0000
+	1818 7cc6 c2c0 7c06 0686 c67c 1818 0000
+	0000 0000 c2c6 0c18 3060 c686 0000 0000
+	0000 386c 6c38 76dc cccc cc76 0000 0000
+	0030 3030 6000 0000 0000 0000 0000 0000
+	0000 0c18 3030 3030 3030 180c 0000 0000
+	0000 3018 0c0c 0c0c 0c0c 1830 0000 0000
+	0000 0000 0066 3cff 3c66 0000 0000 0000
+	0000 0000 0018 187e 1818 0000 0000 0000
+	0000 0000 0000 0000 0018 1818 3000 0000
+	0000 0000 0000 00fe 0000 0000 0000 0000
+	0000 0000 0000 0000 0000 1818 0000 0000
+	0000 0000 0206 0c18 3060 c080 0000 0000
+	0000 386c c6c6 d6d6 c6c6 6c38 0000 0000
+	0000 1838 7818 1818 1818 187e 0000 0000
+	0000 7cc6 060c 1830 60c0 c6fe 0000 0000
+	0000 7cc6 0606 3c06 0606 c67c 0000 0000
+	0000 0c1c 3c6c ccfe 0c0c 0c1e 0000 0000
+	0000 fec0 c0c0 fc06 0606 c67c 0000 0000
+	0000 3860 c0c0 fcc6 c6c6 c67c 0000 0000
+	0000 fec6 0606 0c18 3030 3030 0000 0000
+	0000 7cc6 c6c6 7cc6 c6c6 c67c 0000 0000
+	0000 7cc6 c6c6 7e06 0606 0c78 0000 0000
+	0000 0000 1818 0000 0018 1800 0000 0000
+	0000 0000 1818 0000 0018 1830 0000 0000
+	0000 0006 0c18 3060 3018 0c06 0000 0000
+	0000 0000 007e 0000 7e00 0000 0000 0000
+	0000 0060 3018 0c06 0c18 3060 0000 0000
+	0000 7cc6 c60c 1818 1800 1818 0000 0000
+	0000 007c c6c6 dede dedc c07c 0000 0000
+	0000 1038 6cc6 c6fe c6c6 c6c6 0000 0000
+	0000 fc66 6666 7c66 6666 66fc 0000 0000
+	0000 3c66 c2c0 c0c0 c0c2 663c 0000 0000
+	0000 f86c 6666 6666 6666 6cf8 0000 0000
+	0000 fe66 6268 7868 6062 66fe 0000 0000
+	0000 fe66 6268 7868 6060 60f0 0000 0000
+	0000 3c66 c2c0 c0de c6c6 663a 0000 0000
+	0000 c6c6 c6c6 fec6 c6c6 c6c6 0000 0000
+	0000 3c18 1818 1818 1818 183c 0000 0000
+	0000 1e0c 0c0c 0c0c cccc cc78 0000 0000
+	0000 e666 666c 7878 6c66 66e6 0000 0000
+	0000 f060 6060 6060 6062 66fe 0000 0000
+	0000 c6ee fefe d6c6 c6c6 c6c6 0000 0000
+	0000 c6e6 f6fe dece c6c6 c6c6 0000 0000
+	0000 7cc6 c6c6 c6c6 c6c6 c67c 0000 0000
+	0000 fc66 6666 7c60 6060 60f0 0000 0000
+	0000 7cc6 c6c6 c6c6 c6d6 de7c 0c0e 0000
+	0000 fc66 6666 7c6c 6666 66e6 0000 0000
+	0000 7cc6 c660 380c 06c6 c67c 0000 0000
+	0000 7e7e 5a18 1818 1818 183c 0000 0000
+	0000 c6c6 c6c6 c6c6 c6c6 c67c 0000 0000
+	0000 c6c6 c6c6 c6c6 c66c 3810 0000 0000
+	0000 c6c6 c6c6 d6d6 d6fe ee6c 0000 0000
+	0000 c6c6 6c7c 3838 7c6c c6c6 0000 0000
+	0000 6666 6666 3c18 1818 183c 0000 0000
+	0000 fec6 860c 1830 60c2 c6fe 0000 0000
+	0000 3c30 3030 3030 3030 303c 0000 0000
+	0000 0080 c0e0 7038 1c0e 0602 0000 0000
+	0000 3c0c 0c0c 0c0c 0c0c 0c3c 0000 0000
+	1038 6cc6 0000 0000 0000 0000 0000 0000
+	0000 0000 0000 0000 0000 0000 00ff 0000
+	3030 1800 0000 0000 0000 0000 0000 0000
+	0000 0000 0078 0c7c cccc cc76 0000 0000
+	0000 e060 6078 6c66 6666 667c 0000 0000
+	0000 0000 007c c6c0 c0c0 c67c 0000 0000
+	0000 1c0c 0c3c 6ccc cccc cc76 0000 0000
+	0000 0000 007c c6fe c0c0 c67c 0000 0000
+	0000 386c 6460 f060 6060 60f0 0000 0000
+	0000 0000 0076 cccc cccc cc7c 0ccc 7800
+	0000 e060 606c 7666 6666 66e6 0000 0000
+	0000 1818 0038 1818 1818 183c 0000 0000
+	0000 0606 000e 0606 0606 0606 6666 3c00
+	0000 e060 6066 6c78 786c 66e6 0000 0000
+	0000 3818 1818 1818 1818 183c 0000 0000
+	0000 0000 00ec fed6 d6d6 d6c6 0000 0000
+	0000 0000 00dc 6666 6666 6666 0000 0000
+	0000 0000 007c c6c6 c6c6 c67c 0000 0000
+	0000 0000 00dc 6666 6666 667c 6060 f000
+	0000 0000 0076 cccc cccc cc7c 0c0c 1e00
+	0000 0000 00dc 7666 6060 60f0 0000 0000
+	0000 0000 007c c660 380c c67c 0000 0000
+	0000 1030 30fc 3030 3030 361c 0000 0000
+	0000 0000 00cc cccc cccc cc76 0000 0000
+	0000 0000 0066 6666 6666 3c18 0000 0000
+	0000 0000 00c6 c6d6 d6d6 fe6c 0000 0000
+	0000 0000 00c6 6c38 3838 6cc6 0000 0000
+	0000 0000 00c6 c6c6 c6c6 c67e 060c f800
+	0000 0000 00fe cc18 3060 c6fe 0000 0000
+	0000 0e18 1818 7018 1818 180e 0000 0000
+	0000 1818 1818 0018 1818 1818 0000 0000
+	0000 7018 1818 0e18 1818 1870 0000 0000

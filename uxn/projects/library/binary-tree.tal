@@ -1,0 +1,56 @@
+(
+
+binary tree node layout:
+
++--+--+
+|  '  | incoming-ptr*
++--+--+                 key: null   optional
+   v       left  right  terminated   binary
+   |        ptr   ptr     string      data
+    \     +--+--+--+--+---------+--+----- - -
+     ---> |  '  |  '  |  U x n  .00|
+          +--+--+--+--+---------+--+----- - -
+
+All of the pointers (ptr) are shorts that have the value of the memory
+location of the next node, or 0000 to mean that pointer is empty. The very
+simplest tree is one where the incoming-ptr* is empty:
+
++--+--+
+|00'00| incoming-ptr*
++--+--+
+
+traverse-tree does two jobs at once, depending on whether the search-key is
+found:
+
+* if the search-key exists in the tree, return a pointer to the binary data
+  that follows that node's key string;
+
+* if the search-key is not present in the key, return the incoming-ptr* that
+  should be written when adding this node yourself.
+
+)
+
+@traverse-tree ( incoming-ptr* search-key* -- binary-ptr* 00 if key found
+                                           OR node-incoming-ptr* 01 if key not found )
+	STH2
+	&loop ( incoming-ptr* / search-key* )
+	LDA2k ORA ,&valid-node JCN
+	POP2r #01 JMP2r
+
+	&valid-node ( incoming-ptr* / search-key* )
+	LDA2 ( node* / search-key* )
+	DUP2 #0004 ADD2 ( node* node-key* / search-key* )
+	STH2kr ( node* node-key* search-key* / search-key* )
+	,strcmp JSR ( node* node-end* search-end* order nomatch / search-key* )
+	,&nomatch JCN ( node* node-end* search-end* order / search-key* )
+	POP POP2 ( node* node-end* / search-key* )
+	INC2 NIP2 ( binary-ptr* / search-key* )
+	POP2r #00 ( binary-ptr* 00 )
+	JMP2r
+
+	&nomatch ( node* node-end* search-end* order / search-key* )
+	#80 AND #06 SFT #00 SWP STH2 ( node* node-end* search-end* / search-key* node-offset^ )
+	POP2 POP2 ( node* / search-key* node-offset^ )
+	STH2r ADD2 ( incoming-ptr* / search-key* )
+	,&loop JMP
+

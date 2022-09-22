@@ -1,0 +1,134 @@
+( Cube3d:
+	Just a cube, y'know )
+
+|00 @System &vector $2 &wst $1 &rst $1 &eaddr $2 &ecode $1 &pad $1 &r $2 &g $2 &b $2 &debug $1 &halt $1
+|20 @Screen &vector $2 &width $2 &height $2 &auto $1 &pad $1 &x $2 &y $2 &addr $2 &pixel $1 &sprite $1
+
+|0000
+
+@timer $1
+@color $1
+@cube &v0 $8 &v4 $8
+@line &x $2 &y $2 &dx $2 &dy $2 &e1 $2
+@center &x $2 &y $2
+
+( program )
+
+|0100 ( -> )
+
+	( theme )
+	#4fcd .System/r DEO2
+	#4fc3 .System/g DEO2
+	#dfc2 .System/b DEO2
+	( center )
+	.Screen/width DEI2 #01 SFT2 #0040 SUB2 .center/x STZ2
+	.Screen/height DEI2 #01 SFT2 #0040 SUB2 .center/y STZ2
+	( begin. )
+	;on-frame .Screen/vector DEO2
+
+@on-frame ( -> )
+
+	#00 ;draw-cube JSR2
+	.timer LDZk INC SWP STZ
+	#05 ;draw-cube JSR2
+
+BRK
+
+@draw-cube ( frame color -- )
+
+	.color STZ
+	( create box )
+	#0800
+	&loop
+		STHk
+		#00 .timer LDZ [ #00 STHkr INC #07 AND #60 SFT ADD2 ] #00ff AND2 ;table ADD2 LDA #01 SFT
+		#00 .timer LDZ [ #00 STHkr #60 SFT ADD2 ] #00ff AND2 ;table ADD2 LDA #02 SFT [ #00 STHkr #62 SFT2 ADD2 ]
+		.cube/v0 STHr DUP ADD ADD STZ2
+		INC GTHk ,&loop JCN
+	POP2
+	( vertices )
+	#0800
+	&ver-loop
+		DUP DUP ADD .cube ADD LDZ2 ;draw-vertex JSR2
+		INC GTHk ,&ver-loop JCN
+	POP2
+	( lines )
+	#0400
+	&line-loop
+		STHk
+		.cube/v0 STHkr DUP ADD ADD .cube/v0 STHkr INC #03 AND DUP ADD ADD ,trace JSR
+		.cube/v0 STHkr DUP ADD ADD .cube/v4 STHkr DUP ADD ADD ,trace JSR
+		.cube/v4 STHkr DUP ADD ADD .cube/v4 STHr INC #03 AND DUP ADD ADD ,trace JSR
+		INC GTHk ,&line-loop JCN
+	POP2
+
+JMP2r
+
+@trace ( a b -- )
+
+	STH STH
+	#00 STHkr LDZ .center/x LDZ2 ADD2 #00 STHr INC LDZ .center/y LDZ2 ADD2
+	#00 STHkr LDZ .center/x LDZ2 ADD2 #00 STHr INC LDZ .center/y LDZ2 ADD2
+		.color LDZ ;draw-line JSR2
+
+JMP2r
+
+@draw-vertex ( x y -- )
+
+	#00 SWP #0004 SUB2 .center/y LDZ2 ADD2 .Screen/y DEO2
+	#00 SWP #0003 SUB2 .center/x LDZ2 ADD2 .Screen/x DEO2
+	;&icn .Screen/addr DEO2
+	.color LDZ .Screen/sprite DEO
+
+JMP2r
+	&icn 0000 387c 7c7c 3800
+
+@draw-line ( x1* y1* x2* y2* color -- )
+
+	( load ) STH ,&y STR2 ,&x STR2 .line/y STZ2 .line/x STZ2
+	,&x LDR2 .line/x LDZ2 SUB2 ;abs2 JSR2 .line/dx STZ2
+	#0000 ,&y LDR2 .line/y LDZ2 SUB2 ;abs2 JSR2 SUB2 .line/dy STZ2
+	#ffff #00 .line/x LDZ2 ,&x LDR2 ;lts2 JSR2 DUP2 ADD2 ADD2 ,&sx STR2
+	#ffff #00 .line/y LDZ2 ,&y LDR2 ;lts2 JSR2 DUP2 ADD2 ADD2 ,&sy STR2
+	.line/dx LDZ2 .line/dy LDZ2 ADD2 .line/e1 STZ2
+	&loop
+		.line/x LDZ2 DUP2 .Screen/x DEO2 [ LIT2 &x $2 ] EQU2
+		.line/y LDZ2 DUP2 .Screen/y DEO2 [ LIT2 &y $2 ] EQU2
+			STHkr .Screen/pixel DEO
+			AND ,&end JCN
+		.line/e1 LDZ2 DUP2 ADD2 DUP2
+		.line/dy LDZ2 ;lts2 JSR2 ,&skipy JCN
+			.line/e1 LDZ2 .line/dy LDZ2 ADD2 .line/e1 STZ2
+			.line/x LDZ2 [ LIT2 &sx $2 ] ADD2 .line/x STZ2
+		&skipy
+		.line/dx LDZ2 ;gts2 JSR2 ,&skipx JCN
+			.line/e1 LDZ2 .line/dx LDZ2 ADD2 .line/e1 STZ2
+			.line/y LDZ2 [ LIT2 &sy $2 ] ADD2 .line/y STZ2
+		&skipx
+		,&loop JMP
+	&end
+	POPr
+
+JMP2r
+
+@abs2 DUP2 #0f SFT2 EQU #05 JCN #0000 SWP2 SUB2 JMP2r
+@lts2 #8000 STH2k ADD2 SWP2 STH2r ADD2 GTH2 JMP2r
+@gts2 #8000 STH2k ADD2 SWP2 STH2r ADD2 LTH2 JMP2r
+
+@table ( 256 xy )
+	f7f8 f9fa fbfc fcfd fefe ffff ffff ffff
+	ffff ffff fffe fefd fcfc fbfa f9f8 f7f6
+	f5f3 f2f0 efed ecea e8e6 e4e2 e0de dcda
+	d8d5 d3d1 cecc c9c7 c4c1 bfbc b9b6 b3b0
+	aeab a8a5 a29f 9c98 9592 8f8c 8986 8380
+	7c79 7673 706d 6a67 6360 5d5a 5754 514f
+	4c49 4643 403e 3b38 3633 312e 2c2a 2725
+	2321 1f1d 1b19 1715 1312 100f 0d0c 0a09
+	0807 0605 0403 0302 0101 0000 0000 0000
+	0000 0000 0001 0102 0303 0405 0607 0809
+	0a0c 0d0f 1012 1315 1719 1b1d 1f21 2325
+	272a 2c2e 3133 3638 3b3e 4043 4649 4c4f
+	5154 575a 5d60 6367 6a6d 7073 7679 7c7f
+	8386 898c 8f92 9598 9c9f a2a5 a8ab aeb0
+	b3b6 b9bc bfc1 c4c7 c9cc ced1 d3d5 d8da
+	dcde e0e2 e4e6 e8ea eced eff0 f2f3 f5f6

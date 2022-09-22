@@ -1,0 +1,103 @@
+( 
+	converts a binary file to a proquints, identifiers that are readable, and pronounceable.
+	usage: uxncli proquints.rom file.bin )
+
+
+( devices )
+
+|10 @Console    &vector $2 &read     $1 &pad    $5 &write  $1 &error  $1
+|a0 @File       &vector $2 &success  $2 &stat   $2 &delete $1 &append $1 &name    $2 &length  $2 &read   $2 &write $2
+
+( variables )
+
+|0000
+
+	@length $2
+	@src $30
+
+|0100 ( -> )
+
+	;on-console .Console/vector DEO2
+
+BRK
+
+@on-console ( -> )
+
+	( starting )
+	[ LIT &trap $1 ] ,&started JCN
+		;src #0020 ;mclr JSR2
+		#01 ,&trap STR
+		&started
+	( append )
+	.Console/read DEI #20 LTH ,&validate JCN
+	;src ;slen JSR2 #0030 EQU2 ,&validate JCN
+		;src .Console/read DEI ;sput JSR2 BRK
+		&validate
+	( load )
+	;src .File/name DEO2
+	#fff0 ;data SUB2 .File/length DEO2
+	;data .File/read DEO2
+	( save length )
+	.File/success DEI2 .length STZ2
+	,parse JSR
+	#00 ,&trap STR
+
+BRK
+
+@parse ( -- )
+	
+	.length LDZ2 ;data ADD2 ;data
+	&loop
+		LDA2k ,proquint JSR
+		INC2 INC2 GTH2k ,&loop JCN
+	POP2 POP2
+	#010f DEO
+
+JMP2r
+
+@proquint ( short* -- )
+
+	( c1 ) DUP2 #0c ,&emit-con JSR
+	( v1 ) DUP2 #0a ,&emit-vow JSR
+	( c2 ) DUP2 #06 ,&emit-con JSR
+	( v2 ) DUP2 #03 ,&emit-vow JSR
+	( c3 ) #00 ,&emit-con JSR
+	#2018 DEO
+
+JMP2r
+	&emit-con SFT2 #000f AND2 ;&con ADD2 LDA #18 DEO JMP2r
+	&con "bdfghjklmnprstvz 
+	&emit-vow SFT2 #0003 AND2 ;&vow ADD2 LDA #18 DEO JMP2r
+	&vow "aiou 
+
+@slen ( str* -- len* )
+
+	DUP2 ,scap JSR SWP2 SUB2
+
+JMP2r
+
+@scap ( str* -- end* )
+
+	LDAk #00 NEQ JMP JMP2r
+	&while 
+		INC2 LDAk ,&while JCN
+
+JMP2r
+
+@sput ( str* char -- )
+
+	ROT ROT ,scap JSR STA
+
+JMP2r
+
+@mclr ( addr* len* -- )
+
+	OVR2 ADD2 SWP2
+	&loop
+		STH2k #00 STH2r STA
+		INC2 GTH2k ,&loop JCN
+	POP2 POP2
+
+JMP2r
+
+@data

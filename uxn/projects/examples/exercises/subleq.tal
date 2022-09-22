@@ -1,0 +1,46 @@
+( Subleq:
+	The subleq instruction subtracts the contents at address a
+	from the contents at address b, stores the result at address b,
+	and then, if the result is not positive, jumps to address c.
+	If the result is positive, execution proceeds to the next instruction
+	in sequence. )
+
+|0000
+
+	@a $2 @b $2 @c $2
+
+|0100 ( -> ) @reset
+
+	#0000
+	&while
+		,eval JSR
+		DUP2 #8000 LTH2 ,&while JCN
+	POP2
+	( halt ) #010f DEO
+
+BRK
+
+@eval ( ip* -- ip* )
+
+	DUP2 ,&get JSR .a STZ2
+	INC2 DUP2 ,&get JSR .b STZ2
+	INC2 DUP2 ,&get JSR .c STZ2
+	INC2
+	( I/O )
+ 	.a LDZ2 #ffff EQU2 ,&input JCN
+	.b LDZ2 #ffff EQU2 ,&output JCN
+	( SUBLEQ )
+	.b LDZ2 STH2k ,&get JSR .a LDZ2 ,&get JSR SUB2 STH2r DUP2 ADD2 ;program ADD2 STA2
+	( SET )
+	.b LDZ2 ,&get JSR #0001 SUB2 #8000 LTH2 ,&end JCN POP2 .c LDZ2 &end
+
+JMP2r
+	&input ( -- ) JMP2r
+	&output ( -- ) .a LDZ2 ,&get JSR NIP #18 DEO JMP2r
+	&get ( a* -- b* ) DUP2 ADD2 ;program ADD2 LDA2 JMP2r
+
+@program ( hello world )
+	000f 0011 ffff 0011 ffff ffff 0010 0001
+	ffff 0010 0003 ffff 000f 000f 0000 0000
+	ffff 0048 0065 006c 006c 006f 002c 0020
+	0077 006f 0072 006c 0064 0021 000a 0000

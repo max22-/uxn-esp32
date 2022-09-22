@@ -1,0 +1,27 @@
+( FizzBuzz: 
+	A program that prints the integers from 1 to 100.
+	for multiples of three, print "Fizz"
+	for multiples of five, print "Buzz"
+	for multiples of both three and five, print "FizzBuzz" )
+
+|0100 ( -> ) @reset
+
+	#6400
+	&loop
+		( dec ) DUPk ,print-dec JSR
+		( space ) #2018 DEO
+		DUP #03 ,mod JSR ,&no3 JCN ;s/fizz ,print-str JSR &no3
+		DUP #05 ,mod JSR ,&no5 JCN ;s/buzz ,print-str JSR &no5
+		( linebreak ) #0a18 DEO
+		INC GTHk ,&loop JCN
+	POP2
+	( halt ) #010f DEO
+
+BRK
+
+@mod ( a b -- c ) DIVk MUL SUB JMP2r
+@print-dec ( num -- ) #0a DIV ,print-num JSR #0a ,mod JSR
+@print-num ( num -- ) #30 ADD #18 DEO JMP2r
+@print-str ( addr* -- ) &loop LDAk #18 DEO INC2 LDAk ,&loop JCN POP2 JMP2r
+
+@s &fizz "Fizz $1 &buzz "Buzz $1

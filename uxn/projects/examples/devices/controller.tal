@@ -1,0 +1,169 @@
+( Controller:
+	Buttons should highlight on press and display the button and key bytes. )
+
+|00 @System &vector $2 &wst $1 &rst $1 &pad $4 &r $2 &g $2 &b $2 &debug $1 &halt $1
+|20 @Screen &vector $2 &width $2 &height $2 &auto $1 &pad $1 &x $2 &y $2 &addr $2 &pixel $1 &sprite $1
+|80 @Controller &vector $2 &button $1 &key $1
+
+|0000
+
+@center
+	&x $2 &y $2
+@frame
+	&w $2 &h $2 &x0 $2 &y0 $2 &x1 $2 &y1 $2
+
+|0100 ( -> )
+
+	( theme )
+	#0ff7 .System/r DEO2
+	#0f07 .System/g DEO2
+	#0f07 .System/b DEO2
+	( find center )
+	.Screen/width DEI2 #01 SFT2 .center/x STZ2
+	.Screen/height DEI2 #01 SFT2 .center/y STZ2
+	( place controller )
+	#0068 .frame/w STZ2
+	#0030 .frame/h STZ2
+	.center/x LDZ2 .frame/w LDZ2 #01 SFT2 SUB2 .frame/x0 STZ2
+	.center/y LDZ2 .frame/h LDZ2 #01 SFT2 SUB2 .frame/y0 STZ2
+	.frame/x0 LDZ2 .frame/w LDZ2 ADD2 .frame/x1 STZ2
+	.frame/y0 LDZ2 .frame/h LDZ2 ADD2 .frame/y1 STZ2
+	( vectors )
+	;on-button .Controller/vector DEO2
+	( frame )
+	.frame/x0 LDZ2 .frame/y0 LDZ2
+	.frame/x1 LDZ2 .frame/y1 LDZ2
+		#03 ;line-rect JSR2
+
+	,draw-controller JSR
+
+BRK
+
+@on-button ( -> )
+
+	,draw-controller JSR
+
+	( print stack on start button )
+	.Controller/button DEI #08 EQU JMP BRK #010e DEO
+
+BRK
+
+@draw-controller ( -- )
+
+	.Controller/button DEI STH
+
+	( d-pad )
+	.frame/x0 LDZ2 #0010 ADD2 .Screen/x DEO2
+	.frame/y0 LDZ2 #0010 ADD2 .Screen/y DEO2
+	;controller-icn/dpad-up .Screen/addr DEO2
+	#03  STHkr #04 SFT #01 AND DUP ADD SUB  .Screen/sprite DEO
+	.Screen/y DEI2 #0010 ADD2 .Screen/y DEO2
+	;controller-icn/dpad-down .Screen/addr DEO2
+	#03  STHkr #05 SFT #01 AND DUP ADD SUB  .Screen/sprite DEO
+	.Screen/y DEI2 #0008 SUB2 .Screen/y DEO2
+	.Screen/x DEI2 #0008 SUB2 .Screen/x DEO2
+	;controller-icn/dpad-left .Screen/addr DEO2
+	#03  STHkr #06 SFT #01 AND DUP ADD SUB  .Screen/sprite DEO
+	.Screen/x DEI2 #0010 ADD2 .Screen/x DEO2
+	;controller-icn/dpad-right .Screen/addr DEO2
+	#03  STHkr #07 SFT #01 AND DUP ADD SUB  .Screen/sprite DEO
+	.Screen/x DEI2 #0008 SUB2 .Screen/x DEO2
+	;controller-icn/dpad .Screen/addr DEO2
+	#03 .Screen/sprite DEO
+
+	( options )
+	.center/y LDZ2 #0009 ADD2 .Screen/y DEO2
+	.center/x LDZ2 #0009 SUB2 .Screen/x DEO2
+	;controller-icn/option .Screen/addr DEO2
+	#03 STHkr #02 SFT #01 AND DUP ADD SUB .Screen/sprite DEO
+	.center/x LDZ2 #0004 ADD2 .Screen/x DEO2
+	;controller-icn/option .Screen/addr DEO2
+	#03 STHkr #03 SFT #01 AND DUP ADD SUB .Screen/sprite DEO
+
+	( buttons )
+	.center/y LDZ2 .Screen/y DEO2
+	.center/x LDZ2 #0018 ADD2 .Screen/x DEO2
+	;controller-icn/button .Screen/addr DEO2
+	#03 STHkr #01 SFT #01 AND SUB .Screen/sprite DEO
+		.Screen/y DEI2 #000a ADD2 .Screen/y DEO2
+		;font-hex #0058 ADD2 .Screen/addr DEO2
+		#03 .Screen/sprite DEO
+
+	.center/y LDZ2 .Screen/y DEO2
+	.center/x LDZ2 #0024 ADD2 .Screen/x DEO2
+	;controller-icn/button .Screen/addr DEO2
+	#03 STHr #01 AND SUB .Screen/sprite DEO
+		.Screen/y DEI2 #000a ADD2 .Screen/y DEO2
+		;font-hex #0050 ADD2 .Screen/addr DEO2
+		#03 .Screen/sprite DEO
+
+	.center/x LDZ2 #0010 SUB2 .Screen/x DEO2
+	.center/y LDZ2 #0010 SUB2 .Screen/y DEO2
+	#01 .Screen/auto DEO
+	.Controller/button DEI2 ,draw-short JSR
+	#00 .Screen/auto DEO
+
+JMP2r
+
+( generics )
+
+@draw-short ( short* -- )
+
+	SWP ,draw-byte JSR
+
+@draw-byte ( byte -- )
+
+	DUP #04 SFT ,draw-hex JSR 
+
+@draw-hex ( char -- )
+
+	#00 SWP #0f AND #30 SFT2 ;font-hex ADD2 .Screen/addr DEO2
+	#03 .Screen/sprite DEO
+
+JMP2r
+
+@line-rect ( x1* y1* x2* y2* color -- )
+
+	STH
+	DUP2 ,&ver-y2 STR2 ,&hor-y2 STR2
+	DUP2 ,&ver-x2 STR2 ,&hor-x2 STR2
+	DUP2 ,&ver-y1 STR2 ,&hor-y1 STR2
+	DUP2 ,&ver-x1 STR2 ,&hor-x1 STR2
+	( horizontal )
+	[ LIT2 &hor-x2 $2 ] INC2 [ LIT2 &hor-x1 $2 ]
+	&hor
+		DUP2 .Screen/x DEO2
+		[ LIT2 &hor-y1 $2 ] .Screen/y DEO2 STHkr .Screen/pixel DEOk
+		[ LIT2 &hor-y2 $2 ] .Screen/y DEO2 DEO
+		INC2 GTH2k ,&hor JCN
+	POP2 POP2
+	( vertical )
+	[ LIT2 &ver-y2 $2 ] [ LIT2 &ver-y1 $2 ]
+	&ver
+		DUP2 .Screen/y DEO2
+		[ LIT2 &ver-x1 $2 ] .Screen/x DEO2 STHkr .Screen/pixel DEOk
+		[ LIT2 &ver-x2 $2 ] .Screen/x DEO2 DEO
+		INC2 GTH2k ,&ver JCN
+	POP2 POP2
+	POPr
+
+JMP2r
+
+@controller-icn
+	&dpad       ffff ffff ffff ffff
+	&dpad-up    7eff e7c3 ffff ffff
+	&dpad-down  ffff ffff c3e7 ff7e
+	&dpad-left  7fff efcf cfef ff7f
+	&dpad-right feff f7f3 f3f7 fffe
+	&option     0000 7eff ff7e 0000
+	&button     3c7e ffff ffff 7e3c
+
+@font-hex
+	007c 8282 8282 827c 0030 1010 1010 1010
+	007c 8202 7c80 80fe 007c 8202 1c02 827c
+	000c 1424 4484 fe04 00fe 8080 7c02 827c
+	007c 8280 fc82 827c 00fe 0202 0408 1010
+	007c 8282 7c82 827c 007c 8282 7e02 827c
+	007c 8202 7e82 827e 00fc 8282 fc82 82fc
+	007c 8280 8080 827c 00fc 8282 8282 82fc
+	00fe 8080 fe80 80fe 00fe 8080 f080 8080

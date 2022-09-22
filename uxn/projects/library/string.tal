@@ -1,0 +1,28 @@
+@strcmp ( a* b* -- a-end* b-end* order nonzero if strings differ
+                OR a-end* b-end* 00    00      if strings match )
+	STH2
+	,&entry JMP
+
+	&loop ( a* a b / b* )
+	SUB ,&nomatch JCNk ( a* a-b nonzero / b* )
+	POP2 ( a* / b* )
+	INC2 INC2r
+	&entry ( a* / b* )
+	LDAk LDAkr STHr ( a* a b / b* )
+	ORAk ,&loop JCN
+
+	&nomatch ( a* a-b flag / b* )
+	STH2r SWP2 ( a* b* a-b flag )
+	JMP2r
+
+@strlen ( string-ptr* -- length^ )
+	LIT2r 0000
+	,&entry JMP
+
+	&loop
+	INC2 INC2r
+	&entry
+	LDAk ,&loop JCN
+	POP2 STH2r
+	JMP2r
+

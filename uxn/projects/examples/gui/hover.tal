@@ -1,0 +1,119 @@
+( GUI Hover )
+
+|00 @System [ &vector $2 &pad $6 &r $2 &g $2 &b $2 ]
+|20 @Screen [ &vector $2 &width $2 &height $2 &pad $2 &x $2 &y $2 &addr $2 &pixel $1 &sprite $1 ]
+|90 @Mouse [ &vector $2 &x $2 &y $2 &state $1 &wheel $1 ]
+
+( variables )
+
+|0000
+
+@color $1
+@pointer [ &x $2 &y $2 &sprite $2 ]
+@r1 [ &x1 $2 &y1 $2 &x2 $2 &y2 $2 ]
+@r2 [ &x1 $2 &y1 $2 &x2 $2 &y2 $2 ]
+@r3 [ &x1 $2 &y1 $2 &x2 $2 &y2 $2 ]
+
+( program )
+
+|0100
+
+	( theme ) 
+	#0f0f .System/r DEO2 
+	#0fff .System/g DEO2 
+	#0ff0 .System/b DEO2
+
+	( vectors ) ;on-mouse .Mouse/vector DEO2
+	
+	#0020 #0030 #0060 #0060 .r1/y2 STZ2 .r1/x2 STZ2 .r1/y1 STZ2 .r1/x1 STZ2
+	#0058 #0050 #0090 #0080 .r2/y2 STZ2 .r2/x2 STZ2 .r2/y1 STZ2 .r2/x1 STZ2
+	#0048 #0048 #0080 #0098 .r3/y2 STZ2 .r3/x2 STZ2 .r3/y1 STZ2 .r3/x1 STZ2
+
+( no BRK, run through to on-mouse )
+
+@on-mouse
+	
+	;pointer_icn .pointer/sprite STZ2
+
+	#01 .color STZ
+	.Mouse/x DEI2 .Mouse/y DEI2 .r1 ;within-rect JSR2 #00 EQU ,&draw1 JCN 
+		#02 .color STZ 
+		;hand_icn .pointer/sprite STZ2
+		&draw1 
+	.r1/x1 LDZ2 .r1/y1 LDZ2 .r1/x2 LDZ2 .r1/y2 LDZ2 .color LDZ ;line-rect JSR2
+	
+	#01 .color STZ
+	.Mouse/x DEI2 .Mouse/y DEI2 .r2 ;within-rect JSR2 #00 EQU ,&draw2 JCN 
+		#03 .color STZ 
+		;hand_icn .pointer/sprite STZ2
+		&draw2 
+	.r2/x1 LDZ2 .r2/y1 LDZ2 .r2/x2 LDZ2 .r2/y2 LDZ2 .color LDZ ;line-rect JSR2
+	
+	#01 .color STZ
+	.Mouse/x DEI2 .Mouse/y DEI2 .r3 ;within-rect JSR2 #00 EQU ,&draw3 JCN 
+		#02 .color STZ 
+		;hand_icn .pointer/sprite STZ2
+		&draw3 
+	.r3/x1 LDZ2 .r3/y1 LDZ2 .r3/x2 LDZ2 .r3/y2 LDZ2 .color LDZ ;line-rect JSR2
+
+	( clear last cursor )
+	.pointer/x LDZ2 .Screen/x DEO2
+	.pointer/y LDZ2 .Screen/y DEO2
+	#40 .Screen/sprite DEO
+
+	( record pointer positions )
+	.Mouse/x DEI2 DUP2 .pointer/x STZ2 .Screen/x DEO2 
+	.Mouse/y DEI2 DUP2 .pointer/y STZ2 .Screen/y DEO2
+	.pointer/sprite LDZ2 .Screen/addr DEO2
+
+	( draw new cursor )
+	#41 .Screen/sprite DEO
+
+BRK
+
+@within-rect ( x* y* rect -- flag )
+	
+	STH
+	( y < rect.y1 ) DUP2 STHkr INC INC LDZ2 LTH2 ,&skip JCN
+	( y > rect.y2 ) DUP2 STHkr #06 ADD LDZ2 GTH2 ,&skip JCN
+	SWP2
+	( x < rect.x1 ) DUP2 STHkr LDZ2 LTH2 ,&skip JCN
+	( x > rect.x2 ) DUP2 STHkr #04 ADD LDZ2 GTH2 ,&skip JCN
+	POP2 POP2 POPr
+	#01 
+JMP2r
+	&skip
+	POP2 POP2 POPr
+	#00
+
+JMP2r
+
+@line-rect ( x1* y1* x2* y2* color -- )
+
+	STH
+	DUP2 ,&ver-y2 STR2 ,&hor-y2 STR2
+	DUP2 ,&ver-x2 STR2 ,&hor-x2 STR2
+	DUP2 ,&ver-y1 STR2 ,&hor-y1 STR2
+	DUP2 ,&ver-x1 STR2 ,&hor-x1 STR2
+	( horizontal )
+	[ LIT2 &hor-x2 $2 ] INC2 [ LIT2 &hor-x1 $2 ]
+	&hor
+		DUP2 .Screen/x DEO2
+		[ LIT2 &hor-y1 $2 ] .Screen/y DEO2 STHkr .Screen/pixel DEOk
+		[ LIT2 &hor-y2 $2 ] .Screen/y DEO2 DEO
+		INC2 GTH2k ,&hor JCN
+	POP2 POP2
+	( vertical )
+	[ LIT2 &ver-y2 $2 ] [ LIT2 &ver-y1 $2 ]
+	&ver
+		DUP2 .Screen/y DEO2
+		[ LIT2 &ver-x1 $2 ] .Screen/x DEO2 STHkr .Screen/pixel DEOk
+		[ LIT2 &ver-x2 $2 ] .Screen/x DEO2 DEO
+		INC2 GTH2k ,&ver JCN
+	POP2 POP2
+	POPr
+
+JMP2r
+
+@pointer_icn [ 80c0 e0f0 f8e0 1000 ]
+@hand_icn    [ 4040 4070 f8f8 f870 ]

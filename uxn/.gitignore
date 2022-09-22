@@ -1,0 +1,17 @@
+.DS*
+*jpg~
+*png~
+*gif~
+*bmp~
+/bin
+*io.bit
+*.bak
+/*-test
+/screenshot-*.bmp
+
+*snarf
+*theme
+
+*.rom
+
+*.[o0125678vqki]

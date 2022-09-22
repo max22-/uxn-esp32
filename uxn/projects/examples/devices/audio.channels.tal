@@ -1,0 +1,141 @@
+( dev/audio )
+
+%MOD { DIVk MUL SUB }
+
+( devices )
+
+|00 @System     [ &vector $2 &pad      $6 &r      $2 &g     $2 &b      $2 ]
+|20 @Screen     [ &vector $2 &width    $2 &height $2 &pad   $2 &x      $2 &y    $2 &addr  $2 &pixel $1 &sprite $1 ]
+|30 @Audio0     [ &vector $2 &position $2 &output $1 &pad   $3 &adsr   $2 &length $2 &addr  $2 &volume $1 &pitch $1 ]
+|40 @Audio1     [ &vector $2 &position $2 &output $1 &pad   $3 &adsr   $2 &length $2 &addr  $2 &volume $1 &pitch $1 ]
+|50 @Audio2     [ &vector $2 &position $2 &output $1 &pad   $3 &adsr   $2 &length $2 &addr  $2 &volume $1 &pitch $1 ]
+|60 @Audio3     [ &vector $2 &position $2 &output $1 &pad   $3 &adsr   $2 &length $2 &addr  $2 &volume $1 &pitch $1 ]
+
+( variables )
+
+|0000
+
+@timer    $1
+@counter  $1
+
+|0100 ( -> )
+	
+	( theme )
+	#00ff .System/r DEO2 
+	#0f0f .System/g DEO2 
+	#0ff0 .System/b DEO2 
+
+	( vectors )
+	;on-frame .Screen/vector DEO2
+
+	( setup synth )
+	#1202 .Audio0/adsr DEO2
+	;saw .Audio0/addr DEO2
+	#0100 .Audio0/length DEO2
+	#88 .Audio0/volume DEO
+
+	#0101 .Audio1/adsr DEO2
+	;tri .Audio1/addr DEO2
+	#0100 .Audio1/length DEO2
+	#88 .Audio1/volume DEO
+
+	#0112 .Audio2/adsr DEO2
+	;sin .Audio2/addr DEO2
+	#0100 .Audio2/length DEO2
+	#88 .Audio2/volume DEO
+
+	#0022 .Audio3/adsr DEO2
+	;piano .Audio3/addr DEO2
+	#0100 .Audio3/length DEO2
+	#88 .Audio3/volume DEO
+
+BRK
+
+@on-frame ( -> )
+
+	( incr ) .timer LDZ INC .timer STZ 
+	( skip ) .timer LDZ #10 EQU #01 JCN [ BRK ]
+
+	( get note )
+	.counter LDZ #18 MOD #30 ADD 
+		.Audio0/pitch .counter LDZ #03 AND #40 SFT ADD DEO
+
+	.counter LDZ INC .counter STZ
+	#00 .timer STZ
+
+BRK
+
+@saw 
+	0003 0609 0c0f 1215 181b 1e21 2427 2a2d
+	3033 3639 3b3e 4143 4649 4b4e 5052 5557
+	595b 5e60 6264 6667 696b 6c6e 7071 7274
+	7576 7778 797a 7b7b 7c7d 7d7e 7e7e 7e7e
+	7f7e 7e7e 7e7e 7d7d 7c7b 7b7a 7978 7776
+	7574 7271 706e 6c6b 6967 6664 6260 5e5b
+	5957 5552 504e 4b49 4643 413e 3b39 3633
+	302d 2a27 2421 1e1b 1815 120f 0c09 0603
+	00fd faf7 f4f1 eeeb e8e5 e2df dcd9 d6d3
+	d0cd cac7 c5c2 bfbd bab7 b5b2 b0ae aba9
+	a7a5 a2a0 9e9c 9a99 9795 9492 908f 8e8c
+	8b8a 8988 8786 8585 8483 8382 8282 8282
+	8182 8282 8282 8383 8485 8586 8788 898a
+	8b8c 8e8f 9092 9495 9799 9a9c 9ea0 a2a5
+	a7a9 abae b0b2 b5b7 babd bfc2 c5c7 cacd
+	d0d3 d6d9 dcdf e2e5 e8eb eef1 f4f7 fafd 
+@tri
+	8082 8486 888a 8c8e 9092 9496 989a 9c9e
+	a0a2 a4a6 a8aa acae b0b2 b4b6 b8ba bcbe
+	c0c2 c4c6 c8ca ccce d0d2 d4d6 d8da dcde
+	e0e2 e4e6 e8ea ecee f0f2 f4f6 f8fa fcfe
+	fffd fbf9 f7f5 f3f1 efed ebe9 e7e5 e3e1
+	dfdd dbd9 d7d5 d3d1 cfcd cbc9 c7c5 c3c1
+	bfbd bbb9 b7b5 b3b1 afad aba9 a7a5 a3a1
+	9f9d 9b99 9795 9391 8f8d 8b89 8785 8381
+	7f7d 7b79 7775 7371 6f6d 6b69 6765 6361
+	5f5d 5b59 5755 5351 4f4d 4b49 4745 4341
+	3f3d 3b39 3735 3331 2f2d 2b29 2725 2321
+	1f1d 1b19 1715 1311 0f0d 0b09 0705 0301
+	0103 0507 090b 0d0f 1113 1517 191b 1d1f
+	2123 2527 292b 2d2f 3133 3537 393b 3d3f
+	4143 4547 494b 4d4f 5153 5557 595b 5d5f
+	6163 6567 696b 6d6f 7173 7577 797b 7d7f
+@sin
+	8083 8689 8c8f 9295 989b 9ea1 a4a7 aaad
+	b0b3 b6b9 bbbe c1c3 c6c9 cbce d0d2 d5d7
+	d9db dee0 e2e4 e6e7 e9eb ecee f0f1 f2f4
+	f5f6 f7f8 f9fa fbfb fcfd fdfe fefe fefe
+	fffe fefe fefe fdfd fcfb fbfa f9f8 f7f6
+	f5f4 f2f1 f0ee eceb e9e7 e6e4 e2e0 dedb
+	d9d7 d5d2 d0ce cbc9 c6c3 c1be bbb9 b6b3
+	b0ad aaa7 a4a1 9e9b 9895 928f 8c89 8683
+	807d 7a77 7471 6e6b 6865 625f 5c59 5653
+	504d 4a47 4542 3f3d 3a37 3532 302e 2b29
+	2725 2220 1e1c 1a19 1715 1412 100f 0e0c
+	0b0a 0908 0706 0505 0403 0302 0202 0202
+	0102 0202 0202 0303 0405 0506 0708 090a
+	0b0c 0e0f 1012 1415 1719 1a1c 1e20 2225
+	2729 2b2e 3032 3537 3a3d 3f42 4547 4a4d
+	5053 5659 5c5f 6265 686b 6e71 7477 7a7d
+@piano
+	8182 8588 8d91 959b a1a6 aaad b2b5 b8bd
+	c1c7 cbd0 d5d9 dde1 e5e5 e4e4 e1dc d7d1
+	cbc5 bfb8 b2ac a6a2 9c97 928d 8884 807c
+	7977 7574 7372 7272 7273 7372 706d 6964
+	605b 5650 4d49 4643 4342 4244 4548 4a4d
+	5052 5556 5758 5554 5150 4c4a 4744 423f
+	3d3c 3a38 3835 3431 3030 2f31 3336 393e
+	4449 4e54 5a60 666b 7175 7b82 8990 989e
+	a6ab b1b6 babd bebf bfbe bbb9 b6b3 b0ae
+	aaa8 a6a3 a19e 9c9a 9997 9696 9798 9b9e
+	a1a4 a6a9 a9ac adad adae aeaf b0b0 b1b1
+	b3b3 b4b4 b4b3 b3b1 b0ad abab a9a9 a8a8
+	a7a5 a19d 9891 8b84 7e77 726e 6b6b 6b6c
+	6f71 7477 7776 7370 6c65 5e56 4e48 423f
+	3d3c 3b3a 3a39 3838 3839 393a 3c3e 4146
+	4a50 575b 6064 686a 6e70 7274 7677 7a7d
+
+@melody [ 
+	54 52 54 4f 4b 4f 48 ff
+	54 52 54 4f 4b 4f 48 ff
+	54 56 57 56 57 54 56 54 
+	56 52 54 52 54 50 54 ff ] 

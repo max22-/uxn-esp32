@@ -1,0 +1,97 @@
+( File:
+	Creates a temporary file called file-output.txt, 
+	then read it back in console, print length and delete it. )
+
+|a0 @File0 &vector $2 &success $2 &stat $2 &delete $1 &append $1 &name $2 &length $2 &read $2 &write $2
+|b0 @File1 &vector $2 &success $2 &stat $2 &delete $1 &append $1 &name $2 &length $2 &read $2 &write $2
+
+|0100 ( -> )
+
+	( write a file with file0 )
+	;filepath-txt .File0/name DEO2
+	;part1 ,append JSR
+	;part2 ,append JSR
+	( close file before changing device )
+	.File0/name DEI2k ROT DEO2
+	( read a file with file1 )
+	;filepath-txt .File1/name DEO2
+	,stream JSR
+	( delete file with file0 )
+	;filepath-txt .File0/delete DEO2
+
+BRK
+
+@append ( part* -- )
+
+	DUP2 ;print-str JSR2
+	DUP2 ;slen JSR2 STH2k .File0/length DEO2
+	.File0/write DEO2
+	( print result )
+	;saved-txt ;print-str JSR2 
+	STH2r ;print JSR2 #2018 DEO
+	;bytes-txt ;print-str JSR2 #0a18 DEO
+
+JMP2r
+
+@stream ( -- )
+
+	#0001 .File1/length DEO2
+	LIT2r 0000
+	&stream
+		;&buf DUP2 .File1/read DEO2 LDA #18 DEO INC2r
+		.File1/success DEI2 #0000 NEQ2 ,&stream JCN
+	( print result )
+	;loaded-txt ;print-str JSR2 
+	STH2r ;print JSR2 #2018 DEO
+	;bytes-txt ;print-str JSR2 #0a18 DEO
+
+JMP2r
+	&buf $1
+
+@slen ( str* -- len* )
+
+	DUP2 ,scap JSR SWP2 SUB2
+
+JMP2r
+
+@scap ( str* -- end* )
+
+	LDAk #00 NEQ JMP JMP2r
+	&while INC2 LDAk ,&while JCN
+
+JMP2r
+
+@print ( short* -- )
+
+	&short ( short* -- ) SWP ,&byte JSR
+	&byte ( byte -- ) DUP #04 SFT ,&char JSR
+	&char ( char -- ) #0f AND DUP #09 GTH #27 MUL ADD #30 ADD #18 DEO
+
+JMP2r
+
+@print-str ( str* -- )
+
+	&while
+		LDAk #18 DEO
+		INC2 LDAk ,&while JCN
+	POP2
+
+JMP2r
+
+@saved-txt "Saved 20 $1
+@loaded-txt "Loaded 20 $1
+@bytes-txt "bytes. $1
+@filepath-txt "file-output.txt $1
+
+@part1
+	596f 7572 2073 6163 7265 6420 706c 616e
+	7473 2c20 6966 2068 6572 6520 6265 6c6f
+	772c 0a4f 6e6c 7920 616d 6f6e 6720 7468
+	6520 706c 616e 7473 2077 696c 6c20 6772
+	6f77 2e0a 00
+
+@part2
+	536f 6369 6574 7920 6973 2061 6c6c 2062
+	7574 2072 7564 652c 0a54 6f20 7468 6973
+	2064 656c 6963 696f 7573 2073 6f6c 6974
+	7564 652e 0a
