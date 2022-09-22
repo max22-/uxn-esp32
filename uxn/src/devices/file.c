@@ -106,9 +106,10 @@ file_read(UxnFile *c, void *dest, Uint16 len)
 {
 	if(c->state != FILE_READ && c->state != DIR_READ) {
 		reset(c);
+		/* Directories not handled by the SPIFFS on the ESP32
 		if((c->dir = opendir(c->current_filename)) != NULL)
 			c->state = DIR_READ;
-		else if((c->f = fopen(c->current_filename, "rb")) != NULL)
+		else */ if((c->f = fopen(c->current_filename, "rb")) != NULL)
 			c->state = FILE_READ;
 	}
 	if(c->state == FILE_READ)
