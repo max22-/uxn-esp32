@@ -1,0 +1,37 @@
+( Console:
+	Prints Hello Uxn!, and listens for incoming stdin events on enter. )
+
+|10 @Console &vector $2 &read $1 &pad $5 &write $1 &error $1
+
+|0100 ( -> )
+
+	( set vector )
+	;on-console .Console/vector DEO2
+	( print hello )
+	;hello-txt 
+	&while
+		LDAk .Console/write DEO
+		INC2 LDAk ,&while JCN
+	POP2
+
+BRK
+
+@on-console ( -> )
+
+	;yousaid-txt ,print-str JSR
+	.Console/read DEI .Console/write DEO
+	#0a .Console/write DEO
+
+BRK
+
+@print-str ( str* -- )
+
+	&while
+		LDAk #18 DEO
+		INC2 LDAk ,&while JCN
+	POP2
+
+JMP2r
+
+@hello-txt "Hello 20 "Uxn! $1
+@yousaid-txt "You 20 "said: 20 $1

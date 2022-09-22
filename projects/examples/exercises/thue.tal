@@ -1,0 +1,155 @@
+( thue interpreter
+	usage: thue.rom demo.t )
+
+|10 @Console &vector $2 &read $1 &pad $5 &write $1
+|a0 @File &vector $2 &success $2 &stat $2 &delete $1 &append $1 &name $2 &length $2 &read $2 &write $2
+
+|0000
+
+@src $40
+@ptr $2
+@len $2
+
+|0100 ( -> )
+
+	;on-console .Console/vector DEO2
+
+BRK
+
+@on-console ( -> )
+
+	;src STH2
+
+	( read )
+	.Console/read DEI
+	DUP #20 LTH OVR #7f GTH ORA ,&end JCN
+	STH2kr ;slen JSR2 #003f GTH2 ,&end JCN
+		STH2r ;sput JSR2 BRK
+		&end
+	POP
+
+	( parse )
+	STH2r .File/name DEO2
+	#0001 .File/length DEO2
+	;program .ptr STZ2
+	&s
+		;&buf .File/read DEO2
+		.File/success DEI2 #0000 EQU2 ,&eof JCN
+		[ LIT &buf $1 ] ;walk JSR2
+		,&s JMP
+	&eof
+
+	( assemble )
+	;program/assembly .ptr STZ2
+	;program
+	&w
+		( save ) DUP2 .ptr LDZ2 STA2
+		( incr ) .ptr LDZ2k INC2 INC2 ROT STZ2
+		( next ) &eos INC2 LDAk ,&eos JCN INC2
+		LDAk ,&w JCN
+
+	( save acc )
+	INC2 ;program/accumulator ;scpy JSR2
+
+	( run )
+	&eval ,step JSR ,&eval JCN
+	#010f DEO
+
+BRK
+
+@step ( -- done )
+
+	;program/assembly
+	&while
+		DUP2 ;run-rule JSR2 ,&found JCN
+		#0004 ADD2 LDA2k ORA ,&while JCN
+	POP2
+	#00
+
+JMP2r
+	&found #01 JMP2r
+
+@walk ( char -- )
+
+	.ptr LDZ2 STA
+
+	( check for left-side )
+	.ptr LDZ2 #0002 SUB2 ;&marker ;scmp JSR2 #01 NEQ ,&no-marker JCN
+		#00 .ptr LDZ2 #0002 SUB2 STA
+		.ptr LDZ2k #0002 SUB2 ROT STZ2
+		.len LDZ2k INC2 ROT STZ2
+		&no-marker
+	( check for right-side )
+	.ptr LDZ2 LDA #0a NEQ ,&no-lb JCN
+		#00 .ptr LDZ2 STA
+		&no-lb
+	.ptr LDZ2k INC2 ROT STZ2
+
+JMP2r
+	&marker "::= $1
+
+@run-rule ( rule* -- )
+
+	LDA2k ,&a STR2
+	INC2 INC2 LDA2 ,&b STR2
+
+	;program/accumulator
+	&w
+		[ LIT2 &a $2 ] OVR2 ;sseg JSR2 #01 NEQ ,&no-found JCN
+			,&b LDR2 LDA LIT "~ EQU ,&output JCN
+			( shift ) DUP2 [ ,&b LDR2 ;slen JSR2 ,&a LDR2 ;slen JSR2 SUB2 ] ;ssft JSR2
+			( write ) [ LIT2 &b $2 ] SWP2 OVR2 ;slen JSR2 ;mcpy JSR2 
+			POP2 #01 JMP2r
+			&no-found
+		INC2 LDAk ,&w JCN
+	POP2
+	#00
+
+JMP2r
+	&output
+		,&a LDR2 ;slen JSR2 #0000 SWP2 SUB2 ;ssft JSR2
+		POP2 ,&b LDR2 INC2
+		LDAk LIT "` NEQ ,&no-lb JCN
+			#0a18 DEO #01 JMP2r
+			&no-lb
+		,print-str JSR #01
+	JMP2r
+
+@print-str ( str* -- )
+
+	&while
+		LDAk #18 DEO
+		INC2 LDAk ,&while JCN
+	POP2
+
+JMP2r
+
+@ssft ( str* len* -- )
+
+	STH2 DUP2k ;slen JSR2 ADD2 STH2r
+	DUP2 #8000 GTH2 ,&l JCN
+	ORAk ,&r JCN
+	POP2 POP2 POP2
+
+JMP2r
+	&l #8000 SWP2 SUB2 #8000 ADD2 ,msfl JSR JMP2r
+	&r ,msfr JSR JMP2r
+
+( stdlib )
+
+@mcpy ( src* dst* len* -- ) SWP2 STH2 OVR2 ADD2 SWP2 &l LDAk STH2kr STA INC2r INC2 GTH2k ,&l JCN POP2 POP2 POP2r JMP2r
+@msfl ( b* a* len* -- ) STH2 SWP2 EQU2k ,&e JCN &l DUP2k STH2kr ADD2 LDA ROT ROT STA INC2 GTH2k ,&l JCN POP2 POP2 &e POP2r JMP2r
+@msfr ( b* a* len* -- ) STH2 EQU2k ,&e JCN &l DUP2 LDAk ROT ROT STH2kr ADD2 STA #0001 SUB2 LTH2k ,&l JCN POP2 POP2 &e POP2r JMP2r
+
+@scap ( str* -- end* ) LDAk #00 NEQ JMP JMP2r &w INC2 LDAk ,&w JCN JMP2r
+@sput ( chr str* -- ) ,scap JSR STA JMP2r
+@slen ( str* -- len* ) DUP2 ,scap JSR SWP2 SUB2 JMP2r
+@scpy ( src* dst* -- ) STH2 &w LDAk STH2kr STA INC2r INC2 LDAk ,&w JCN POP2 #00 STH2r STA JMP2r
+@scmp ( a* b* -- f ) STH2 &l LDAk LDAkr STHr ANDk #00 EQU ,&e JCN NEQk ,&e JCN POP2 INC2 INC2r ,&l JMP &e NIP2 POP2r EQU JMP2r
+@sseg ( a* b* -- f ) STH2 &l LDAk LDAkr STHr NEQ ,&e JCN INC2k LDA #00 EQU ,&e JCN INC2 INC2r ,&l JMP &e LDA LDAr STHr EQU JMP2r
+
+$10
+
+@program $4000
+	&assembly $4000
+	&accumulator $4000

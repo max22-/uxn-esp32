@@ -1,0 +1,159 @@
+( devices )
+
+( uxnasm rule110.tal rule110.rom && uxnemu rule110.rom )
+
+%+  { ADD }  %-  { SUB }  %*  { MUL }  %/  { DIV }
+%<  { LTH }  %>  { GTH }  %=  { EQU }  %!  { NEQ }
+%++ { ADD2 } %-- { SUB2 } %** { MUL2 } %// { DIV2 }
+%<< { LTH2 } %>> { GTH2 } %== { EQU2 } %!! { NEQ2 }
+
+%2*  { #10 SFT } %2/  { #01 SFT } %2**  { #10 SFT2 } %2//  { #01 SFT2 }
+%4*  { #20 SFT } %4/  { #02 SFT } %4**  { #20 SFT2 } %4//  { #02 SFT2 }
+%8*  { #30 SFT } %8/  { #03 SFT } %8**  { #30 SFT2 } %8//  { #03 SFT2 }
+%10* { #40 SFT } %10/ { #04 SFT } %10** { #40 SFT2 } %10// { #04 SFT2 }
+%20* { #50 SFT } %20/ { #05 SFT } %20** { #50 SFT2 } %20// { #05 SFT2 }
+
+%2MOD  { #01 AND } %2MOD2  { #0001 AND2 }
+%4MOD  { #03 AND } %4MOD2  { #0003 AND2 }
+%8MOD  { #07 AND } %8MOD2  { #0007 AND2 }
+%10MOD { #0f AND } %10MOD2 { #000f AND2 }
+
+%ROL2 { DUP2 #0f SFT2 SWP2 #10 SFT2 ++ }
+%ROR2 { DUP2 #f0 SFT2 SWP2 #01 SFT2 ++ }
+
+%DEBUG      { ;print-hex/byte JSR2 #0a18 DEO }
+%DEBUG2     { ;print-hex JSR2 #0a18 DEO }
+%RTN        { JMP2r }
+
+%WIDTH { #0020 }
+%STEPS { #30 }
+
+|00 @System  [ &vector $2 &pad  $6  &r $2  &g $2  &b $2 ]
+|20 @Screen  [ &vector $2 &width $2 &height $2 &auto $1 &pad $1 &x $2 &y  $2 &addr $2 &pixel $1 &sprite $1 ]
+|90 @Mouse      [ &vector $2 &x        $2 &y      $2 &state $1 &wheel $1 ]
+
+|0000
+
+@input 
+
+|0100
+
+	( set system colors )
+	#0ff7 .System/r DEO2
+	#0f0e .System/g DEO2
+	#0f0c .System/b DEO2
+
+	;on-mouse   .Mouse/vector DEO2
+
+	( set size )
+	#0080 .Screen/width DEO2
+	#0180 .Screen/height DEO2
+
+	( seed ) #0001 ;input STA2
+
+	,render JSR
+
+BRK
+
+@render ( -- )
+
+	STEPS #00
+	&loop
+		( update )
+		DUP 2* LDZ2k 
+		;rule-110 JSR2 
+		ROT INC INC STZ2
+		( draw )
+		DUP ,draw-line JSR
+		INC GTHk ,&loop JCN
+	POP2
+
+RTN
+
+@draw-line ( line -- )
+
+	STHk #00 SWP 8** .Screen/y DEO2
+	#1000
+	&loop
+		DUP #00 SWP 8** .Screen/x DEO2
+		( shift ) INCk #10 SWP -
+		( get address ) STHkr 2* LDZ2
+		( bit ) ROT SFT2 #0001 AND2 
+		( get sprite ) 8** ;cell-icns ++ .Screen/addr DEO2
+		#01 STHkr #00 = + .Screen/sprite DEO
+		INC GTHk ,&loop JCN
+	POP2
+	POPr
+
+RTN
+
+@rule-110 ( value* -- value* )
+
+	#0000 ,&res STR2
+	ROL2 STH2
+	#1000
+	&loop
+		( get 3-bits ) STH2kr #e000 AND2 #0d SFT2 ;rule ++ LDA STH
+		( get result ) DUP #40 SFT #00 STHr ROT SFT2
+		( reset ) ROR2 ROR2 ROR2
+		( save ) ,&res LDR2 ++ ,&res STR2
+		STH2r ROR2 STH2
+		INC GTHk ,&loop JCN
+	POP2
+	POP2r
+
+	,&res LDR2
+
+RTN
+	&res $2
+
+@rule
+	00 01 01 01 00 01 01 00
+
+@on-mouse ( -> )
+	
+	( clear last cursor )
+	;mouse-icn .Screen/addr DEO2 
+	,&x LDR2 .Screen/x DEO2 
+	,&y LDR2 .Screen/y DEO2 
+	#40 .Screen/sprite DEO
+
+	( record pointer positions )
+	.Mouse/x DEI2 DUP2 ,&x STR2 .Screen/x DEO2
+	.Mouse/y DEI2 DUP2 ,&y STR2 .Screen/y DEO2 
+
+	( colorize on state )
+	#43 [ .Mouse/state DEI #00 ! ] - .Screen/sprite DEO
+
+	( on click )
+	.Mouse/state DEI #00 ! JMP BRK
+
+	( toggle bit )
+	.input LDZ2k
+		#0001 .Mouse/x DEI2 8// #000f SWP2 -- NIP #40 SFT SFT2 EOR2 
+		ROT STZ2
+	;render JSR2
+	( release ) #00 .Mouse/state DEO
+
+BRK
+	&x $2 &y $2
+
+@print-hex ( value* -- )
+	
+	SWP ,&byte JSR 
+	&byte ( byte -- )
+		STHk #04 SFT ,&parse JSR #18 DEO
+		STHr #0f AND ,&parse JSR #18 DEO
+	RTN
+	&parse ( byte -- char ) DUP #09 GTH ,&above JCN #30 + RTN 
+	&above #57 + RTN
+
+RTN
+
+@mouse-icn
+	80c0 e0f0 f8e0 1000
+
+@cell-icns
+	7c82 8282 8282 7c00
+	7cfe fefe fefe 7c00
+

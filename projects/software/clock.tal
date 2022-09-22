@@ -1,0 +1,323 @@
+( simple graphical clock )
+
+|00 @System     [ &vector $2 &pad      $6 &r      $2 &g     $2 &b      $2 ]
+|10 @Console    [ &vector $2 &read     $1 &pad    $5 &write $1 &error  $1 ]
+|20 @Screen     [ &vector $2 &width    $2 &height $2 &auto  $1 &pad    $1 &x      $2 &y      $2 &addr $2 &pixel $1 &sprite $1 ]
+|c0 @DateTime   [ &year   $2 &month    $1 &day    $1 &hour  $1 &minute $1 &second $1 &dotw $1 &doty $2 &isdst $1 ]
+
+|0000
+
+@last
+	&day $1 &sec $1
+@center
+	&x $2 &y $2
+@date
+	&x $2 &y $2
+@time
+	&x $2 &y $2
+@needles
+	&hx $2 &hy $2
+	&mx $2 &my $2
+	&sx $2 &sy $2
+	&zx $2 &zy $2
+@buf
+	&d $3 &h $2 &s1 $1 &m $2 &s2 $1 &s $3
+@line
+	&x $2 &y $2 &dx $2 &dy $2 &e1 $2
+
+|0100 ( -> )
+
+	( theme )
+	#0ff8 .System/r DEO2
+	#0f08 .System/g DEO2
+	#0f08 .System/b DEO2
+	( resize )
+	#00f0 .Screen/width DEO2
+	#0120 .Screen/height DEO2
+	( vectors )
+	;on-frame .Screen/vector DEO2
+	( center )
+	.Screen/width DEI2 #01 SFT2
+		DUP2 .center/x STZ2
+		DUP2 #0028 SUB2 .date/x STZ2
+		#0020 SUB2 .time/x STZ2
+	.Screen/height DEI2 #01 SFT2
+		DUP2 .center/y STZ2
+		DUP2 #0078 SUB2 .date/y STZ2
+		#006c ADD2 .time/y STZ2
+	;draw-watchface JSR2
+	( time buffer )
+	LIT ":
+		DUP .buf/s1 STZ
+		.buf/s2 STZ
+
+( continue )
+
+@on-frame ( -> )
+
+	( once per second )
+	.DateTime/second DEI
+	DUP .last/sec LDZ EQU ,&same-sec JCN
+		( make time )
+		.DateTime/hour DEI .buf/h ;decimal JSR2
+		.DateTime/minute DEI .buf/m ;decimal JSR2
+		DUP .buf/s ;decimal JSR2
+		( draw label )
+		.time/x LDZ2 .Screen/x DEO2
+		.time/y LDZ2 .Screen/y DEO2
+		;buf/h ;draw-text JSR2
+		( draw needles )
+		#00 ;draw-needles JSR2
+		;make-needles JSR2
+		#01 ;draw-needles JSR2
+		DUP .last/sec STZ
+		&same-sec
+	POP
+
+	( once per day )
+	.DateTime/day DEI
+	DUP .last/day LDZ EQU ,&same-day JCN
+		( make date )
+		DUP .buf/d ;decimal JSR2
+		( draw label )
+		.date/x LDZ2 .Screen/x DEO2
+		.date/y LDZ2 .Screen/y DEO2
+		[ #00 .DateTime/dotw DEI #20 SFT ] ;week-txt ADD2 ;draw-text JSR2
+		[ #00 .DateTime/month DEI #20 SFT ] ;month-txt ADD2 ;draw-text JSR2
+		;buf/d ;draw-text JSR2
+		DUP .last/day STZ
+		&same-day
+	POP
+
+BRK
+
+@draw-needles ( draw -- )
+
+	STH
+	.center/x LDZ2 .center/y LDZ2
+	OVR2 OVR2
+	.needles/mx LDZ2 .needles/my LDZ2 #01 STHkr MUL
+		;draw-line JSR2
+	OVR2 OVR2
+	.needles/hx LDZ2 .needles/hy LDZ2 #01 STHkr MUL
+		;draw-line JSR2
+	.needles/sx LDZ2 .needles/sy LDZ2
+	.needles/zx LDZ2 .needles/zy LDZ2 #02 STHr MUL
+		;draw-line JSR2
+
+	( middle )
+	#0001 SUB2 .Screen/y DEO2
+	#0001 SUB2 .Screen/x DEO2
+	;middle-icn .Screen/addr DEO2
+	#0a .Screen/sprite DEO
+
+JMP2r
+
+@draw-text ( addr* -- )
+
+	( auto addr ) #15 .Screen/auto DEO
+	&while
+		LDAk
+		DUP ;is-lc JSR2 ,&lc JCN
+		DUP ;is-uc JSR2 ,&uc JCN
+		DUP ;is-num JSR2 ,&num JCN
+		DUP LIT "/ EQU ,&slash JCN
+		DUP LIT ": EQU ,&colon JCN
+		POP ;font/blank
+		&end
+		.Screen/addr DEO2
+		#03 .Screen/sprite DEO
+		INC2 LDAk ,&while JCN
+	POP2
+	#00 .Screen/sprite DEO
+	( auto none ) #00 .Screen/auto DEO
+
+JMP2r
+	&lc #61 SUB #00 SWP #40 SFT2 ;font/lc ADD2 ,&end JMP
+	&uc #41 SUB #00 SWP #40 SFT2 ;font/uc ADD2 ,&end JMP
+	&num #30 SUB #00 SWP #40 SFT2 ;font/num ADD2 ,&end JMP
+	&slash POP ;font/slash ,&end JMP
+	&colon POP ;font/colon ,&end JMP
+
+@draw-line ( x1* y1* x2* y2* color -- )
+
+	( load ) STH ,&y STR2 ,&x STR2 .line/y STZ2 .line/x STZ2
+	,&x LDR2 .line/x LDZ2 SUB2 ;abs2 JSR2 .line/dx STZ2
+	#0000 ,&y LDR2 .line/y LDZ2 SUB2 ;abs2 JSR2 SUB2 .line/dy STZ2
+	#ffff #00 .line/x LDZ2 ,&x LDR2 ;lts2 JSR2 DUP2 ADD2 ADD2 ,&sx STR2
+	#ffff #00 .line/y LDZ2 ,&y LDR2 ;lts2 JSR2 DUP2 ADD2 ADD2 ,&sy STR2
+	.line/dx LDZ2 .line/dy LDZ2 ADD2 .line/e1 STZ2
+	&loop
+		.line/x LDZ2 DUP2 .Screen/x DEO2 [ LIT2 &x $2 ] EQU2
+		.line/y LDZ2 DUP2 .Screen/y DEO2 [ LIT2 &y $2 ] EQU2
+			STHkr .Screen/pixel DEO
+			AND ,&end JCN
+		.line/e1 LDZ2 DUP2 ADD2 DUP2
+		.line/dy LDZ2 ;lts2 JSR2 ,&skipy JCN
+			.line/e1 LDZ2 .line/dy LDZ2 ADD2 .line/e1 STZ2
+			.line/x LDZ2 [ LIT2 &sx $2 ] ADD2 .line/x STZ2
+		&skipy
+		.line/dx LDZ2 ;gts2 JSR2 ,&skipx JCN
+			.line/e1 LDZ2 .line/dx LDZ2 ADD2 .line/e1 STZ2
+			.line/y LDZ2 [ LIT2 &sy $2 ] ADD2 .line/y STZ2
+		&skipx
+		,&loop JMP
+	&end
+	POPr
+
+JMP2r
+
+@draw-watchface ( -- )
+
+	#3c00
+	&loop
+		( dots )
+		#00 OVRk ADD2 ;table ADD2 LDA2
+			#0018 ;circle JSR2
+			.Screen/x DEO2 .Screen/y DEO2 #01 .Screen/pixel DEO
+		( markers )
+		DUP #05 ;mod JSR2 ,&no-marker JCN
+			#00 OVRk ADD2 ;table ADD2 LDA2
+			STH2k #0018 ;circle JSR2 SWP2
+			STH2r #001c ;circle JSR2 SWP2
+				#01 ;draw-line JSR2
+			&no-marker
+		INC GTHk ;&loop JCN2
+	POP2
+
+JMP2r
+
+@make-needles ( -- )
+
+	[ #00 .DateTime/second DEI #1e ADD #3c ;mod JSR2 ] DUP2 ADD2 ;table ADD2 LDA2
+		#00a0 ,circle JSR .needles/zx STZ2 .needles/zy STZ2
+	[ #00 .DateTime/second DEI ] DUP2 ADD2 ;table ADD2 LDA2
+		#0020 ,circle JSR .needles/sx STZ2 .needles/sy STZ2
+	[ #00 .DateTime/minute DEI ] DUP2 ADD2 ;table ADD2 LDA2
+		#0022 ,circle JSR .needles/mx STZ2 .needles/my STZ2
+	[ #00 .DateTime/hour DEI #0c ;mod JSR2 #20 SFTk NIP ADD ]
+	( minute offset ) [ #00 .DateTime/minute DEI #0f DIV ADD2 ] DUP2 ADD2 ;table ADD2 LDA2
+		#002a ,circle JSR .needles/hx STZ2 .needles/hy STZ2
+
+JMP2r
+
+@circle ( cx cy radius* -- y* x* )
+
+	STH2 SWP
+	#00 SWP #40 SFT2 STH2kr DIV2 .center/x LDZ2 ADD2 #0800 STH2kr DIV2 SUB2
+	STH2 SWP2r
+	#00 SWP #40 SFT2 STH2kr DIV2 .center/y LDZ2 ADD2 #0800 STH2kr DIV2 SUB2
+	POP2r STH2r
+
+JMP2r
+
+@decimal ( value* zp-label -- )
+
+	STH
+	DUP #0a DIV #30 ADD STHkr STZ
+	#0a ;mod JSR2 #30 ADD STHr INC STZ
+
+JMP2r
+
+@mod DIVk MUL SUB JMP2r
+@abs2 DUP2 #0f SFT2 EQU #05 JCN #0000 SWP2 SUB2 JMP2r
+@lts2 #8000 STH2k ADD2 SWP2 STH2r ADD2 GTH2 JMP2r
+@gts2 #8000 STH2k ADD2 SWP2 STH2r ADD2 LTH2 JMP2r
+@is-uc DUP #40 GTH SWP #5b LTH AND JMP2r
+@is-lc DUP #60 GTH SWP #7b LTH AND JMP2r
+@is-num DUP #2f GTH SWP #3a LTH AND JMP2r
+
+@week-txt
+	"Sun $1 "Mon $1 "Tue $1 "Wed $1 "Thu $1 "Fri $1
+	"Sat $1
+
+@month-txt
+	"Jan $1 "Feb $1 "Mar $1 "Apr $1 "May $1 "Jun $1
+	"Jul $1 "Aug $1 "Sep $1 "Oct $1 "Nov $1 "Dec $1
+
+@table ( 60 positions on a circle )
+	8000 8d00 9a02 a706 b40b c011 cb18 d520
+	df2a e734 ee40 f44b f958 fd65 ff72 ff80
+	ff8d fd9a f9a7 f4b4 eec0 e7cb dfd5 d5df
+	cbe7 c0ee b4f4 a7f9 9afd 8dff 80ff 72ff
+	65fd 58f9 4bf4 40ee 34e7 2adf 20d5 18cb
+	11c0 0bb4 06a7 029a 008d 0080 0072 0265
+	0658 0b4b 113f 1834 202a 2a20 3418 3f11
+	4b0b 5806 6502 7200
+
+@middle-icn
+	40e0 4000 0000 0000
+
+@font
+	&num
+	0018 2442 4242 4242 4242 4242 4224 1800
+	0008 1828 0808 0808 0808 0808 0808 1c00
+	0018 2442 4202 0202 0408 1020 4040 7e00
+	0018 2442 0202 0438 0402 0202 0204 7800
+	000c 0c14 1414 2424 2444 447e 0404 0e00
+	007e 4040 4040 5864 4202 0202 0204 7800
+	000c 1020 4040 5864 4242 4242 4224 1800
+	007e 4202 0204 0404 0808 0810 1010 1000
+	0018 2442 4242 2418 2442 4242 4224 1800
+	0018 2442 4242 4242 261a 0202 0408 3000
+	&uc
+	0010 1028 2844 4444 8282 fe82 8282 0000
+	00f8 4442 4242 4478 4442 4242 44f8 0000
+	003c 4282 8280 8080 8080 8282 423c 0000
+	00f8 4442 4242 4242 4242 4242 44f8 0000
+	00fc 4240 4040 4878 4840 4040 42fc 0000
+	80fe 4240 4040 447c 4440 4040 40e0 0000
+	003a 4682 8080 8e82 8282 8282 463a 0000
+	00ee 4444 4444 447c 4444 4444 44ee 0000
+	0038 1010 1010 1010 1010 1010 1038 0000
+	000e 0404 0404 0404 0404 4444 2810 0000
+	00ee 4448 4850 5060 5050 4848 44ee 0000
+	00e0 4040 4040 4040 4040 4040 42fe 0000
+	0082 c6c6 c6aa aaaa 9292 9282 8282 0000
+	00e2 4262 6262 5252 4a4a 4646 42e2 0000
+	0038 4482 8282 8282 8282 8282 4438 0000
+	00f8 4442 4242 4244 7840 4040 40f0 0000
+	0038 4482 8282 8282 8282 829a 643a 0000
+	00f8 4442 4242 4478 4844 4442 42e2 0000
+	0010 2844 4440 2010 0804 4444 2810 0000
+	00fe 9210 1010 1010 1010 1010 1038 0000
+	00ee 4444 4444 4444 4444 4444 4438 0000
+	0082 8282 8282 8244 4444 2828 1010 0000
+	0082 8292 9292 9292 92ba aa44 4444 0000
+	0042 4242 2424 1818 1824 2442 4242 0000
+	0082 8282 4444 2828 1010 1010 1038 0000
+	007e 4204 0408 0810 1020 2040 427e 0000
+	&lc
+	0000 0000 0030 0808 3848 4848 4834 0000
+	0060 2020 202c 3222 2222 2222 322c 0000
+	0000 0000 001c 2240 4040 4040 221c 0000
+	000c 0404 0434 4c44 4444 4444 4c36 0000
+	0000 0000 0018 2424 3c20 2020 2418 0000
+	000c 1210 1038 1010 1010 1010 1038 0000
+	0000 0000 0034 4a48 4830 4038 4444 4438
+	00c0 4040 4058 6444 4444 4444 44ee 0000
+	0010 0000 0030 1010 1010 1010 1038 0000
+	0008 0000 0018 0808 0808 0808 0808 2810
+	0060 2020 2022 2224 2438 2424 2272 0000
+	0030 1010 1010 1010 1010 1010 1038 0000
+	0000 0000 00a4 da92 9292 9292 9292 0000
+	0000 0000 00d8 6444 4444 4444 44ee 0000
+	0000 0000 0038 4482 8282 8282 4438 0000
+	0000 0000 00d8 6442 4242 4242 6458 40e0
+	0000 0000 0034 4c84 8484 8484 4c34 040e
+	0000 0000 0068 3420 2020 2020 2070 0000
+	0000 0000 0018 2424 1008 0424 2418 0000
+	0010 1010 107c 1010 1010 1010 1408 0000
+	0000 0000 00cc 4444 4444 4444 4c36 0000
+	0000 0000 00ee 4444 4428 2828 1010 0000
+	0000 0000 0092 9292 9292 92aa 4444 0000
+	0000 0000 00ee 4428 1010 1028 44ee 0000
+	0000 0000 00ee 4444 4448 2828 1010 2040
+	0000 0000 007c 4408 0810 2020 447c 0000
+	&colon
+	0000 0000 0010 1000 0000 0000 1010 0000
+	&slash
+	0202 0404 0808 1010 2020 4040 8080 0000
+	&blank
+	0000 0000 0000 0000 0000 0000 0000 0000
+

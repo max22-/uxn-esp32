@@ -1,0 +1,65 @@
+( usage: uxncli hexdump.rom file.bin )
+
+|10 @Console &vector $2 &read $1 &pad $5 &write $1 &error $1
+|a0 @File &vector $2 &success $2 &stat $2 &delete $1 &append $1 &name $2 &length $2 &read $2 &write $2
+
+|0000
+
+	@src $40
+
+|0100 ( -> )
+
+	;on-console .Console/vector DEO2
+
+BRK
+
+@on-console ( -> )
+
+	;src STH2
+	( read input )
+	.Console/read DEI
+	DUP #20 LTH OVR #7f GTH ORA ,&end JCN
+	STH2kr ,slen JSR #003f GTH2 ,&end JCN
+		STH2kr ,scap JSR STA POP2r BRK
+		&end
+	POP
+	STH2r .File/name DEO2
+	#0002 .File/length DEO2
+	LIT2r 0000
+	&stream
+		#0000 ,&buf STR2
+		;&buf .File/read DEO2
+		.File/success DEI2 #0000 EQU2 ,&eof JCN
+		;&buf LDA2 ,print JSR #2018 DEO
+		INC2r
+		( linebreak )
+		STH2kr #000f AND2 ORA ,&no-lb JCN
+			#0a18 DEO &no-lb
+		,&stream JMP &eof
+	POP2r
+	#010f DEO
+
+BRK
+	&buf $2
+
+@slen ( str* -- len* )
+
+	DUP2 ,scap JSR SWP2 SUB2
+
+JMP2r
+
+@scap ( str* -- end* )
+
+	LDAk #00 NEQ JMP JMP2r
+	&while
+		INC2 LDAk ,&while JCN
+
+JMP2r
+
+@print ( short* -- )
+
+	SWP ,&byte JSR
+	&byte ( byte -- ) DUP #04 SFT ,&char JSR
+	&char ( char -- ) #0f AND DUP #09 GTH #27 MUL ADD #30 ADD #18 DEO
+
+JMP2r

@@ -1,0 +1,148 @@
+( Screen:
+	Draws a table of all possible sprite arrangements. )
+
+|00 @System &vector $2 &wst $1 &rst $1 &pad $4 &r $2 &g $2 &b $2 &debug $1 &halt $1
+|20 @Screen &vector $2 &width $2 &height $2 &auto $1 &pad $1 &x $2 &y $2 &addr $2 &pixel $1 &sprite $1
+
+|0000
+
+@count $2
+@center &x $2 &y $2
+
+|0100 ( -> )
+	
+	( vector )
+	;on-frame .Screen/vector DEO2
+	( theme )
+	#f07f .System/r DEO2
+	#f0e0 .System/g DEO2
+	#f0c0 .System/b DEO2
+	( gba screen size 00f0 x 00a0 )
+	( nds screen size 0100 x 00c0 )
+	#00f0 .Screen/width DEO2
+	#00a0 .Screen/height DEO2
+	( find screen center )
+	.Screen/width DEI2 #01 SFT2 .center/x STZ2
+	.Screen/height DEI2 #01 SFT2 .center/y STZ2
+	( draw )
+	;draw-sprites JSR2
+	;draw-1bpp JSR2
+	;draw-2bpp JSR2
+	#00 .Screen/auto DEO
+	
+BRK
+
+@on-frame ( -> )
+
+	#01 .Screen/auto DEO
+	.count LDZ2 INC2 [ DUP2 ] .count STZ2
+	.center/x LDZ2 #0050 ADD2 .Screen/x DEO2
+	.center/y LDZ2 #0048 SUB2 .Screen/y DEO2
+	;draw-short JSR2
+
+BRK
+
+@draw-sprites ( -- )
+	
+	( horizontal )
+	.center/x LDZ2 #0060 SUB2 .Screen/x DEO2
+	.center/y LDZ2 #0048 SUB2 .Screen/y DEO2
+	;font-hex .Screen/addr DEO2
+	#f6 .Screen/auto DEO
+	#01 .Screen/sprite DEO
+	( vertical )
+	.center/x LDZ2 #0070 SUB2 .Screen/x DEO2
+	.center/y LDZ2 #0038 SUB2 .Screen/y DEO2
+	;font-hex .Screen/addr DEO2
+	#f5 .Screen/auto DEO
+	#01 .Screen/sprite DEO
+
+	#00 .Screen/auto DEO
+	( table )
+	;preview_icn .Screen/addr DEO2
+	#00 #00
+	&loop
+		( move ) DUP #0f AND #40 SFT #01 SFT #00 SWP
+			.center/x LDZ2 #0060 SUB2 ADD2 .Screen/x DEO2
+		( move ) DUP #f0 AND #01 SFT #00 SWP
+			.center/y LDZ2 #0038 SUB2 ADD2 .Screen/y DEO2
+		( draw ) DUP .Screen/sprite DEO
+		INC NEQk ,&loop JCN
+	POP2
+	
+JMP2r
+
+@draw-1bpp ( -- )
+
+	#10 #00
+	&loop
+		( color ) STHk
+		( y ) DUP #02 SFT [ #00 SWP ] #40 SFT2
+			[ .center/y LDZ2 #0038 SUB2 ADD2 ] STH2
+		( x ) DUP #03 AND [ #00 SWP ] #40 SFT2 #0040 ADD2
+			[ .center/x LDZ2 #0010 SUB2 ADD2 ]
+		STH2r STHr #00 ,draw-circle JSR
+		INC GTHk ,&loop JCN
+	POP2
+	
+JMP2r
+
+@draw-2bpp ( -- )
+
+	#10 #00
+	&loop
+		( color ) STHk
+		( y ) DUP #02 SFT [ #00 SWP ] #40 SFT2
+			[ .center/y LDZ2 #0008 ADD2 ADD2 ] STH2
+		( x ) DUP #03 AND [ #00 SWP ] #40 SFT2 #0040 ADD2
+			[ .center/x LDZ2 #0010 SUB2 ADD2 ]
+		STH2r STHr #80 ,draw-circle JSR
+		INC GTHk ,&loop JCN
+	POP2
+	
+JMP2r
+
+@draw-circle ( x* y* color depth -- )
+	
+	ADD STH
+	;preview_icn .Screen/addr DEO2
+	.Screen/y DEO2
+	.Screen/x DEO2
+	#01 .Screen/auto DEO
+	STHr .Screen/sprite DEOk
+	#02 .Screen/auto DEO
+	SWP #10 ADD SWP DEOk
+	.Screen/x DEI2k #0008 SUB2 ROT DEO2
+	#01 .Screen/auto DEO
+	SWP #10 ADD SWP DEOk
+	SWP #10 ADD SWP DEO
+
+JMP2r
+
+@draw-short ( short* -- )
+
+	SWP ,draw-byte JSR
+
+@draw-byte ( byte -- )
+
+	DUP #04 SFT ,draw-hex JSR #0f AND
+
+@draw-hex ( char -- )
+
+	#00 SWP #30 SFT2 ;font-hex ADD2 .Screen/addr DEO2
+	#01 .Screen/sprite DEO
+
+JMP2r
+
+@preview_icn
+	0f38 675f dfbf bfbf 0007 1820 2344 4848
+
+@font-hex
+	007c 8282 8282 827c 0030 1010 1010 1010
+	007c 8202 7c80 80fe 007c 8202 1c02 827c
+	000c 1424 4484 fe04 00fe 8080 7c02 827c
+	007c 8280 fc82 827c 007c 8202 1e02 0202
+	007c 8282 7c82 827c 007c 8282 7e02 827c
+	007c 8202 7e82 827e 00fc 8282 fc82 82fc
+	007c 8280 8080 827c 00fc 8282 8282 82fc
+	007c 8280 f080 827c 007c 8280 f080 8080

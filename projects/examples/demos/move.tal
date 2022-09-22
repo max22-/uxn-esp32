@@ -1,0 +1,73 @@
+( Move:
+	Use controller arrows, leave a slime. )
+
+|00 @System &vector $2 &pad $6 &r $2 &g $2 &b $2
+|20 @Screen &vector $2 &width $2 &height $2 &auto $1 &pad $1 &x $2 &y $2 &addr $2 &pixel $1 &sprite $1
+|80 @Controller &vector $2 &button $1 &key $1
+
+|0000
+
+@hello &x $2 &y $2
+
+|0100 ( -> )
+	
+	( theme )
+	#c0f4 .System/r DEO2
+	#c0fc .System/g DEO2
+	#c0f7 .System/b DEO2
+	( vectors )
+	;on-frame .Screen/vector DEO2
+	( set origin )
+	.Screen/width DEI2 #01 SFT2 .hello/x STZ2
+	.Screen/height DEI2 #01 SFT2 .hello/y STZ2
+	( drawing mode )
+	#16 .Screen/auto DEO
+	( defaults )
+	#00 ;on-frame/draw JMP2
+
+BRK
+
+@on-frame ( -> )
+
+	.Controller/button DEI 
+	DUP ,&continue JCN
+		POP BRK
+		&continue
+	( clear )
+	#40 .Screen/sprite DEO
+	( movement )
+	DUP #10 AND #00 EQU ,&no-u JCN .hello/y LDZ2k #0001 SUB2 ROT STZ2 &no-u
+	DUP #20 AND #00 EQU ,&no-d JCN .hello/y LDZ2k INC2 ROT STZ2 &no-d
+	DUP #40 AND #00 EQU ,&no-l JCN .hello/x LDZ2k #0001 SUB2 ROT STZ2 &no-l
+	DUP #80 AND #00 EQU ,&no-r JCN .hello/x LDZ2k INC2 ROT STZ2 &no-r
+	&draw
+	( draw hello )
+	.hello/x LDZ2 STH2k .Screen/x DEO2
+	.hello/y LDZ2 STH2k .Screen/y DEO2
+	;hello-chr .Screen/addr DEO2
+	#c1 .Screen/sprite DEOk DEO
+	( draw slime )
+	STH2r .Screen/y DEO2
+	STH2r .Screen/x DEO2
+	;slime-icn .Screen/addr DEO2
+	,get-slime JSR .Screen/sprite DEOk DEO
+
+BRK
+
+@get-slime ( button -- color )
+
+	#0f AND
+		DUP #01 NEQ ,&no-ctrl JCN POP #05 JMP2r &no-ctrl
+		DUP #02 NEQ ,&no-alt JCN POP #0a JMP2r &no-alt
+	POP #0f
+
+JMP2r
+
+@hello-chr
+	0007 1820 2040 4044 0000 071f 1f3f 3f3b
+	00e0 1804 0402 0222 0000 e0f8 f8fc fcdc
+	4040 4423 2018 0700 3f3f 3b1c 1f07 0000
+	0202 22c4 0418 e000 fcfc dc38 f8e0 0000
+@slime-icn
+	0000 0000 0003 0707 0000 0000 00c0 e0e0
+	0707 0300 0000 0000 e0e0 c000 0000 0000

@@ -1,0 +1,52 @@
+(
+	heap functions
+
+	The heap is an area of memory that is written from the bottom up. These
+	are a few convenience functions to do that writing.
+
+	There is a global short called "heap" that must be written to before using
+	these functions, otherwise the zero page and program memory could be
+	overwritten.
+
+	A simple program could use all unallocated memory for the heap like so:
+
+		|0100 @reset
+			;my-heap ;heap STA2
+
+			(the rest of your code)
+
+		@my-heap
+
+	Note that if there is a risk that the heap may overflow its bounds, it is
+	strongly recommended to check where it is writing to. ";heap LDA2" will
+	tell you where the next byte is written.
+)
+
+@heap $2
+
+@append-heap-byte ( byte -- )
+	,heap LDR2 ( byte heap* )
+	INC2k ,heap STR2
+	STA
+	JMP2r
+
+@append-heap-short ( short^ -- )
+	,heap LDR2 ( short^ heap* )
+	INC2k INC2 ,heap STR2
+	STA2
+	JMP2r
+
+@append-heap-string ( string* -- )
+	( copies a null-terminated string onto the heap, including the null )
+	STH2 ,heap LDR2 ( heap* / string* )
+	#01 JMP ( skip past INC2r )
+
+	&loop
+	INC2r ( heap* / string* )
+	LDAkr DUPr STH2k STAr ( heap* / string* byte )
+	INC2
+	LITr f7 JCNr ( f7 is the value ",&loop" would produce )
+	POP2r ( heap* )
+	,heap STR2
+	JMP2r
+

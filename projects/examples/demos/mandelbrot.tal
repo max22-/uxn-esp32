@@ -1,0 +1,107 @@
+( mandelbrot )
+
+%+  { ADD }  %-  { SUB }  %*  { MUL }  %/  { DIV }
+%<  { LTH }  %>  { GTH }  %=  { EQU }  %!  { NEQ }
+
+%GTS2 { #8000 ADD2 SWP2 #8000 ADD2 LTH2 }
+%AUTO-X    { #01 .Screen/auto DEO }
+%NEXT-LINE { #0000 .Screen/x DEO2 .Screen/y DEI2k INC2 ROT DEO2 }
+
+%WIDTH { #0280 }
+%HEIGHT { #01e0 }
+
+%XMIN { #de69 } ( -8601 )
+%XMAX { #0b33 } ( 2867 )
+%YMIN { #ecc7 } ( -4915 )
+%YMAX { #1333 } ( 4915 )
+%MAXI { #20 } ( 32 )
+%DX { XMAX XMIN SUB2 WIDTH DIV2 } ( (XMAX-XMIN)/W )
+%DY { YMAX YMIN SUB2 HEIGHT DIV2 } ( (YMAX-YMIN)/H )
+%X  { .x LDZ2  } %Y  { .y LDZ2  }
+%X2 { .x2 LDZ2 } %Y2 { .y2 LDZ2 }
+
+|00 @System     &vector $2 &wst      $1 &rst    $1 &eaddr  $2 &ecode  $1 &pad     $1 &r       $2 &g      $2 &b     $2 &debug  $1 &halt $1
+|20 @Screen     &vector $2 &width    $2 &height $2 &auto   $1 &pad    $1 &x       $2 &y       $2 &addr   $2 &pixel $1 &sprite $1
+
+|0000 ( zero-page )
+
+@x  $2 @y  $2
+@x2 $2 @y2 $2
+
+|0100 ( -> )
+
+	( theme ) 
+	#0f0f .System/r DEO2 
+	#0ff0 .System/g DEO2 
+	#00ff .System/b DEO2
+
+	WIDTH .Screen/width DEO2 ( 640 )
+	HEIGHT .Screen/height DEO2 ( 480 )
+
+	AUTO-X
+
+	;draw-mandel JSR2
+
+BRK
+
+@draw-mandel ( -- )
+
+	YMAX YMIN
+	&ver
+		DUP2 ,&y STR2
+		XMAX XMIN
+		&hor
+			DUP2 ,&x STR2
+			#0000 DUP2k DUP2 .x STZ2 .y STZ2 .x2 STZ2 .y2 STZ2
+			MAXI #00
+			&loop
+				X Y ;smul2 JSR2 DUP2 ADD2 [ LIT2 &y $2 ] ADD2 .y STZ2
+				X2 Y2 SUB2 [ LIT2 &x $2 ] ADD2 .x STZ2
+				X DUP2 ;smul2 JSR2 .x2 STZ2
+				Y DUP2 ;smul2 JSR2 .y2 STZ2
+				X2 Y2 ADD2 #4000 GTH2 ,&end JCN
+				INC GTHk ,&loop JCN
+				&end
+			NIP .Screen/pixel DEO
+			DX ADD2 OVR2 OVR2 GTS2 ;&hor JCN2
+		POP2 POP2
+		NEXT-LINE
+		DY ADD2 OVR2 OVR2 GTS2 ;&ver JCN2
+	POP2 POP2
+
+JMP2r
+
+@smul2 ( a* b* -- c* )
+	LITr 00
+	DUP2 #8000 LTH2 ,&b-positive JCN
+	INCr DUP2k EOR2 SWP2 SUB2
+	&b-positive
+	SWP2
+	DUP2 #8000 LTH2 ,&a-positive JCN
+	INCr DUP2k EOR2 SWP2 SUB2
+	&a-positive
+	( ahi alo bhi blo )
+	LITr 00 STH ( ahi alo bhi / blo* )
+	OVRr STH ( ahi alo / blo* bhi* )
+	OVRr STH ( ahi / blo* bhi* alo* )
+	OVRr STH ( asign / blo* bhi* alo* ahi* )
+	ROT2r MUL2kr STH2r ( asign ahi-bhi* / blo* alo* ahi* bhi* )
+	ROT2r MUL2kr STH2r ( asign ahi-bhi* alo-bhi* / blo* ahi* bhi* alo* )
+	NIP2r ( asign ahi-bhi* alo-bhi* / blo* ahi* alo* )
+	ROT2r MUL2kr STH2r ( asign ahi-bhi* alo-bhi* alo-blo* / ahi* alo* blo* )
+	ROT2r MUL2r STH2r POP2r ( asign ahi-bhi* alo-bhi* alo-blo* ahi-blo* )
+	SWP2 ( asign ahi-bhi* alo-bhi* ahi-blo* alo-blo* )
+	( 32-bit result is [ r3 r2 r1 r0 ] )
+	POP #00 SWP ( asign ahi-bhi* alo-bhi* ahi-blo* r21* )
+	( r21 max is 00fe, ahi-blo max is 7e81, max sum is 7f7f )
+	ADD2 ( asign ahi-bhi* alo-bhi* r21'* )
+	( r21' max is 7f7f, alo-bhi max is 7e81, max sum is fe00 )
+	ADD2 ( asign ahi-bhi* r21"* )
+	( The result we want is bits 27-12 due to the fixed point representation we use. )
+	#04 SFT2 SWP2 #40 SFT2 ADD2
+	( saturate to +/-7.fff )
+	#7fff GTH2k JMP SWP2 NIP2
+	STHr #01 NEQ ,&result-positive JCN
+	DUP2k EOR2 SWP2 SUB2
+	&result-positive
+JMP2r

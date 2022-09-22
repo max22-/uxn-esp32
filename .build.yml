@@ -1,0 +1,87 @@
+image: debian/oldstable
+packages:
+    - curl
+    - build-essential
+    - libsdl2-dev
+    - rsync
+    - wget
+    - zip
+oauth: pages.sr.ht/PAGES:RW
+environment:
+    SITE: rabbits.srht.site/uxn
+    SSH_HOST_KEYS: |
+        [w1.uxn-build.ald.nu]:2222 ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIP+IYCB4JrKklFjWSMRkPBTqUjBqUuhlDQy6/X3l8xj5
+        [m1.uxn-build.ald.nu]:2223 ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIDvWVqlHh3XQ5ziEbT55K896/mW2BVDdkU6hWgIfU9md
+        [p1.uxn-build.ald.nu]:2224 ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIAgduGa60Tx3PsnEaJDyUzmPmpzGYmDeLFtLcVoU5tJs
+secrets:
+    - 138ad607-a4ec-4d74-88a1-8f3be2ba2d03
+sources:
+    - https://git.sr.ht/~rabbits/uxn
+tasks:
+    - prepare: |
+        rm -f out build
+        mkdir -p out build/uxn-lin64 build/uxn-win64 build/uxn-mac64 build/essentials/uxn
+        umask 077
+        mkdir -p ~/.ssh
+        printf '%s\n' "${SSH_HOST_KEYS}" > ~/.ssh/known_hosts
+        printf 'User build\nStrictHostKeyChecking yes\nCheckHostIP no\nHost win\nHostName w1.uxn-build.ald.nu\nPort 2222\nHost mac\nHostName m1.uxn-build.ald.nu\nPort 2223\nHost 9front\nHostName p1.uxn-build.ald.nu\nPort 2224\n' > ~/.ssh/config
+    - build-linux: |
+        cd uxn
+        ./build.sh --no-run
+        cp bin/asma.rom ../out/
+        mv bin ../build/uxn-lin64/uxn
+    - build-essentials: |
+        for F in uxn/projects/software/calc.tal uxn/projects/software/launcher.tal uxn/projects/examples/demos/piano.tal uxn/projects/examples/software/clock.tal catclock/src/catclock.tal dexe/src/dexe.tal donsol/src/main.tal left/src/left.tal nasu/src/nasu.tal noodle/src/noodle.tal orca-toy/src/orca.tal:orca.rom turye/src/turye.tal; do
+            PROJECT="${F%%/*}"
+            if [ "${F}" = "${F%:*}" ]; then
+                ROMNAME="${F##*/}"
+                ROMNAME="${ROMNAME%.tal}.rom"
+                [ "${ROMNAME}" != main.rom ] || ROMNAME="${PROJECT}.rom"
+            else
+                ROMNAME="${F##*:}"
+                F="${F%:*}"
+            fi
+            [ -d "${PROJECT}" ] || git clone "https://git.sr.ht/~rabbits/${PROJECT}"
+            ( cd "${PROJECT}" && ../build/uxn-lin64/uxn/uxnasm "${F#*/}" "../build/essentials/uxn/${ROMNAME}" || rm -f "../build/essentials/uxn/${ROMNAME}" )
+        done
+        [ -e ~/.ssh/id_rsa ] || complete-build
+    - build-windows: |
+        if ssh win true; then
+            ssh win "export PATH=\"\${PATH}:/mingw64/bin\"; set -ex; cd uxn; git fetch; git checkout .; git clean -xfd; git checkout $(cd uxn && git rev-parse HEAD); MSYSTEM=MSYS ./build.sh --no-run"
+            rsync -rp win:uxn/bin/ build/uxn-win64/uxn/
+        else
+            wget -nv -NP out "https://${SITE}/"uxn{,-essentials}-win64.{tar.gz,zip} || true
+            touch out/needs-solar-build
+        fi
+    - build-macos: |
+        if ssh mac true; then
+            ssh mac "export PATH=\"\${PATH}:/usr/local/bin\"; set -ex; cd uxn; git fetch; git checkout .; git clean -xfd; git checkout $(cd uxn && git rev-parse HEAD); ./build.sh --no-run"
+            rsync -rp mac:uxn/bin/ build/uxn-mac64/uxn/
+        else
+            wget -nv -NP out "https://${SITE}/"uxn{,-essentials}-mac64.{tar.gz,zip} || true
+            touch out/needs-solar-build
+        fi
+    - archive: |
+        for PROJECT in uxn-lin64 uxn-win64 uxn-mac64 essentials; do
+            [ -d "build/${PROJECT}/uxn" ] || continue
+            tar -czf "out/${PROJECT}.tar.gz" -C "build/${PROJECT}" uxn
+            ( cd "build/${PROJECT}" && zip -qr "../../out/${PROJECT}.zip" uxn )
+            if [ "${PROJECT}" != essentials ]; then
+                cp build/essentials/uxn/* "build/${PROJECT}/uxn/"
+                tar -czf "out/uxn-essentials-${PROJECT#uxn-}.tar.gz" -C "build/${PROJECT}" uxn
+                ( cd "build/${PROJECT}" && zip -qr "../../out/uxn-essentials-${PROJECT#uxn-}.zip" uxn )
+            fi
+        done
+    - upload: |
+        ls -l out
+        if [ "$(cd uxn && git rev-parse HEAD)" != "$(cd uxn && git rev-parse origin/main)" ]; then exit; fi
+        tar -czf out.tar.gz -C out .
+        acurl() {
+            set +x
+            curl -H "Authorization: Bearer ${OAUTH2_TOKEN}" "${@}"
+            set -x
+        }
+        acurl -fsS "https://pages.sr.ht/publish/${SITE}" -Fcontent=@out.tar.gz
+        acurl -fsS "https://pages.sr.ht/publish/${SITE}" -Fcontent=@out.tar.gz -Fprotocol=GEMINI
+    - build-9front: |
+        ssh 9front "$(cd uxn && git rev-parse HEAD)"

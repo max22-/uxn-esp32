@@ -1,0 +1,236 @@
+(
+	100r animated logo splash screen
+	by Andrew Alderwick, 2021
+	based on artwork by Hundred Rabbits
+)
+
+( devices )
+
+|00 @System     [ &vector $2 &wst      $1 &rst    $1 &pad   $4 &r      $2 &g      $2 &b    $2 &debug  $1 &halt $1 ]
+|20 @Screen     [ &vector $2 &width    $2 &height $2 &pad   $2 &x      $2 &y      $2 &addr $2 &pixel  $1 &sprite $1 ]
+|c0 @DateTime   [ &year   $2 &month    $1 &day    $1 &hour  $1 &minute $1 &second $1 &dotw $1 &doty   $2 &isdst $1 ]
+
+( variables )
+
+|0000
+
+( program )
+
+|0100 @Reset ( -> )
+	( seed prng (must be nonzero) )
+	#00 .DateTime/second DEI
+	#00 .DateTime/minute DEI #60 SFT2 EOR2
+	#00 .DateTime/hour   DEI #c0 SFT2 EOR2 ;prng/x STA2
+	#00 .DateTime/hour   DEI #04 SFT2
+	#00 .DateTime/day    DEI DUP2 ADD2 EOR2
+	#00 .DateTime/month  DEI #60 SFT2 EOR2
+	    .DateTime/year  DEI2 #a0 SFT2 EOR2 ;prng/y STA2
+	;prng/x LDA2 ;prng/y LDA2 EOR2
+
+	;rabbits STH2 #0f05 &loop-x
+		#0f05 &loop-y
+			ROTk SWP STH2kr STA2 POP
+			INC2r INC2r
+			INC
+			GTHk ,&loop-y JCN
+			POP2
+		INC
+		GTHk ,&loop-x JCN
+		POP2 POP2r
+	( fall through )
+
+@repeat
+	;init-occupancy JSR2
+	#00 ;precalc-frame STA
+	;precalculate-vector .Screen/vector DEO2
+	BRK
+
+@init-occupancy ( -- )
+	#1400 &loop-y
+		#1400 &loop-x
+			ROTk #00 ;set-occupied JSR2 POP
+			INC
+			GTHk ,&loop-x JCN
+			POP2
+		INC
+		GTHk ,&loop-y JCN
+		POP2
+	;rabbits
+	DUP2 #00c8 ADD2 SWP2 &loop-rabbits
+		LDA2k #01 ;set-occupied JSR2
+		INC2 INC2
+		GTH2k ,&loop-rabbits JCN
+		POP2 POP2
+	JMP2r
+
+@precalculate-vector ( -> )
+	,precalculate JSR BRK
+
+@precalculate ( -- )
+	;rabbits #00c8 OVR ,precalc-frame LDR MUL2 ADD2 ( first rabbit address )
+	DUP2 #00c8 ADD2 SWP2 &loop-rabbits
+		DUP2 ,move-rabbit JSR
+		INC2 INC2
+		GTH2k ,&loop-rabbits JCN
+		POP2 POP2
+	,precalc-frame LDR INC DUP ,precalc-frame STR
+		#05 EQU JMP JMP2r
+	;display-init JSR2
+	;display .Screen/vector DEO2
+	JMP2r
+
+@precalc-frame $1
+
+@set-occupied ( x y value -- )
+	STH
+	#00 SWP #0014 MUL2 ( x yoffset* / value )
+	ROT #00 SWP ADD2 ( offset* / value )
+	;occupied ADD2 STH2 STAr
+	JMP2r
+
+@move-rabbit ( addr* -- )
+	STH2k LDA2 ( x y / addr* )
+	DUP2 #00 ,set-occupied JSR
+	;&possible-moves ( x y possible* / addr* )
+	OVR2 #01   SUB  ,&check-move JSR ( up )
+	OVR2 INC   INC  ,&check-move JSR ( down )
+	OVR2 #0100 SUB2 ,&check-move JSR ( left )
+	OVR2 #0100 ADD2 ,&check-move JSR ( right )
+	;&possible-moves SUB2 ( x y num-possible-times-2* / addr* )
+	DUP ,&can-move JCN
+	POP2
+	&write ( x y / addr* )
+	DUP2 #01 ,set-occupied JSR
+	STH2r #00c8 ADD2 STA2
+	JMP2r
+
+	&can-move ( x y num-possible-times-2* / addr* )
+	NIP2 ( num-possible-times-2* / addr* )
+	,prng JSR SWP2 DIV2k MUL2 SUB2 #fe AND ( chosen-move* / addr* )
+	;&possible-moves ADD2 LDA2
+	,&write JMP
+
+	&check-move ( possible* new-x new-y -- possible'* )
+	DUP2 ,get-occupied JSR ,&blocked JCN
+	OVR2r LIT2r 00c8 SUB2r ( possible* new-x new-y / previous-frame-addr* )
+		&check-history-loop
+		;rabbits INC2 STH2kr GTH2 ,&history-okay JCN
+		DUP2 STH2kr LDA2 EQU2 ,&history-clash JCN
+		LIT2r 00c8 SUB2r
+		,&check-history-loop JMP
+	&history-okay
+	POP2r
+	OVR2 STA2 INC2 INC2
+	JMP2r
+	&history-clash ( possible* new-x new-y / previous-frame-addr* )
+	POP2r
+	&blocked ( possible* new-x new-y )
+	POP2
+	JMP2r
+
+	&possible-moves $10
+
+@get-occupied ( x y -- value )
+	#00 SWP #0014 MUL2 ( x yoffset* )
+	ROT #00 SWP ADD2 ( offset* )
+	;occupied ADD2 LDA
+	JMP2r
+
+@prng ( -- number* )
+	LIT2 &x $2
+	DUP2 #50 SFT2 EOR2
+	DUP2 #03 SFT2 EOR2
+	LIT2 &y $2 DUP2 ,&x STR2
+	DUP2 #01 SFT2 EOR2 EOR2
+	,&y STR2k POP
+	JMP2r
+
+@display-init ( -- )
+	.Screen/width  DEI2 #01 SFT2 #0050 SUB2 ;display-rabbit/xoffset STA2
+	.Screen/height DEI2 #01 SFT2 #0050 SUB2 ;display-rabbit/yoffset STA2
+	;rabbit-sprite .Screen/addr DEO2
+	JMP2r
+
+@display-rabbit ( color n counter -- )
+	OVR LTHk ,&finish JCN
+	SUB ( color n timeline )
+	DUP #63 GTH ,&start JCN
+	#17 DIVk STHk MUL SUB ( color n stage-timeline / frame )
+	DUP #07 GTH ,&static JCN
+	( rabbit is in-between two frames )
+	#08 OVR SUB ,&from-weight STR
+	,&to-weight STR ( color n / frame )
+	#00 SWP DUP2 ADD2 ;rabbits ADD2 #00c8 #00 STHr MUL2 ADD2 ( color from-addr* )
+	LDA2k STH2 #00c8 ADD2 LDA2
+	&draw ( color to-x to-y / from-x from-y )
+	STHr ,&mix JSR LIT2 &yoffset $2 ADD2 .Screen/y DEO2
+	STHr ,&mix JSR LIT2 &xoffset $2 ADD2 .Screen/x DEO2
+	.Screen/sprite DEO
+	JMP2r
+
+	&mix ( to-z from-z -- mixed* )
+	    #00 SWP LIT2 00 &from-weight 00 MUL2 ( to-n from-mixed* )
+	ROT #00 SWP LIT2 00 &to-weight   00 MUL2 ADD2
+	JMP2r
+
+	&finish ( color n counter n )
+	POP
+	LITr ff ,&static JMP
+	&start ( color n counter )
+	LITr 04
+	&static ( color n counter / frame )
+	INCr
+	POP
+	#00 SWP DUP2 ADD2 ;rabbits ADD2 #00c8 #00 STHr MUL2 ADD2
+	LDA2 STH2k
+	,&draw JMP
+
+@display-counter $1
+
+@display ( -> )
+	,display-counter LDR #01 SUB DUP ,display-counter STR
+	DUP #f0 LTH ,&skip-palette JCN
+	#ff OVR SUB #00
+		DUP2 .System/r DEO2
+		DUP2 .System/g DEO2
+		     .System/b DEO2
+	&skip-palette
+	INCk #0000 &clear-loop
+		ROTk ;display-rabbit JSR2
+		INC
+		DUP #64 LTH ,&clear-loop JCN
+		POP2 POP
+	#0500 &draw-loop
+		ROTk ;display-rabbit JSR2
+		INC
+		DUP #64 LTH ,&draw-loop JCN
+	POP2
+	,&no-finish JCN
+	;sunset .Screen/vector DEO2
+	&no-finish
+	BRK
+
+@sunset ( -> )
+	;display-counter LDA #02 SUB DUP ;display-counter STA
+	DUP #1f GTH ,&skip-palette JCN
+	DUP #01 SFT #00
+		DUP2 .System/r DEO2
+		DUP2 .System/g DEO2
+		     .System/b DEO2
+	#6400 &draw-loop
+		#05 OVR #00 ;display-rabbit JSR2
+		INC
+		GTHk ,&draw-loop JCN
+		POP2
+	&skip-palette
+	,&no-finish JCN
+	;repeat JMP2
+	&no-finish
+	BRK
+
+@rabbit-sprite 003c 7e7e 7e7e 3c00
+
+@occupied $190
+
+@rabbits
+

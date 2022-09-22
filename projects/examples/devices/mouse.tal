@@ -1,0 +1,168 @@
+( Mouse:
+	Paint with 3 colors with each mouse button. )
+
+|00 @System &vector $2 &wst $1 &rst $1 &pad $4 &r $2 &g $2 &b $2 &debug $1 &halt $1
+|20 @Screen &vector $2 &width $2 &height $2 &auto $1 &pad $1 &x $2 &y $2 &addr $2 &pixel $1 &sprite $1
+|90 @Mouse &vector $2 &x $2 &y $2 &state $1 &pad $3 &modx $2 &mody $2
+
+|0000
+
+@line
+	&x $2 &y $2 &dx $2 &dy $2 &e1 $2
+@length $2
+@frame $2
+@pen 
+	&x $2 &y $2 &x2 $2 &y2 $2
+@pointer
+	&x $2 &y $2 &lastx $2 &lasty $2 &state $1
+
+|0100 ( -> )
+
+	( theme )
+	#4cfd .System/r DEO2
+	#4cf3 .System/g DEO2
+	#dcf2 .System/b DEO2
+
+	( vectors )
+	;on-mouse .Mouse/vector DEO2
+	;on-frame .Screen/vector DEO2
+
+BRK
+
+@on-frame ( -> )
+
+	.Mouse/state DEI ,&skip JCN
+		;run DUP2 JSR2 JSR2
+		&skip
+
+BRK
+
+@on-mouse ( -> )
+
+	;pointer-icn .Screen/addr DEO2
+	( clear last cursor )
+	.pointer/x LDZ2 .Screen/x DEO2
+	.pointer/y LDZ2 .Screen/y DEO2
+	#40 .Screen/sprite DEO
+	( draw new cursor )
+	.Mouse/x DEI2 DUP2 .pointer/x STZ2 .Screen/x DEO2
+	.Mouse/y DEI2 DUP2 .pointer/y STZ2 .Screen/y DEO2
+	#42 .Mouse/state DEI #00 NEQ ADD .Screen/sprite DEO
+	( on down )
+	.Mouse/state DEI #00 NEQ .pointer/state LDZ #00 EQU AND ,on-mouse-down JCN
+	( on drag )
+	.Mouse/state DEI ,on-mouse-drag JCN
+	.Mouse/state DEI .pointer/state STZ
+
+BRK
+
+@on-mouse-down ( -> )
+
+	#0000 DUP2 .length STZ2 .frame STZ2
+	;clear-screen JSR2
+	( record start position )
+	.Mouse/x DEI2 DUP2 .pointer/x STZ2 .pointer/lastx STZ2
+	.Mouse/y DEI2 DUP2 .pointer/y STZ2 .pointer/lasty STZ2
+	.Mouse/state DEI .pointer/state STZ
+
+BRK
+
+@on-mouse-drag ( -> )
+
+	( record )
+	;stroke .length LDZ2 #20 SFT2 ADD2 STH2
+		.pointer/x LDZ2 .pointer/lastx LDZ2 SUB2 STH2kr STA2
+		.pointer/y LDZ2 .pointer/lasty LDZ2 SUB2 STH2r INC2 INC2 STA2
+	( move ptr )
+	.length LDZ2 INC2 .length STZ2 
+	( draw line )
+	.pointer/lastx LDZ2
+	.pointer/lasty LDZ2
+	.pointer/x LDZ2
+	.pointer/y LDZ2
+		#01
+		;draw-line JSR2
+	( record last position )
+	.Mouse/x DEI2 
+		DUP2 .pointer/lastx STZ2 
+		DUP2 .pen/x STZ2
+		.pen/x2 STZ2
+	.Mouse/y DEI2 
+		DUP2 .pointer/lasty STZ2 
+		DUP2 .pen/y STZ2
+		.pen/y2 STZ2
+	.Mouse/state DEI .pointer/state STZ
+
+BRK
+
+@run ( -- )
+
+	( read )
+	;stroke .frame LDZ2 #20 SFT2 ADD2 STH2
+		.pen/x LDZ2 STH2kr LDA2 ADD2 .pen/x STZ2
+		.pen/y LDZ2 STH2r INC2 INC2 LDA2 ADD2 .pen/y STZ2
+	( line )
+	.pen/x LDZ2 .pen/y LDZ2
+	.pen/x2 LDZ2 .pen/y2 LDZ2
+		.frame LDZ2 #01 SFT2 NIP #01 AND INC ;draw-line JSR2
+	( history )
+	.pen/x LDZ2 .pen/x2 STZ2
+	.pen/y LDZ2 .pen/y2 STZ2
+	( incr frame )
+	.frame LDZ2 INC2 .length LDZ2 INC2 ( mod2 ) DIV2k MUL2 SUB2 .frame STZ2
+
+JMP2r
+
+@draw-line ( x1* y1* x2* y2* color -- )
+
+	( load ) STH ,&y STR2 ,&x STR2 .line/y STZ2 .line/x STZ2
+	,&x LDR2 .line/x LDZ2 SUB2 ;abs2 JSR2 .line/dx STZ2
+	#0000 ,&y LDR2 .line/y LDZ2 SUB2 ;abs2 JSR2 SUB2 .line/dy STZ2
+	#ffff #00 .line/x LDZ2 ,&x LDR2 ;lts2 JSR2 DUP2 ADD2 ADD2 ,&sx STR2
+	#ffff #00 .line/y LDZ2 ,&y LDR2 ;lts2 JSR2 DUP2 ADD2 ADD2 ,&sy STR2
+	.line/dx LDZ2 .line/dy LDZ2 ADD2 .line/e1 STZ2
+	&loop
+		.line/x LDZ2 DUP2 .Screen/x DEO2 [ LIT2 &x $2 ] EQU2
+		.line/y LDZ2 DUP2 .Screen/y DEO2 [ LIT2 &y $2 ] EQU2
+			STHkr .Screen/pixel DEO
+			AND ,&end JCN
+		.line/e1 LDZ2 DUP2 ADD2 DUP2
+		.line/dy LDZ2 ;lts2 JSR2 ,&skipy JCN
+			.line/e1 LDZ2 .line/dy LDZ2 ADD2 .line/e1 STZ2
+			.line/x LDZ2 [ LIT2 &sx $2 ] ADD2 .line/x STZ2
+		&skipy
+		.line/dx LDZ2 ;gts2 JSR2 ,&skipx JCN
+			.line/e1 LDZ2 .line/dx LDZ2 ADD2 .line/e1 STZ2
+			.line/y LDZ2 [ LIT2 &sy $2 ] ADD2 .line/y STZ2
+		&skipx
+		,&loop JMP
+	&end
+	POPr
+
+JMP2r
+
+@abs2 DUP2 #0f SFT2 EQU #05 JCN #0000 SWP2 SUB2 JMP2r
+@lts2 #8000 STH2k ADD2 SWP2 STH2r ADD2 GTH2 JMP2r
+@gts2 #8000 STH2k ADD2 SWP2 STH2r ADD2 LTH2 JMP2r
+
+@clear-screen ( -- )
+
+	.Screen/height DEI2 #03 SFT2 NIP #00
+	&y
+		#00 OVR #30 SFT2 .Screen/y DEO2
+		.Screen/width DEI2 #03 SFT2 NIP #00
+		&x
+			#00 OVR #30 SFT2 .Screen/x DEO2
+			#00 .Screen/sprite DEO
+			INC GTHk ,&x JCN
+		POP2
+		INC GTHk ,&y JCN
+	POP2
+
+JMP2r
+
+@pointer-icn
+	80c0 e0f0 f8e0 1000
+
+@stroke
+

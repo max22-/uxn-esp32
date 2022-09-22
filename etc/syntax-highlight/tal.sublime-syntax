@@ -1,0 +1,126 @@
+%YAML 1.2
+---
+# See http://www.sublimetext.com/docs/3/syntax.html
+name: Uxn Assembly
+scopeName: tal.
+fileTypes: [tal]
+file_extensions:
+  - tal
+scope: source.tal
+
+contexts:
+  main:
+
+    # get
+    - match: '\.(\S+)\sDEI2'
+      scope:  entity.name.type.typedef
+      pop: true
+    - match: '\.(\S+)\sDEI'
+      scope:  entity.name.type.typedef
+      pop: true
+    - match: '\.(\S+)\sLDZ2'
+      scope:  entity.name.type.typedef
+      pop: true
+    - match: '\.(\S+)\sLDZ'
+      scope:  entity.name.type.typedef
+      pop: true
+    - match: '\,(\S+)\sLDR2'
+      scope:  entity.name.type.typedef
+      pop: true
+    - match: '\,(\S+)\sLDR'
+      scope:  entity.name.type.typedef
+      pop: true
+    - match: '\;(\S+)\sLDA2'
+      scope:  entity.name.type.typedef
+      pop: true
+    - match: '\;(\S+)\sLDA'
+      scope:  entity.name.type.typedef
+      pop: true
+    # set
+    - match: '\.(\S+)\sDEO2'
+      scope:  constant.numeric
+      pop: true
+    - match: '\.(\S+)\sDEO'
+      scope:  constant.numeric
+      pop: true
+    - match: '\.(\S+)\sSTZ2'
+      scope:  constant.numeric
+      pop: true
+    - match: '\.(\S+)\sSTZ'
+      scope:  constant.numeric
+      pop: true
+    - match: '\,(\S+)\sSTR2'
+      scope:  constant.numeric
+      pop: true
+    - match: '\,(\S+)\sSTR'
+      scope:  constant.numeric
+      pop: true
+    - match: '\;(\S+)\sSTA2'
+      scope:  constant.numeric
+      pop: true
+    - match: '\;(\S+)\sSTA'
+      scope:  constant.numeric
+      pop: true
+
+    # label
+    - match: '\@(\S+)\s?'
+      scope: string.control
+      pop: true
+    # sublabel
+    - match: '\&(\S+)\s?'
+      scope: string.control
+      pop: true
+    # include
+    - match: 'include'
+      scope: string.control
+      pop: true
+
+    # jump
+    - match: '\|(\S+)\s?'
+      scope: entity.name.tag.structure.any
+      pop: true
+    # pad
+    - match: '\$(\S+)\s?'
+      scope: entity.name.tag.structure.any
+      pop: true
+
+    # Pushing to stack
+    - match: '\"(\S+)\s?'
+      scope: constant.numeric
+      pop: true
+    
+    # Addressing
+    - match: '\.(\S+)\s?'     # zero-page
+      scope: variable.function.shell
+      pop: true
+    - match: '\,(\S+)\s?'     # relative
+      scope: entity.name.tag.yaml
+      pop: true
+    - match: '\;(\S+)\s?'     # absolute
+      scope: keyword.control
+      pop: true
+    - match: '\:(\S+)\s?'     # raw
+      scope: keyword.control
+      pop: true
+
+      # Blocks
+    - match: '\[\s?'
+      scope: comment
+      pop: true
+    - match: '\]\s?'
+      scope: comment
+      pop: true
+
+    - match: '\{'
+      scope: variable.control
+      push:
+        - meta_scope: variable.control
+        - match: '\}'
+          pop: true
+
+    - match: '\s\(\s'
+      scope: comment
+      push:
+        - meta_scope: comment.line
+        - match: '\s\)\s'
+          pop: true

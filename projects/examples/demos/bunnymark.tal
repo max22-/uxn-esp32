@@ -1,0 +1,277 @@
+( bunnymark.tal )
+
+( November 2021, Kira Oakley )
+( March 2022, Devine Lu Linvega )
+
+|00 @System  &vector $2 &pad $6 &r $2 &g $2 &b $2 &debug $1 &halt $1
+|20 @Screen  &vector $2 &width $2 &height $2 &auto $1 &pad $1 &x $2 &y $2 &addr  $2 &pixel $1 &sprite $1
+|90 @Mouse &vector $2 &x $2 &y $2 &state $1 &wheel $1
+|c0 @Date &year $2 &month $1 &day $1 &hour $1 &minute $1 &second $1 &dotw $1 &doty $2 &isdst $1
+
+|0000
+
+	@frames $2
+	@last $1
+
+|0100 ( -> )
+
+	( set system colors )
+	#2ce9 .System/r DEO2
+	#01c0 .System/g DEO2
+	#2ce5 .System/b DEO2
+
+	( interrupts )
+	;on-frame .Screen/vector DEO2
+
+	( draw "FPS:" and "BUNNIES:" and instructions labels )
+	.Screen/width DEI2 #0046 SUB2 #0008 ;text/fps #42 ;draw-str JSR2
+	#0004 #0008 ;text/bunnies #42 ;draw-str JSR2
+	.Screen/width DEI2 #01 SFT2 #0050 SUB2 #0008 ;text/instructions #43 ;draw-str JSR2
+	#0028 #0008 #0000 ;draw-dec JSR2
+
+	( seed prng )
+	#04 ;rand/a STA
+
+BRK
+
+@on-frame ( -> )
+
+	( frames++ ) 
+	.frames LDZ2k INC2 ROT STZ2
+	.Date/second DEI .last LDZ EQU ,&post-fps-update JCN
+	( fps update )
+	( update last-secs ) .Date/second DEI .last STZ
+	( update fps label ) .Screen/width DEI2 #002b SUB2 #0008 .frames LDZ2 ;draw-dec JSR2
+	( reset frames counter ) #0000 .frames STZ2
+
+	&post-fps-update
+		( mouse input to add/remove bunnies )
+		.Mouse/state DEI #01 EQU ,&add JCN
+		.Mouse/state DEI #01 GTH ,&remove JCN
+		,&done JMP
+	&add
+		;add-bunny JSR2 ,&done JMP
+	&remove
+		;remove-bunny JSR2 ,&done JMP
+	&done
+
+	( loop from 0 to ;sprite/length to make all ;draw-bunny calls )
+	[ ;sprite/length LDA2 ] #0000
+	&loop
+		EQU2k ,&bail JCN
+		DUP2 ,draw-bunny JSR
+		INC2 ,&loop JMP
+	&bail
+	POP2 POP2
+
+BRK
+
+@draw-bunny ( idx -- )
+
+	( compute the offset to the beginning of this bunny's data )
+	[ #30 SFT2 ;sprite/array ADD2 ]
+
+	( clear the old sprite location )
+		( top )
+	[ LDA2k ] #05 SFT2 .Screen/x DEO2
+	[ INC2k INC2 LDA2 ] #05 SFT2 .Screen/y DEO2
+	#00 ;draw-sprite JSR2
+
+	( move the sprite by its velocity )
+	[ LDA2k ] [ OVR2 #0004 ADD2 LDA2 ] ADD2 OVR2 STA2
+	[ INC2k INC2 LDA2 ] [ OVR2 #0006 ADD2 LDA2 ] ADD2 OVR2 INC2 INC2 STA2
+
+	( check for right wall collision + bounce x )
+	[ DUP2 #0004 ADD2 LDA2 ] #0f SFT2 #0001 EQU2 ,&skip-max-x JCN
+	[ LDA2k ] #05 SFT2 #0008 ADD2 [ .Screen/width DEI2 ] LTH2 ,&skip-max-x JCN
+	[ DUP2 #0004 ADD2 LDA2 ] #ffff MUL2 [ OVR2 #0004 ADD2 STA2 ]
+	&skip-max-x
+	( check for left wall collision + bounce x )
+	[ LDA2k ] #0f SFT2 #0000 EQU2 ,&skip-min-x JCN
+	[ DUP2 #0004 ADD2 LDA2 ] #ffff MUL2 [ OVR2 #0004 ADD2 STA2 ]
+	&skip-min-x
+	( check for bottom wall collision + bounce y )
+	[ DUP2 #0006 ADD2 LDA2 ] #0f SFT2 #0001 EQU2 ,&skip-max-y JCN
+	[ INC2k INC2 LDA2 ] #05 SFT2 #0008 ADD2 [ .Screen/height DEI2 ] LTH2 ,&skip-max-y JCN
+	[ DUP2 #0006 ADD2 LDA2 ] #ffff MUL2 [ OVR2 #0006 ADD2 STA2 ]
+	,&skip-gravity JMP
+	&skip-max-y
+	( check for top wall collision + bounce x )
+	[ INC2k INC2 LDA2 ] #0f SFT2 #0000 EQU2 ,&skip-min-y JCN
+	[ DUP2 #0006 ADD2 LDA2 ] #ffff MUL2 [ OVR2 #0006 ADD2 STA2 ]
+	,&skip-gravity JMP
+	&skip-min-y
+
+	( apply gravity )
+	[ DUP2 #0006 ADD2 LDA2 ] #0004 ADD2 OVR2 #0006 ADD2 STA2
+	&skip-gravity
+
+	( draw the sprite )
+	( top )
+	[ LDA2k ] #05 SFT2 .Screen/x DEO2
+	[ INC2 INC2 LDA2 ] #05 SFT2 .Screen/y DEO2
+	#85 ,draw-sprite ( .. )
+
+JMP
+
+@draw-sprite ( color -- )
+
+	#15 .Screen/auto DEO
+	;bunny-chr .Screen/addr DEO2
+	.Screen/sprite DEO
+	#00 .Screen/auto DEO
+
+JMP2r
+
+@add-bunny ( -- )
+
+	;sprite/length LDA2
+	( cap bunny count at 65535 )
+	DUP2 #ffff EQU2 ,&bail JCN
+	( compute the offset to the beginning of this new bunny's data )
+	DUP2 #30 SFT2 ;sprite/array ADD2
+	( populate the new bunny's x/y/xvel/yvel with random values )
+	#00 [ ;rand JSR2 ] OVR2 STA2
+	[ ;rand JSR2 #1f AND ] [ ;rand JSR2 ] OVR2 INC2 INC2 STA2
+	#00 [ ;rand JSR2 #7f AND ] OVR2 #0004 ADD2 STA2
+	#00 [ ;rand JSR2 #7f AND ] OVR2 #0006 ADD2 STA2
+	( pop ptr to bunny data ) POP2
+	( write new increased array length )
+	INC2 DUP2 ;sprite/length STA2
+	( update label )
+	STH2k #0028 #0008 STH2r ;draw-dec JSR2
+	&bail
+	( pop sprite/length ) POP2
+
+JMP2r
+
+@draw-str ( x* y* text* color -- )
+
+	#01 .Screen/auto DEO
+	STH
+	SWP2 .Screen/y DEO2
+	SWP2 .Screen/x DEO2
+	&loop
+		LDAk #20 SUB #00 SWP #30 SFT2 ;font ADD2 .Screen/addr DEO2
+		STHkr .Screen/sprite DEO
+		INC2 LDAk ,&loop JCN
+	POP2
+	STHr POP
+	#00 .Screen/auto DEO
+
+JMP2r
+
+@draw-dec ( x* y* num* -- )
+
+	#01 .Screen/auto DEO
+	SWP2 .Screen/y DEO2
+	SWP2 .Screen/x DEO2
+	#2710 DIV2k DUP2 NIP ,&digit JSR MUL2 SUB2
+	#03e8 DIV2k DUP2 NIP ,&digit JSR MUL2 SUB2
+	#0064 DIV2k DUP2 NIP ,&digit JSR MUL2 SUB2 NIP
+	#0a DIVk DUP ,&digit JSR MUL SUB
+	,&digit JSR
+	#00 .Screen/auto DEO
+
+JMP2r
+	&digit ( num -- )
+		#30 SFT #00 SWP ;font/num ADD2 .Screen/addr DEO2
+		#41 .Screen/sprite DEO
+	JMP2r
+
+@remove-bunny ( -- )
+
+	;sprite/length LDA2
+	( don't let length go below 0 )
+	ORAk #00 EQU ,&bail JCN
+	( clear the old sprite location )
+	DUP2 #0001 SUB2 #30 SFT2 ;sprite/array ADD2
+	( top )
+	[ LDA2k ] #05 SFT2 .Screen/x DEO2
+	[ INC2k INC2 LDA2 ] #05 SFT2 .Screen/y DEO2
+	( clear )
+	#00 ;draw-sprite JSR2
+	POP2
+	#0001 SUB2 DUP2 ;sprite/length STA2
+	( update label )
+	STH2k #0028 #0008 STH2r ;draw-dec JSR2
+	&bail
+		POP2
+
+JMP2r
+
+( PRNG code taken from flappy.tal -- thanks! )
+
+@rand ( -- number )
+
+	( local vars )
+	#04 JMP
+	&x $1 &y $1 &z $1 &a $1
+	( 8-bit PRNG https://github.com/edrosten/8bit_rng )
+	( t = x ^ (x << 4) )
+	,&x LDR DUP #40 SFT EOR
+	( x = y )
+	,&y LDR ,&x STR
+	( y = z )
+	,&z LDR ,&y STR
+	( z = a )
+	,&a LDR DUP ,&z STR
+	( a = z ^ t ^ (z >> 1) ^ (t << 1) )
+	DUPk ADD EOR SWP DUP #01 SFT EOR EOR
+	DUP ,&a STR
+
+JMP2r
+
+( static string data )
+
+@text
+	&fps "FPS: 00
+	&bunnies "BUNS: 00
+	&instructions "CLICK 20 "TO 20 "ADD 20 "BUNNIES! 00
+
+@font ( atari8.uf1 )
+	0000 0000 0000 0000 6060 6060 6000 6000
+	6666 6600 0000 0000 006c fe6c 6cfe 6c00
+	183e 603c 067c 1800 0066 6c18 3066 4600
+	386c 3870 decc 7600 6060 6000 0000 0000
+	0e1c 1818 181c 0e00 7038 1818 1838 7000
+	0066 3cff 3c66 0000 0018 187e 1818 0000
+	0000 0000 0030 3060 0000 007e 0000 0000
+	0000 0000 0018 1800 0206 0c18 3060 4000
+	&num
+	3c66 6e76 6666 3c00 1838 1818 1818 7e00
+	3c66 060c 1830 7e00 7e0c 180c 0666 3c00
+	0c1c 3c6c 7e0c 0c00 7e60 7c06 0666 3c00
+	3c60 607c 6666 3c00 7e06 0c18 3030 3000
+	3c66 663c 6666 3c00 3c66 663e 060c 3800
+	0060 6000 6060 0000 0030 3000 3030 6000
+	0c18 3060 3018 0c00 0000 7e00 007e 0000
+	6030 180c 1830 6000 3c66 060c 1800 1800
+	3c66 6e6a 6e60 3e00 183c 6666 7e66 6600
+	7c66 667c 6666 7c00 3c66 6060 6066 3c00
+	786c 6666 666c 7800 7e60 607c 6060 7e00
+	7e60 607c 6060 6000 3e60 606e 6666 3e00
+	6666 667e 6666 6600 7830 3030 3030 7800
+	0606 0606 0666 3c00 666c 7870 786c 6600
+	6060 6060 6060 7e00 c6ee fed6 c6c6 c600
+	6676 7e7e 6e66 6600 3c66 6666 6666 3c00
+	7c66 667c 6060 6000 3c66 6666 766c 3600
+	7c66 667c 6c66 6600 3c66 603c 0666 3c00
+	7e18 1818 1818 1800 6666 6666 6666 3e00
+	6666 6666 663c 1800 c6c6 c6d6 feee c600
+	6666 3c18 3c66 6600 6666 663c 1818 1800
+	7e06 0c18 3060 7e00 7860 6060 6060 7800
+
+@bunny-chr
+	2466 6600 2424 003c 4200 007e 7e7e 7e7e
+	1818 3c3c 1800 0000 ff66 4242 667e 4242
+
+( beginning of sprite pixel data + array )
+
+@sprite
+	&length $2
+	&array
+		&x 0600
+		&y 0500
+		&xvel 0060
+		&yvel 0010

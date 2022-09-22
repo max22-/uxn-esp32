@@ -1,0 +1,145 @@
+( Polycat:
+	A cat with one eye, and the hind and tail of a lizard.
+	Original character by Rekka Bellum )
+
+|00 @System &vector $2 &wst $1 &rst $1 &pad $4 &r $2 &g $2 &b $2 &debug $1 &halt $1
+|20 @Screen &vector $2 &width $2 &height $2 &auto $1 &pad $1 &x $2 &y $2 &addr $2 &pixeld $1 &sprite $1
+|90 @Mouse &vector $2 &x $2 &y $2 &state $1 &pad $3 &scrollx $2 &scrolly $2
+
+|0000
+
+@cat &x $2 &y $2 &timer $1
+@pointer &x $2 &y $2
+
+|0100 ( -> )
+	
+	( theme )
+	#0a3f .System/r DEO2
+	#05df .System/g DEO2
+	#0caf .System/b DEO2
+	( DOS resolution )
+	#0140 .Screen/width DEO2
+	#00c8 .Screen/height DEO2
+	( vectors )
+	;on-mouse .Mouse/vector DEO2
+	( find center )
+	.Screen/width DEI2 #01 SFT2 .cat/x STZ2
+	.Screen/height DEI2 #01 SFT2 .cat/y STZ2
+	( draw ground )
+	#f6 .Screen/auto DEO
+	.cat/y LDZ2 #0018 ADD2 .Screen/y DEO2
+	.cat/x LDZ2 #0010 SUB2 .Screen/x DEO2
+	;ground .Screen/addr DEO2
+	#01 .Screen/sprite DEO
+	( init )
+	#ff ;draw-eye/last STA
+	#ff ;draw-tail/last STA
+	( set screen mode auto-x )
+	#05 .Screen/auto DEO
+	,draw-polycat JSR
+
+BRK
+
+@draw-polycat ( -- )
+
+	( ears )
+	.cat/y LDZ2 .Screen/y DEO2
+	.cat/x LDZ2 #0008 SUB2 .Screen/x DEO2
+	;ears .Screen/addr DEO2
+	#81 .Screen/sprite DEOk DEO
+	( body )
+	.cat/y LDZ2 #0010 ADD2 .Screen/y DEO2
+	.cat/x LDZ2 #0008 SUB2 .Screen/x DEO2
+	;body .Screen/addr DEO2
+	#81 .Screen/sprite DEO
+	( eye/tail )
+	#00 ,draw-eye JSR
+	#00 ;draw-tail ( .. )
+
+JMP2
+
+@on-mouse ( -> )
+	
+	.Mouse/x DEI2 .cat/x LDZ2 GTH2 #50 SFT
+	.Mouse/y DEI2 .cat/y LDZ2 GTH2 #60 SFT
+		ADD ,draw-eye JSR
+	.cat/timer LDZ INC [ DUP ] .cat/timer STZ
+		#04 SFT ,draw-tail JSR
+	,draw-cursor JSR
+
+BRK
+
+@draw-eye ( quad -- )
+	
+	DUP ,&last LDR NEQ ,&changed JCN
+		POP JMP2r &changed
+	( only redraw on change )
+	#00 OVR ;eye ADD2 .Screen/addr DEO2
+	.cat/y LDZ2 #0008 ADD2 .Screen/y DEO2
+	.cat/x LDZ2 #0008 SUB2 .Screen/x DEO2
+	#81 .Screen/sprite DEOk DEO
+	,&last STR
+
+JMP2r
+	&last $1
+
+@draw-tail ( frame -- )
+
+	STHk ,&last LDR NEQ ,&changed JCN
+		POPr JMP2r &changed
+	( only redraw on change )
+	STHr #00 OVR ;frames ADD2 LDA
+	#00 SWP #40 SFT2 ;body/tail ADD2
+		.Screen/addr DEO2
+	.cat/x LDZ2 .Screen/x DEO2
+	.cat/y LDZ2 #0010 ADD2 .Screen/y DEO2
+	#81 .Screen/sprite DEO
+	,&last STR
+
+JMP2r
+	&last $1
+
+@draw-cursor ( -- )
+	
+	( last cursor )
+	;cursor STH2k .Screen/addr DEO2
+	.pointer/x LDZ2 .Screen/x DEO2
+	.pointer/y LDZ2 .Screen/y DEO2
+	#40 .Screen/sprite DEO
+	( new cursor )
+	STH2r .Screen/addr DEO2
+	.Mouse/x DEI2 DUP2 .pointer/x STZ2 .Screen/x DEO2
+	.Mouse/y DEI2 DUP2 .pointer/y STZ2 .Screen/y DEO2
+	#41 .Mouse/state DEI #00 NEQ ADD .Screen/sprite DEO
+
+JMP2r
+
+@cursor
+	80c0 e0f0 f8e0 1000
+@frames
+	00 01 02 03 02 01 00 00
+	00 00 00 00 00 00 00 00
+@ears
+	081c 3e3e 7f7f ffff 081c 3e3e 7f7f fffc
+	081c 3c3e 7e7e ffff 081c 3c3e 7e7e ff1f
+@eye
+	ffff ffff ff7f 3f0f f7ef cfe7 f07c 3f0f
+	ffff ffff fffe fcf0 87c3 c183 071e fcf0
+	ffff ffff ff7f 3f0f f0e1 c1e0 f07c 3f0f
+	ffff ffff fffe fcf0 f7fb f9f3 071e fcf0
+	ffff ffff ff7f 3f0f f0e7 cfef f77c 3f0f
+	ffff ffff fffe fcf0 0783 c1c3 871e fcf0
+	ffff ffff ff7f 3f0f f0e0 c1e1 f07c 3f0f
+	ffff ffff fffe fcf0 07f3 f9fb f71e fcf0
+@body
+	0707 0707 0302 0200 0107 0707 0300 0000
+	&tail
+	e0f0 f0e0 e080 8000 c0f2 f9f9 fef8 b000
+	e0f0 f0e0 e080 8000 c0f2 f9f9 fef8 b000
+	e0f0 f0e0 e080 8000 c0f2 faf9 fef8 b000
+	e0f0 f0e0 e080 8000 c0f1 faf9 fef8 b000
+	0707 0707 0f08 1000 0307 0707 0f00 0000
+	e0e0 e0e0 e080 8000 f2f9 f9fe b884 8400
+@ground
+	bf00 5c02 0202 020c ef10 6f90 8080 8074
+	ff00 fe01 0100 0116 fd00 3c40 4040 4028

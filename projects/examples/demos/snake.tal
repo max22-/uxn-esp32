@@ -1,0 +1,235 @@
+( uxnasm projects/examples/demos/snake.tal bin/snake.rom && uxnemu bin/snake.rom )
+
+%+  { ADD } %-   { SUB }              %/   { DIV }  
+%<  { LTH } %>   { GTH }  %=  { EQU } %!   { NEQ } 
+%++ { ADD2 } %-- { SUB2 }              %// { DIV2 } 
+%<< { LTH2 } %>> { GTH2 } %== { EQU2 } %!! { NEQ2 }  
+%2/  { #01 SFT } %2* { #10 SFT }
+%8//  { #03 SFT2 } %8**  { #30 SFT2 }
+%MOD { DIVk MUL SUB }
+%MAX { LTHk JMP SWP POP }
+%RTN { JMP2r }
+%TOS { #00 SWP }
+%BRK? { #01 JCN BRK }
+
+
+%DIFFICULTY { #06 }
+
+( devices )
+
+|00 @System     [ &vector $2 &wst      $1 &rst    $1 &pad   $4 &r      $2 &g      $2 &b    $2 &debug  $1 &halt $1 ]
+|10 @Console    [ &vector $2 &read     $1 &pad    $5 &write $1 &error  $1 ]
+|20 @Screen     [ &vector $2 &width    $2 &height $2 &pad   $2 &x      $2 &y      $2 &addr $2 &pixel  $1 &sprite $1 ]
+|30 @Audio0     [ &vector $2 &position $2 &output $1 &pad   $3 &adsr   $2 &length $2 &addr $2 &volume $1 &pitch $1 ]
+|80 @Controller [ &vector $2 &button   $1 &key    $1 ]
+|c0 @DateTime   [ &year   $2 &month    $1 &day    $1 &hour  $1 &minute $1 &second $1 &dotw $1 &doty   $2 &isdst $1 ]
+
+( variables )
+
+|0000
+
+( program )
+
+@arena
+	&w $1 &h $1 &timer $1
+@apple
+	&x $1 &y $1
+@snake
+	&direction $1 &length $1 &dead $1
+	&x $1 &y $1
+	&tail
+
+|0100 ( -> )
+
+	( theme ) 
+	#0f7e .System/r DEO2 
+	#0fe6 .System/g DEO2 
+	#0f62 .System/b DEO2
+
+	( vectors )
+	;on-frame .Screen/vector DEO2
+	;on-button .Controller/vector DEO2
+
+	( resize )
+	#00c8 .Screen/width DEO2
+	#0100 .Screen/height DEO2
+
+	( set arena )
+	.Screen/width DEI2 8// NIP .arena/w STZ
+	.Screen/height DEI2 8// NIP .arena/h STZ
+
+	;reset JSR2
+
+BRK
+
+@on-frame ( -> )
+
+	.arena/timer LDZ INC DUP .arena/timer STZ
+		DIFFICULTY = BRK?
+
+	( clear ) #00 ;draw-snake JSR2
+	( update ) ;move JSR2
+	( draw ) #02 .snake/dead LDZ + ;draw-snake JSR2
+		#83 ;draw-apple JSR2
+	( score ) .snake/length LDZ #41 ;draw-score JSR2
+	( reset ) #00 .arena/timer STZ
+
+BRK
+
+@on-button ( -> )
+
+	.Controller/button DEI 
+	DUP #08 ! ,&no-escape JCN
+		;reset JSR2
+		&no-escape
+	#04 SFT DUP #00 = ,&skip JCN
+		DUP .snake/direction STZ
+		&skip
+	POP
+
+BRK
+
+@reset ( -- )
+
+	#00 ;draw-snake JSR2
+	#00 ;draw-apple JSR2
+
+	.arena/w LDZ 2/ #01 - .snake/x STZ
+	.arena/h LDZ 2/ #01 - .snake/y STZ
+	#00 .snake/dead STZ
+	#00 .snake/length STZ
+	#00 .snake/direction STZ
+
+	#03 ;draw-snake JSR2
+	;add-apple JSR2
+
+RTN
+
+@move ( -- )
+
+	( tail )
+	.snake/x LDZ2 STH2
+	.snake/length LDZ #00
+	&loop
+		( pop ) DUP 2* .snake/tail + LDZ2 STH2 SWP2r
+		( push ) DUP 2* .snake/tail + STH2r ROT STZ2
+		INC GTHk ,&loop JCN
+	POP2
+	POP2r
+
+	.snake/dead LDZ #00 = JMP RTN
+
+	.snake/direction LDZ
+	DUP #01 ! ,&no-up JCN
+		.snake/y LDZ #01 - 
+			.arena/h LDZ MAX
+			.snake/y STZ
+		&no-up
+	DUP #02 ! ,&no-down JCN
+		.snake/y LDZ INC
+			.arena/h LDZ MOD
+			.snake/y STZ
+		&no-down
+	DUP #04 ! ,&no-left JCN
+		.snake/x LDZ #01 - 
+			.arena/w LDZ MAX
+			.snake/x STZ
+		&no-left
+	DUP #08 ! ,&no-right JCN
+		.snake/x LDZ INC 
+			.arena/w LDZ MOD
+			.snake/x STZ
+		&no-right
+	POP
+
+	( detect collision with apple )
+	.snake/x LDZ2 .apple/x LDZ2 NEQ2 ,&no-collision-apple JCN
+		#00 ;draw-apple JSR2
+		.snake/length LDZ INC .snake/length STZ
+		;add-apple JSR2
+		;move JSR2
+		&no-collision-apple
+
+	.snake/length LDZ #01
+	&loop-body
+		( pop ) DUP 2* .snake/tail + LDZ2 
+		.snake/x LDZ2 NEQ2 ,&no-collision-body JCN
+			#01 .snake/dead STZ
+			#03 ;draw-snake JSR2
+			&no-collision-body
+		INC GTHk ,&loop-body JCN
+	POP2
+
+RTN
+
+@add-apple ( -- )
+
+	.DateTime/hour DEI2 .DateTime/minute DEI2 MUL2 #1234 MUL2 +
+		.arena/w LDZ MOD .apple/x STZ
+	.DateTime/hour DEI2 .DateTime/minute DEI2 MUL2 #abcd MUL2 +
+		.arena/h LDZ MOD .apple/y STZ
+
+RTN
+
+@draw-snake ( color -- )
+
+	STH
+	( draw tail )
+	;snake-icns .Screen/addr DEO2
+	.snake/length LDZ #00
+	&loop
+		DUP 2* .snake/tail + LDZ TOS 8** .Screen/x DEO2
+		DUP 2* .snake/tail + INC LDZ TOS 8** .Screen/y DEO2
+		STHkr .Screen/sprite DEO
+		INC GTHk ,&loop JCN
+	POP2
+	( draw head )
+	.snake/x LDZ TOS 8** .Screen/x DEO2
+	.snake/y LDZ TOS 8** .Screen/y DEO2
+	;snake-icns/face .Screen/addr DEO2
+	STHr .Screen/sprite DEO
+
+RTN
+
+@draw-apple ( color -- )
+
+	.apple/x LDZ TOS 8** .Screen/x DEO2
+	.apple/y LDZ TOS 8** .Screen/y DEO2
+	;apple-chr .Screen/addr DEO2
+	.Screen/sprite DEO
+
+RTN
+
+@draw-score ( score color -- )
+
+	STH
+	#0010 .Screen/x DEO2
+	#0010 .Screen/y DEO2
+	DUP #04 SFT TOS 8** ;font-hex ++ .Screen/addr DEO2
+	.Screen/x DEI2 #0008 ++ .Screen/x DEO2
+		( draw ) STHkr .Screen/sprite DEO
+	#0f AND TOS 8** ;font-hex ++ .Screen/addr DEO2
+	.Screen/x DEI2 #0008 ++ .Screen/x DEO2
+		( draw ) STHr .Screen/sprite DEO
+
+RTN
+
+( assets )
+
+@snake-icns
+	7eff ffff ffff ff7e
+	&face
+	7eff ffdb ffe7 ff7e
+@apple-chr
+	0000 76ff ffff 7e3c
+	1008 0000 0000 0000
+@font-hex ( 0-F )
+	007c 8282 8282 827c 0030 1010 1010 1010
+	007c 8202 7c80 80fe 007c 8202 1c02 827c
+	000c 1424 4484 fe04 00fe 8080 7c02 827c
+	007c 8280 fc82 827c 007c 8202 1e02 0202
+	007c 8282 7c82 827c 007c 8282 7e02 827c
+	007c 8202 7e82 827e 00fc 8282 fc82 82fc
+	007c 8280 8080 827c 00fc 8282 8282 82fc
+	007c 8280 f080 827c 007c 8280 f080 8080 
+
