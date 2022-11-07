@@ -10,7 +10,7 @@ THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
 WITH REGARD TO THIS SOFTWARE.
 */
 
-#define FIXED_SIZE 0
+#define FIXED_SIZE 1
 
 typedef struct Layer {
 	Uint8 *pixels, changed;
@@ -23,7 +23,7 @@ typedef struct UxnScreen {
 	Uint8 mono;
 } UxnScreen;
 
-extern UxnScreen uxn_screen;
+extern UxnScreen *uxn_screen;
 
 void screen_palette(UxnScreen *p, Uint8 *addr);
 void screen_resize(UxnScreen *p, Uint16 width, Uint16 height);

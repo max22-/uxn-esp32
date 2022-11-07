@@ -1,4 +1,6 @@
 #include <stdlib.h>
+#warning remove
+#include <stdio.h>
 
 #include "../uxn.h"
 #include "screen.h"
@@ -15,7 +17,8 @@ THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
 WITH REGARD TO THIS SOFTWARE.
 */
 
-UxnScreen uxn_screen;
+UxnScreen *uxn_screen;
+
 
 static Uint8 blending[5][16] = {
 	{0, 0, 0, 0, 1, 0, 1, 1, 2, 2, 0, 2, 3, 3, 3, 0},
@@ -31,11 +34,17 @@ static void
 screen_write(UxnScreen *p, Layer *layer, Uint16 x, Uint16 y, Uint8 color)
 {
 	if(x < p->width && y < p->height) {
-		Uint32 i = x + y * p->width;
-		if(color != layer->pixels[i]) {
-			layer->pixels[i] = color;
+                Uint32 i = x + y * p->width;
+		Uint32 idx = i/4;
+		Uint8 shift = (i%4)*2;
+		Uint8 mask = ~(0x3<<shift), byte = layer->pixels[idx];
+		byte = (byte & mask) | (color << shift);
+		layer->pixels[idx] = byte;
+		
+		/*if(color != layer->pixels[i]) {
+		  layer->pixels[i] = layer->pixels[i] & (0xf << (4-shift)) | color<<shift;
 			layer->changed = 1;
-		}
+		}*/
 	}
 }
 
@@ -76,18 +85,26 @@ void
 screen_resize(UxnScreen *p, Uint16 width, Uint16 height)
 {
 	Uint8
-		*bg = realloc(p->bg.pixels, width * height),
-		*fg = realloc(p->fg.pixels, width * height);
+		*bg = realloc(p->bg.pixels, width * height / 2),
+		*fg = realloc(p->fg.pixels, width * height / 2);
+	if(!bg || !fg) {printf("realloc error\n"); while(1);} else {printf("realloc ok!\n");}
+	fflush(stdout);
+	/*
 	Uint32
 		*pixels = realloc(p->pixels, width * height * sizeof(Uint32));
+	*/
+	printf("debug1\n");
 	if(bg) p->bg.pixels = bg;
 	if(fg) p->fg.pixels = fg;
-	if(pixels) p->pixels = pixels;
-	if(bg && fg && pixels) {
+	//if(pixels) p->pixels = pixels;
+	printf("debug2\n");
+	if(bg && fg /*&& pixels*/) {
 		p->width = width;
 		p->height = height;
+		printf("calling screen_clear\n");
 		screen_clear(p, &p->bg);
 		screen_clear(p, &p->fg);
+		printf("screen_clear called\n");
 	}
 }
 
@@ -96,7 +113,7 @@ screen_clear(UxnScreen *p, Layer *layer)
 {
 	Uint32 i, size = p->width * p->height;
 	for(i = 0; i < size; i++)
-		layer->pixels[i] = 0x00;
+		layer->pixels[i/2] = 0x00;
 	layer->changed = 1;
 }
 
@@ -135,10 +152,10 @@ Uint8
 screen_dei(Device *d, Uint8 port)
 {
 	switch(port) {
-	case 0x2: return uxn_screen.width >> 8;
-	case 0x3: return uxn_screen.width;
-	case 0x4: return uxn_screen.height >> 8;
-	case 0x5: return uxn_screen.height;
+	case 0x2: return uxn_screen->width >> 8;
+	case 0x3: return uxn_screen->width;
+	case 0x4: return uxn_screen->height >> 8;
+	case 0x5: return uxn_screen->height;
 	default: return d->dat[port];
 	}
 }
@@ -151,14 +168,14 @@ screen_deo(Device *d, Uint8 port)
 		if(!FIXED_SIZE) {
 			Uint16 w;
 			DEVPEEK16(w, 0x2);
-			screen_resize(&uxn_screen, clamp(w, 1, 1024), uxn_screen.height);
+			screen_resize(uxn_screen, clamp(w, 1, 1024), uxn_screen->height);
 		}
 		break;
 	case 0x5:
 		if(!FIXED_SIZE) {
 			Uint16 h;
 			DEVPEEK16(h, 0x4);
-			screen_resize(&uxn_screen, uxn_screen.width, clamp(h, 1, 1024));
+			screen_resize(uxn_screen, uxn_screen->width, clamp(h, 1, 1024));
 		}
 		break;
 	case 0xe: {
@@ -166,7 +183,7 @@ screen_deo(Device *d, Uint8 port)
 		Uint8 layer = d->dat[0xe] & 0x40;
 		DEVPEEK16(x, 0x8);
 		DEVPEEK16(y, 0xa);
-		screen_write(&uxn_screen, layer ? &uxn_screen.fg : &uxn_screen.bg, x, y, d->dat[0xe] & 0x3);
+		screen_write(uxn_screen, layer ? &uxn_screen->fg : &uxn_screen->bg, x, y, d->dat[0xe] & 0x3);
 		if(d->dat[0x6] & 0x01) DEVPOKE16(0x8, x + 1); /* auto x+1 */
 		if(d->dat[0x6] & 0x02) DEVPOKE16(0xa, y + 1); /* auto y+1 */
 		break;
@@ -174,7 +191,7 @@ screen_deo(Device *d, Uint8 port)
 	case 0xf: {
 		Uint16 x, y, dx, dy, addr;
 		Uint8 i, n, twobpp = !!(d->dat[0xf] & 0x80);
-		Layer *layer = (d->dat[0xf] & 0x40) ? &uxn_screen.fg : &uxn_screen.bg;
+		Layer *layer = (d->dat[0xf] & 0x40) ? &uxn_screen->fg : &uxn_screen->bg;
 		DEVPEEK16(x, 0x8);
 		DEVPEEK16(y, 0xa);
 		DEVPEEK16(addr, 0xc);
@@ -184,7 +201,7 @@ screen_deo(Device *d, Uint8 port)
 		if(addr > 0x10000 - ((n + 1) << (3 + twobpp)))
 			return;
 		for(i = 0; i <= n; i++) {
-			screen_blit(&uxn_screen, layer, x + dy * i, y + dx * i, &d->u->ram[addr], d->dat[0xf] & 0xf, d->dat[0xf] & 0x10, d->dat[0xf] & 0x20, twobpp);
+			screen_blit(uxn_screen, layer, x + dy * i, y + dx * i, &d->u->ram[addr], d->dat[0xf] & 0xf, d->dat[0xf] & 0x10, d->dat[0xf] & 0x20, twobpp);
 			addr += (d->dat[0x6] & 0x04) << (1 + twobpp);
 		}
 		DEVPOKE16(0xc, addr);   /* auto addr+length */
