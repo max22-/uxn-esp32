@@ -1,4 +1,5 @@
 #include <SPIFFS.h>
+#include <fabgl.h>
 #include "vga.h"
 
 extern "C" {
@@ -7,6 +8,7 @@ extern "C" {
   #include "src/devices/file.h"
   #include "src/devices/datetime.h"
   #include "src/devices/screen.h"
+  #include "src/devices/controller.h"
 }
 
 /*
@@ -20,12 +22,14 @@ THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
 WITH REGARD TO THIS SOFTWARE.
 */
 
-char *rom_path = "/spiffs/screen.rom";
+char *rom_path = "/spiffs/potato.rom";
 #define WIDTH 320 // See also vga.cpp to configure the resolution
 #define HEIGHT 240
 
 static Uxn u;
-static Device *devscreen;
+static Device *devscreen, *devctrl;
+
+fabgl::PS2Controller PS2Controller;
 
 /* Compilation error when we put a newline after the type declaration O__O */
 static void error(char *msg, const char *err)
@@ -88,7 +92,7 @@ static int start(Uxn *u)
 	/* empty    */ uxn_port(u, 0x5, nil_dei, nil_deo);
 	/* empty    */ uxn_port(u, 0x6, nil_dei, nil_deo);
 	/* empty    */ uxn_port(u, 0x7, nil_dei, nil_deo);
-	/* empty    */ uxn_port(u, 0x8, nil_dei, nil_deo);
+	/* control  */ devctrl = uxn_port(u, 0x8, nil_dei, nil_deo);
 	/* empty    */ uxn_port(u, 0x9, nil_dei, nil_deo);
 	/* file0    */ uxn_port(u, 0xa, file_dei, file_deo);
 	/* file1    */ uxn_port(u, 0xb, file_dei, file_deo);
@@ -135,10 +139,10 @@ void setup()
 		console_input(&u, '\n');
 	}
   */
-  Serial.println("5s delay");
-  delay(5000);
-  Serial.println("vga_begin");
-  vga_begin();  
+  vga_begin();
+  PS2Controller.begin(PS2Preset::KeyboardPort0);
+  auto keyboard = PS2Controller.keyboard();
+  keyboard->setLayout(&fabgl::FrenchLayout);
 }
 
 
@@ -151,7 +155,29 @@ void loop()
 		if(c != EOF)
 			console_input(u, (Uint8)c);
 	}*/
-  Serial.println("loop");
+  auto keyboard = PS2Controller.keyboard();
+  if (keyboard->virtualKeyAvailable()) {
+    VirtualKeyItem item;
+    if (keyboard->getNextVirtualKey(&item)) {
+      printf("%s: ", keyboard->virtualKeyToString(item.vk));
+      printf("\tASCII = 0x%02X\t", item.ASCII);
+      if (item.ASCII >= ' ') {
+        printf("'%c'", item.ASCII);
+      }
+      if(item.down) {
+        if(item.ASCII != 0)
+          controller_key(devctrl, item.ASCII);
+        else if(item.vk == fabgl::VK_F4) ESP.restart();
+      }
+      printf("\t%s", item.down ? "DN" : "UP");
+      printf("\t[");
+      for (int i = 0; i < 8 && item.scancode[i] != 0; ++i)
+        printf("%02X ", item.scancode[i]);
+      printf("]");
+      printf("\r\n");
+    }
+    
+  }
   uxn_eval(&u, GETVECTOR(devscreen));
   vga_sync();
   uxn_screen->fg.changed=0;
