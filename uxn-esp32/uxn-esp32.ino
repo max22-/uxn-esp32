@@ -9,6 +9,7 @@ extern "C" {
   #include "src/devices/datetime.h"
   #include "src/devices/screen.h"
   #include "src/devices/controller.h"
+  #include "src/devices/mouse.h"
 }
 
 /*
@@ -27,7 +28,7 @@ char *rom_path = "/spiffs/potato.rom";
 #define HEIGHT 240
 
 static Uxn u;
-static Device *devscreen, *devctrl;
+static Device *devscreen, *devctrl, *devmouse;
 
 fabgl::PS2Controller PS2Controller;
 
@@ -93,7 +94,7 @@ static int start(Uxn *u)
 	/* empty    */ uxn_port(u, 0x6, nil_dei, nil_deo);
 	/* empty    */ uxn_port(u, 0x7, nil_dei, nil_deo);
 	/* control  */ devctrl = uxn_port(u, 0x8, nil_dei, nil_deo);
-	/* empty    */ uxn_port(u, 0x9, nil_dei, nil_deo);
+	/* mouse    */ devmouse = uxn_port(u, 0x9, nil_dei, nil_deo);
 	/* file0    */ uxn_port(u, 0xa, file_dei, file_deo);
 	/* file1    */ uxn_port(u, 0xb, file_dei, file_deo);
 	/* datetime */ uxn_port(u, 0xc, datetime_dei, nil_deo);
@@ -140,7 +141,7 @@ void setup()
 	}
   */
   vga_begin();
-  PS2Controller.begin(PS2Preset::KeyboardPort0);
+  PS2Controller.begin(PS2Preset::KeyboardPort0_MousePort1);
   auto keyboard = PS2Controller.keyboard();
   keyboard->setLayout(&fabgl::FrenchLayout);
 }
@@ -176,8 +177,29 @@ void loop()
       printf("]");
       printf("\r\n");
     }
-    
   }
+  auto mouse = PS2Controller.mouse();
+  
+  if(mouse->deltaAvailable()) {
+    Serial.println("Handling mouse");
+    MouseDelta mouseDelta;
+    mouse->getNextDelta(&mouseDelta);
+    if(mouseDelta.deltaX || mouseDelta.deltaY) {
+      static int mouseX = 0, mouseY = 0;
+      mouseX = constrain(mouseX + mouseDelta.deltaX, 0, WIDTH - 1);
+      mouseY = constrain(mouseY - mouseDelta.deltaY, 0, HEIGHT - 1);
+      mouse_pos(devmouse, mouseX, mouseY);
+      Serial.printf("(%d, %d)\n", mouseX, mouseY);
+    }
+
+    uint8_t state = mouseDelta.buttons.left | (mouseDelta.buttons.middle<<1) | (mouseDelta.buttons.right << 2);
+    if(state != devmouse->dat[6]) {
+      devmouse->dat[6] = state;
+      uxn_eval(devmouse->u, GETVECTOR(devmouse));
+    }
+
+  }
+
   uxn_eval(&u, GETVECTOR(devscreen));
   vga_sync();
   uxn_screen->fg.changed=0;
