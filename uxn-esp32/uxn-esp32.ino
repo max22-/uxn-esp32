@@ -169,6 +169,7 @@ void loop()
         if(item.ASCII != 0)
           controller_key(devctrl, item.ASCII);
         else if(item.vk == fabgl::VK_F4) ESP.restart();
+        else if(item.vk == fabgl::VK_F5) screen_mono(uxn_screen, uxn_screen->pixels);
       }
       printf("\t%s", item.down ? "DN" : "UP");
       printf("\t[");

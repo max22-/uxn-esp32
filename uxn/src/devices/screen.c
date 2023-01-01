@@ -143,7 +143,7 @@ void
 screen_mono(UxnScreen *p, Uint32 *pixels)
 {
 	p->mono = !p->mono;
-	screen_redraw(p, pixels);
+	/*screen_redraw(p, pixels);*/
 }
 
 /* IO */
