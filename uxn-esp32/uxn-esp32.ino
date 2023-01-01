@@ -1,6 +1,5 @@
 #include <SPIFFS.h>
-#include <fabgl.h>
-#include "vga.h"
+#include <TFT_eSPI.h>
 
 extern "C" {
   #include "src/uxn.h"
@@ -23,14 +22,12 @@ THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
 WITH REGARD TO THIS SOFTWARE.
 */
 
-char *rom_path = "/spiffs/potato.rom";
-#define WIDTH 320 // See also vga.cpp to configure the resolution
-#define HEIGHT 240
+char *rom_path = "/spiffs/basic.rom";
+TFT_eSPI tft = TFT_eSPI();
+uint16_t *line;
 
 static Uxn u;
 static Device *devscreen, *devctrl, *devmouse;
-
-fabgl::PS2Controller PS2Controller;
 
 /* Compilation error when we put a newline after the type declaration O__O */
 static void error(char *msg, const char *err)
@@ -108,10 +105,13 @@ void setup()
 {
 	int i;
   Serial.begin(115200);
-  SPIFFS.begin();
- 
   Serial.println("boot");
-  delay(1000);
+  SPIFFS.begin();
+
+  tft.begin();
+  tft.initDMA();
+  tft.setRotation(3);
+  tft.fillScreen(TFT_BLACK);
 
   Serial.println("Starting uxn");
 	if(!start(&u))
@@ -128,11 +128,15 @@ void setup()
   uxn_screen->bg.pixels=NULL;
   uxn_screen->fg.pixels=NULL;
   Serial.println("screen_resize");
-  screen_resize(uxn_screen, WIDTH, HEIGHT);
+  if(!screen_resize(uxn_screen, tft.width(), tft.height()))
+    error("Screen", "Failed to allocate memory");
 
   Serial.println("Calling uxneval(&u, PAGE_PROGRAM)");
 	if(!uxn_eval(&u, PAGE_PROGRAM))
 		error("Init", "Failed");
+  line = (Uint16*)heap_caps_malloc(tft.width() * sizeof(Uint16), MALLOC_CAP_8BIT | MALLOC_CAP_DMA);
+  if(!line)
+    error("screen", "failed to allocate memory for scanline");
   /*
 	for(i = 2; i < argc; i++) {
 		char *p = argv[i];
@@ -140,10 +144,6 @@ void setup()
 		console_input(&u, '\n');
 	}
   */
-  vga_begin();
-  PS2Controller.begin(PS2Preset::KeyboardPort0_MousePort1);
-  auto keyboard = PS2Controller.keyboard();
-  keyboard->setLayout(&fabgl::FrenchLayout);
 }
 
 
@@ -156,53 +156,47 @@ void loop()
 		if(c != EOF)
 			console_input(u, (Uint8)c);
 	}*/
-  auto keyboard = PS2Controller.keyboard();
-  if (keyboard->virtualKeyAvailable()) {
-    VirtualKeyItem item;
-    if (keyboard->getNextVirtualKey(&item)) {
-      printf("%s: ", keyboard->virtualKeyToString(item.vk));
-      printf("\tASCII = 0x%02X\t", item.ASCII);
-      if (item.ASCII >= ' ') {
-        printf("'%c'", item.ASCII);
-      }
-      if(item.down) {
-        if(item.ASCII != 0)
-          controller_key(devctrl, item.ASCII);
-        else if(item.vk == fabgl::VK_F4) ESP.restart();
-        else if(item.vk == fabgl::VK_F5) screen_mono(uxn_screen, uxn_screen->pixels);
-      }
-      printf("\t%s", item.down ? "DN" : "UP");
-      printf("\t[");
-      for (int i = 0; i < 8 && item.scancode[i] != 0; ++i)
-        printf("%02X ", item.scancode[i]);
-      printf("]");
-      printf("\r\n");
-    }
-  }
-  auto mouse = PS2Controller.mouse();
   
-  if(mouse->deltaAvailable()) {
-    Serial.println("Handling mouse");
-    MouseDelta mouseDelta;
-    mouse->getNextDelta(&mouseDelta);
-    if(mouseDelta.deltaX || mouseDelta.deltaY) {
-      static int mouseX = 0, mouseY = 0;
-      mouseX = constrain(mouseX + mouseDelta.deltaX, 0, WIDTH - 1);
-      mouseY = constrain(mouseY - mouseDelta.deltaY, 0, HEIGHT - 1);
-      mouse_pos(devmouse, mouseX, mouseY);
-      Serial.printf("(%d, %d)\n", mouseX, mouseY);
-    }
+  uxn_eval(&u, GETVECTOR(devscreen));
 
-    uint8_t state = mouseDelta.buttons.left | (mouseDelta.buttons.middle<<1) | (mouseDelta.buttons.right << 2);
-    if(state != devmouse->dat[6]) {
-      devmouse->dat[6] = state;
-      uxn_eval(devmouse->u, GETVECTOR(devmouse));
-    }
+  uint32_t w = uxn_screen->width, h = uxn_screen->height;
+  uint8_t *fg = uxn_screen->fg.pixels, *bg=uxn_screen->bg.pixels;
+  Uint16 palette[16], palette_mono[2] = {TFT_BLACK, TFT_WHITE};
+  //uint8_t mono = uxn_screen->mono;
+  uint8_t mono = 0;
+  uint32_t c32;
+  uint16_t c16;
 
+  for(int i = 0; i < 16; i++) {
+    c32 = uxn_screen->palette[(i >> 2) ? (i >> 2) : (i & 3)];
+    c16 = tft.color24to16(c32 & 0Xffffff);
+    palette[i] = c16 >> 8 | c16 << 8; /* We swap bytes for the tft screen */
   }
 
-  uxn_eval(&u, GETVECTOR(devscreen));
-  vga_sync();
+  tft.startWrite();
+  tft.setAddrWindow(0, 0, w, h);
+
+  for(int y=0; y< h; y++) {
+    for(int x = 0; x < w; x++) {
+      int pixnum = y*w + x;
+      int idx = pixnum / 4;
+      uint8_t shift = (pixnum%4)*2;
+      #define GETPIXEL(i) (((i)>>shift) & 0x3)
+      uint8_t fg_pixel = GETPIXEL(fg[idx]), bg_pixel = GETPIXEL(bg[idx]);
+
+      if(mono) {
+        if(fg_pixel)
+          line[x] = palette_mono[fg_pixel];
+        else line[x] = palette_mono[bg_pixel&0x1];
+      }
+      else 
+        line[x] = palette[fg_pixel << 2 | bg_pixel];
+    }
+    /*Serial.printf("Busy ? %s\n", tft.dmaBusy() ? "true" : "false");*/
+    tft.pushPixelsDMA(line, w);
+  }
+  tft.endWrite();
+
   uxn_screen->fg.changed=0;
   uxn_screen->bg.changed=0;  
 }

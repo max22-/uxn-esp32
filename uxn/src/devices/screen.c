@@ -81,14 +81,13 @@ screen_palette(UxnScreen *p, Uint8 *addr)
 	p->fg.changed = p->bg.changed = 1;
 }
 
-void
+int
 screen_resize(UxnScreen *p, Uint16 width, Uint16 height)
 {
 	Uint8
 		*bg = realloc(p->bg.pixels, width * height / 2),
 		*fg = realloc(p->fg.pixels, width * height / 2);
-	if(!bg || !fg) {printf("realloc error\n"); while(1);} else {printf("realloc ok!\n");}
-	fflush(stdout);
+	if(!bg || !fg) return 0;
 	/*
 	Uint32
 		*pixels = realloc(p->pixels, width * height * sizeof(Uint32));
@@ -106,6 +105,7 @@ screen_resize(UxnScreen *p, Uint16 width, Uint16 height)
 		screen_clear(p, &p->fg);
 		printf("screen_clear called\n");
 	}
+	return 1;
 }
 
 void
