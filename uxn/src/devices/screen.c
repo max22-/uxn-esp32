@@ -85,8 +85,8 @@ int
 screen_resize(UxnScreen *p, Uint16 width, Uint16 height)
 {
 	Uint8
-		*bg = realloc(p->bg.pixels, width * height / 2),
-		*fg = realloc(p->fg.pixels, width * height / 2);
+		*bg = realloc(p->bg.pixels, width * height / 4),
+		*fg = realloc(p->fg.pixels, width * height / 4);
 	if(!bg || !fg) return 0;
 	/*
 	Uint32
@@ -113,7 +113,7 @@ screen_clear(UxnScreen *p, Layer *layer)
 {
 	Uint32 i, size = p->width * p->height;
 	for(i = 0; i < size; i++)
-		layer->pixels[i/2] = 0x00;
+		layer->pixels[i/4] = 0x00;
 	layer->changed = 1;
 }
 
