@@ -1,6 +1,7 @@
 #include <FFat.h>
 #include <TFT_eSPI.h>
 #include "touchscreen.h"
+#include "log.h"
 
 extern "C" {
   #include "src/uxn.h"
@@ -24,9 +25,10 @@ WITH REGARD TO THIS SOFTWARE.
 */
 
 char *rom_path = "/ffat/potato.rom";
+#define USE_TOUCH
 
 static Uxn u;
-static Device *devscreen, *devctrl, *devmouse;
+static Device *devconsole, *devscreen, *devctrl, *devmouse;
 
 /* Compilation error when we put a newline after the type declaration O__O */
 void error(char *msg, const char *err)
@@ -66,13 +68,6 @@ static void nil_deo(Device *d, Uint8 port)
 	(void)port;
 }
 
-static int console_input(Uxn *u, char c)
-{
-	Device *d = &u->dev[1];
-	d->dat[0x2] = c;
-	return uxn_eval(u, GETVECTOR(d));
-}
-
 int
 uxn_interrupt(void)
 {
@@ -84,7 +79,7 @@ static int start(Uxn *u)
 	if(!uxn_boot(u, (Uint8 *)calloc(0x10000, sizeof(Uint8))))
 		error("Boot", "Failed");
 	/* system   */ uxn_port(u, 0x0, system_dei, system_deo);
-	/* console  */ uxn_port(u, 0x1, nil_dei, console_deo);
+	/* console  */ devconsole = uxn_port(u, 0x1, nil_dei, console_deo);
 	/* screen   */ devscreen = uxn_port(u, 0x2, screen_dei, screen_deo);
 	/* empty    */ uxn_port(u, 0x3, nil_dei, nil_deo);
 	/* empty    */ uxn_port(u, 0x4, nil_dei, nil_deo);
@@ -104,12 +99,15 @@ static int start(Uxn *u)
 
 void setup()
 {
-	int i;
   Serial.begin(115200);
   Serial.println("boot");
   touchscreen_init();
   if(!FFat.begin(true))
     error("FFat", "Failed to initialize file system");
+
+  #ifdef USE_TOUCH
+  touchscreen_calibrate();
+  #endif
 
   Serial.println("Starting uxn");
 	if(!start(&u))
@@ -132,28 +130,18 @@ void setup()
   Serial.println("Calling uxneval(&u, PAGE_PROGRAM)");
 	if(!uxn_eval(&u, PAGE_PROGRAM))
 		error("Init", "Failed");
-
-  
-  /*
-	for(i = 2; i < argc; i++) {
-		char *p = argv[i];
-		while(*p) console_input(&u, *p++);
-		console_input(&u, '\n');
-	}
-  */
 }
 
 
 void loop()
-{/*
-  if
-  	Device *d = &u->dev[0];
-	while(!d->dat[0xf]) {
-		int c = fgetc(stdin);
-		if(c != EOF)
-			console_input(u, (Uint8)c);
-	}*/
+{
+  if(Serial.available()) {
+    devconsole->dat[0x2] = Serial.read();
+	  uxn_eval(&u, GETVECTOR(devconsole));
+  }
+  #ifdef USE_TOUCH
   touchscreen_touch(devmouse);
+  #endif
   uxn_eval(&u, GETVECTOR(devscreen));
   touchscreen_redraw();
 }

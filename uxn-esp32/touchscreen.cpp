@@ -5,11 +5,15 @@ extern "C" {
   #include "src/devices/screen.h"
   #include "src/devices/mouse.h"
 }
+#include "log.h"
 
 TFT_eSPI tft = TFT_eSPI();
 static uint16_t *line;
+const char *calibration_file = "/ffat/calib.dat";
 
 extern void error(char *msg, const char *err);
+
+void touchscreen_calibrate();
 
 void touchscreen_init()
 {
@@ -23,18 +27,34 @@ void touchscreen_init()
   line = (uint16_t*)heap_caps_malloc(tft.width() * sizeof(Uint16), MALLOC_CAP_8BIT | MALLOC_CAP_DMA);
   if(!line)
     error("screen", "failed to allocate memory for scanline");
-  uint16_t calData[5];
-  tft.calibrateTouch(calData, TFT_MAGENTA, TFT_BLACK, 15);
 }
 
-void touchscreen_calibrate(uint16_t *calData)
+void touchscreen_calibrate()
 {
+  uint16_t cal_data[5];
+  FILE *f = fopen(calibration_file, "r");
+  if(f) {
+    LOG("%s found\n", calibration_file);
+    size_t n = fread(cal_data, sizeof(cal_data), 1, f);
+    fclose(f);
+    if(n == 1) {
+      LOG("data read\n");
+      tft.setTouch(cal_data);
+      return;
+    }
+  }
+  LOG("failed to load %s\n", calibration_file);
   tft.fillScreen(TFT_BLACK);
   tft.setCursor(20, 5);
-  tft.setTextSize(2);
+  tft.setTextSize(1);
   tft.setTextColor(TFT_WHITE, TFT_BLACK);
   tft.println("Touch corners as indicated");
-  tft.calibrateTouch(calData, TFT_MAGENTA, TFT_BLACK, 15);
+  tft.calibrateTouch(cal_data, TFT_MAGENTA, TFT_BLACK, 15);
+  f = fopen(calibration_file, "w");
+  if(!f) error("calibration", "failed to open calibration file");
+  size_t n = fwrite(cal_data, sizeof(cal_data), 1, f);
+  fclose(f);
+  if(n != 1) error("calibration", "failed to write file");
 }
 
 void touchscreen_touch(Device *devmouse)
