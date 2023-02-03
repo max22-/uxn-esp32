@@ -1,6 +1,7 @@
 #include <FFat.h>
 #include <TFT_eSPI.h>
 #include "touchscreen.h"
+#include "keyboard.h"
 #include "log.h"
 
 extern "C" {
@@ -26,6 +27,7 @@ WITH REGARD TO THIS SOFTWARE.
 
 char *rom_path = "/ffat/potato.rom";
 #define USE_TOUCH
+#define USE_KEYBOARD
 
 static Uxn u;
 static Device *devconsole, *devscreen, *devctrl, *devmouse;
@@ -130,6 +132,10 @@ void setup()
   Serial.println("Calling uxneval(&u, PAGE_PROGRAM)");
 	if(!uxn_eval(&u, PAGE_PROGRAM))
 		error("Init", "Failed");
+
+  #ifdef USE_KEYBOARD
+  keyboard_init();
+  #endif
 }
 
 
