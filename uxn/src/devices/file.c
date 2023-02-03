@@ -104,12 +104,14 @@ file_init(UxnFile *c, char *filename, size_t max_len)
 static Uint16
 file_read(UxnFile *c, void *dest, Uint16 len)
 {
+	if(c->current_filename[0] == '.' && c->current_filename[1] == 0) {
+		snprintf(dest, len, "---- ffat\n");
+	}
 	if(c->state != FILE_READ && c->state != DIR_READ) {
 		reset(c);
-		/* Directories not handled by the SPIFFS on the ESP32
 		if((c->dir = opendir(c->current_filename)) != NULL)
 			c->state = DIR_READ;
-		else */ if((c->f = fopen(c->current_filename, "rb")) != NULL)
+		else if((c->f = fopen(c->current_filename, "rb")) != NULL)
 			c->state = FILE_READ;
 	}
 	if(c->state == FILE_READ)
